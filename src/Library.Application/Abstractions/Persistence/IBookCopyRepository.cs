@@ -12,6 +12,10 @@ public interface IBookCopyRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task AddAsync(
+        BookCopy bookCopy,
+        CancellationToken cancellationToken = default);
+
     Task UpdateAsync(
         BookCopy bookCopy,
         CancellationToken cancellationToken = default);

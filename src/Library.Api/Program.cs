@@ -40,3 +40,4 @@ var seeder = app.Services.GetRequiredService<InMemoryDataSeeder>();
 seeder.Seed();
 
 app.Run();
+public partial class Program;

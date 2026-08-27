@@ -1,3 +1,5 @@
+using Library.Domain.Enums;
+
 namespace Library.Application.Features.Members.Models;
 
 public sealed record MemberResponse(
@@ -5,4 +7,4 @@ public sealed record MemberResponse(
     string MembershipNumber,
     string Name,
     string Email,
-    string Status);
+    MemberStatus Status);

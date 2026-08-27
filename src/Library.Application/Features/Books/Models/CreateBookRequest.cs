@@ -1,18 +1,16 @@
 namespace Library.Application.Features.Books.Models;
 
 /// <summary>
-/// Represents a book returned by the library API.
+/// Represents the information required to create a new book.
 /// </summary>
-/// <param name="Id">The unique identifier of the book.</param>
 /// <param name="ISBN">The International Standard Book Number of the book.</param>
 /// <param name="Title">The title of the book.</param>
 /// <param name="Author">The author of the book.</param>
-/// <param name="Description">An optional description of the book.</param>
 /// <param name="PublishedYear">The year in which the book was published.</param>
-public sealed record BookResponse(
-    Guid Id,
+/// <param name="Description">An optional description of the book.</param>
+public sealed record CreateBookRequest(
     string ISBN,
     string Title,
     string Author,
-    string? Description,
-    int PublishedYear);
+    int PublishedYear,
+    string? Description);

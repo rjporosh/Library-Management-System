@@ -1,5 +1,6 @@
 using Library.Application.Abstractions.Persistence;
 using Library.Application.Features.Books.Models;
+using Library.Domain.Entities;
 
 namespace Library.Application.Features.Books;
 
@@ -19,13 +20,33 @@ public sealed class BookService(IBookRepository bookRepository)
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        var book = await bookRepository.GetByIdAsync(id, cancellationToken);
+        var book = await bookRepository.GetByIdAsync(
+            id,
+            cancellationToken);
 
         return book is null ? null : Map(book);
     }
 
-    private static BookResponse Map(
-        Library.Domain.Entities.Book book)
+    public async Task<BookResponse> CreateAsync(
+        CreateBookRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var book = new Book(
+            Guid.NewGuid(),
+            request.ISBN,
+            request.Title,
+            request.Author,
+            request.PublishedYear,
+            request.Description);
+
+        await bookRepository.AddAsync(
+            book,
+            cancellationToken);
+
+        return Map(book);
+    }
+
+    private static BookResponse Map(Book book)
     {
         return new BookResponse(
             book.Id,

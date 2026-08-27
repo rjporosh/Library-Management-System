@@ -31,4 +31,9 @@ public sealed class Member
     {
         return Status == MemberStatus.Active;
     }
+
+    public void Suspend()
+    {
+        Status = MemberStatus.Suspended;
+    }
 }

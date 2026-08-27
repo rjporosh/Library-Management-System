@@ -27,6 +27,15 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         return Task.FromResult(copy);
     }
 
+    public Task AddAsync(
+        BookCopy bookCopy,
+        CancellationToken cancellationToken = default)
+    {
+        _copies.Add(bookCopy);
+
+        return Task.CompletedTask;
+    }
+
     public Task UpdateAsync(
         BookCopy bookCopy,
         CancellationToken cancellationToken = default)
