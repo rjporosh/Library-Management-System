@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# .NET
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# JetBrains
+.idea/
+
+# Test / Coverage
+TestResults/
+coverage/
+
+# Node
+**/node_modules/
+**/dist/
+**/.vite/
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
