@@ -9,7 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure();
 
-// API
+// MVC Controllers
+builder.Services.AddControllers();
+
+// OpenAPI
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -23,14 +26,17 @@ if (app.Environment.IsDevelopment())
         options
             .WithTitle("Library Management System API")
             .WithTheme(ScalarTheme.Mars)
-            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+            .WithDefaultHttpClient(
+                ScalarTarget.CSharp,
+                ScalarClient.HttpClient);
     });
 }
 
-// Seed in-memory data
+// Controllers
+app.MapControllers();
+
+// Seed demo data
 var seeder = app.Services.GetRequiredService<InMemoryDataSeeder>();
 seeder.Seed();
-
-app.UseHttpsRedirection();
 
 app.Run();
