@@ -27,14 +27,13 @@ public sealed class BookCopiesApiTests
             HttpStatusCode.OK,
             booksResponse.StatusCode);
 
-        var books =
-            await booksResponse.Content.ReadFromJsonAsync<
-                List<BookResponse>>();
+    var books =
+        await booksResponse.Content.ReadFromJsonAsync<
+            PagedBookResponse>();
 
-        Assert.NotNull(books);
-        Assert.NotEmpty(books);
-
-        var bookId = books[0].Id;
+    Assert.NotNull(books);
+    Assert.NotEmpty(books.Items);
+    var bookId = books.Items[0].Id;
 
         var response = await _client.GetAsync(
             $"/api/book-copies/book/{bookId}");
@@ -62,12 +61,12 @@ public sealed class BookCopiesApiTests
 
         var books =
             await booksResponse.Content.ReadFromJsonAsync<
-                List<BookResponse>>();
+                PagedBookResponse>();
 
         Assert.NotNull(books);
-        Assert.NotEmpty(books);
+        Assert.NotEmpty(books.Items);
 
-        var bookId = books[0].Id;
+        var bookId = books.Items[0].Id;
 
         var copiesResponse = await _client.GetAsync(
             $"/api/book-copies/book/{bookId}");
@@ -119,13 +118,13 @@ public sealed class BookCopiesApiTests
 
         var books =
             await booksResponse.Content.ReadFromJsonAsync<
-                List<BookResponse>>();
+                PagedBookResponse>();
 
         Assert.NotNull(books);
-        Assert.NotEmpty(books);
+        Assert.NotEmpty(books.Items);
 
         var request = new CreateBookCopyRequest(
-            books[0].Id,
+            books.Items[0].Id,
             $"BC-TEST-{Guid.NewGuid():N}");
 
         var response = await _client.PostAsJsonAsync(
@@ -156,13 +155,13 @@ public sealed class BookCopiesApiTests
 
         var books =
             await booksResponse.Content.ReadFromJsonAsync<
-                List<BookResponse>>();
+                PagedBookResponse>();
 
         Assert.NotNull(books);
-        Assert.NotEmpty(books);
+        Assert.NotEmpty(books.Items);
 
         var request = new CreateBookCopyRequest(
-            books[0].Id,
+            books.Items[0].Id,
             $"BC-TEST-{Guid.NewGuid():N}");
 
         var createResponse = await _client.PostAsJsonAsync(

@@ -1,3 +1,4 @@
+using Library.Application.Common.Pagination;
 using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -8,26 +9,64 @@ namespace Library.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class BooksController(BookService bookService) : ControllerBase
 {
-    /// <summary>
-    /// Retrieves all books in the library catalog.
+      /// <summary>
+    /// Retrieves a paginated and optionally    filtered collection of books.
     /// </summary>
     /// <remarks>
-    /// Returns the complete collection of books currently available
-    /// in the library catalog.
+    /// Searches the book catalog using a   case-insensitive partial match.
+    ///
+    /// When no search fields are specified,    the search is performed against
+    /// the book title only.
+    ///
+    /// Multiple search fields can be   supplied as a comma-separated list.
+    /// Matching across multiple fields uses    OR semantics.
+    ///
+    /// Examples:
+    /// - /api/books
+    /// - /api/books?search=clean
+    /// - /api/books?search=martin&amp; searchBy=title,author
+    /// - /api/books?pageNumber=2&amp;  pageSize=20
     /// </remarks>
-    /// <response code="200">Books were retrieved successfully.</response>
+    /// <param name="pageNumber">
+    /// The page number. Defaults to the configured     default page number.
+    /// </param>
+    /// <param name="pageSize">
+    /// The number of books per page. Defaults to the   configured default page size.
+    /// The maximum page size is controlled by the  pagination configuration.
+    /// </param>
+    /// <param name="search">Optional   case-insensitive partial search text.</   param>
+    /// <param name="searchBy">
+    /// Optional comma-separated search     fields: title, author, isbn.
+    /// Defaults to title when omitted.
+    /// </param>
+    /// <response code="200">The paginated  book collection was retrieved    successfully.</response>
     [HttpGet]
     [ProducesResponseType(
         StatusCodes.Status200OK,
-        Type = typeof(IReadOnlyList<BookResponse>))]
-    public async Task<ActionResult<IReadOnlyList<BookResponse>>> GetAll(
-        CancellationToken cancellationToken)
+        Type = typeof(PagedBookResponse))]
+    public async    Task<ActionResult<PagedBookResponse>>  GetAll(
+    [FromQuery] int pageNumber = PaginationDefaults.       DefaultPageNumber,
+    [FromQuery] int pageSize = PaginationDefaults.     DefaultPageSize,
+    [FromQuery] string? search = null,
+    [FromQuery] string? searchBy = null,
+    [FromQuery] string? sortBy = null,
+    [FromQuery] string? sortDirection = null,
+    CancellationToken cancellationToken = default)
     {
-        var books = await bookService.GetAllAsync(cancellationToken);
+        var query = new BookQuery(
+            pageNumber,
+            pageSize,
+            search,
+            searchBy,
+            sortBy,
+            sortDirection);
+
+        var books = await bookService.  GetAllAsync(
+            query,
+            cancellationToken);
 
         return Ok(books);
     }
-
     /// <summary>
     /// Retrieves a single book by its unique identifier.
     /// </summary>

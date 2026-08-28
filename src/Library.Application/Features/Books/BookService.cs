@@ -1,4 +1,5 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Pagination;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
 
@@ -6,16 +7,47 @@ namespace Library.Application.Features.Books;
 
 public sealed class BookService(IBookRepository bookRepository)
 {
-    public async Task<IReadOnlyList<BookResponse>> GetAllAsync(
+    public async Task<PagedBookResponse> GetAllAsync(
+        BookQuery query,
         CancellationToken cancellationToken = default)
     {
-        var books = await bookRepository.GetAllAsync(cancellationToken);
+        var normalizedPageNumber = Math.Max(
+            query.PageNumber,
+            PaginationDefaults.DefaultPageNumber);
+        
+        var normalizedPageSize = Math.Clamp(
+            query.PageSize,
+            PaginationDefaults.MinPageSize,
+            PaginationDefaults.MaxPageSize);
 
-        return books
+        var normalizedQuery = query with
+        {
+            PageNumber = normalizedPageNumber,
+            PageSize = normalizedPageSize
+        };
+
+        var (books, totalItems) = await bookRepository.GetAsync(
+            normalizedQuery,
+            cancellationToken);
+
+        var totalPages = totalItems == 0
+            ? 0
+            : (int)Math.Ceiling(
+                totalItems / (double)normalizedPageSize);
+
+        var items = books
             .Select(Map)
             .ToList();
-    }
 
+        return new PagedBookResponse(
+            items,
+            normalizedPageNumber,
+            normalizedPageSize,
+            totalItems,
+            totalPages,
+            normalizedPageNumber < totalPages,
+            normalizedPageNumber > 1);
+    }
     public async Task<BookResponse?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)

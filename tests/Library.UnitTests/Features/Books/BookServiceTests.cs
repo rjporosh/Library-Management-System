@@ -8,51 +8,183 @@ namespace Library.UnitTests.Features.Books;
 public sealed class BookServiceTests
 {
     [Fact]
-    public async Task GetAllAsync_ShouldReturnMappedBooks()
+    public async Task GetAllAsync_ShouldReturnMappedBooksWithPagination()
     {
-        var firstBook = CreateBook();
-        var secondBook = CreateBook();
+        var firstBook = CreateBook(
+            title: "Clean Code",
+            author: "Robert C. Martin");
+
+        var secondBook = CreateBook(
+            title: "Clean Architecture",
+            author: "Robert C. Martin");
 
         var repository = new FakeBookRepository(
             [firstBook, secondBook]);
 
         var service = new BookService(repository);
 
-        var result = await service.GetAllAsync();
+var result = await service.GetAllAsync(
+    new BookQuery(),
+    CancellationToken.None);
 
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Items.Count);
 
-        Assert.Equal(firstBook.Id, result[0].Id);
-        Assert.Equal(firstBook.ISBN, result[0].ISBN);
-        Assert.Equal(firstBook.Title, result[0].Title);
-        Assert.Equal(firstBook.Author, result[0].Author);
-        Assert.Equal(firstBook.Description, result[0].Description);
-        Assert.Equal(firstBook.PublishedYear, result[0].PublishedYear);
+        Assert.Equal(secondBook.Id, result.Items[0].Id);
+        Assert.Equal(secondBook.ISBN, result.Items[0].ISBN);
+        Assert.Equal(secondBook.Title, result.Items[0].Title);
+        Assert.Equal(secondBook.Author, result.Items[0].Author);
+        Assert.Equal(secondBook.Description, result.Items[0].Description);
+        Assert.Equal(secondBook.PublishedYear, result.Items[0].PublishedYear);
 
-        Assert.Equal(secondBook.Id, result[1].Id);
+        Assert.Equal(firstBook.Id, result.Items[1].Id);
+        Assert.Equal(firstBook.ISBN, result.Items[1].ISBN);
+        Assert.Equal(firstBook.Title, result.Items[1].Title);
+        Assert.Equal(firstBook.Author, result.Items[1].Author);
+        Assert.Equal(firstBook.Description, result.Items[1].Description);
+        Assert.Equal(firstBook.PublishedYear, result.Items[1].PublishedYear);           
+
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(2, result.TotalItems);
+        Assert.Equal(1, result.TotalPages);
+        Assert.False(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
     }
 
     [Fact]
-    public async Task GetAllAsync_WhenRepositoryIsEmpty_ShouldReturnEmptyList()
+    public async Task GetAllAsync_WhenRepositoryIsEmpty_ShouldReturnEmptyPage()
     {
         var repository = new FakeBookRepository();
+
         var service = new BookService(repository);
 
-        var result = await service.GetAllAsync();
+        var result = await service.GetAllAsync(
+            new BookQuery(),
+            CancellationToken.None);
 
-        Assert.Empty(result);
+        Assert.Empty(result.Items);
+        Assert.Equal(1, result.PageNumber);
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(0, result.TotalItems);
+        Assert.Equal(0, result.TotalPages);
+        Assert.False(result.HasNextPage);
+        Assert.False(result.HasPreviousPage);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldRespectPagination()
+    {
+        var books = Enumerable.Range(1, 25)
+            .Select(index => CreateBook(
+                title: $"Book {index:D2}",
+                author: $"Author {index:D2}"))
+            .ToList();
+
+        var repository = new FakeBookRepository(books);
+
+        var service = new BookService(repository);
+
+        var result = await service.GetAllAsync(
+            new BookQuery(
+                PageNumber: 2,
+                PageSize: 10));
+
+        Assert.Equal(10, result.Items.Count);
+        Assert.Equal(2, result.PageNumber);
+        Assert.Equal(10, result.PageSize);
+        Assert.Equal(25, result.TotalItems);
+        Assert.Equal(3, result.TotalPages);
+        Assert.True(result.HasNextPage);
+        Assert.True(result.HasPreviousPage);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldSearchTitleByDefault()
+    {
+        var matchingBook = CreateBook(
+            title: "Clean Code",
+            author: "Robert C. Martin");
+
+        var nonMatchingBook = CreateBook(
+            title: "Design Patterns",
+            author: "Clean Author");
+
+        var repository = new FakeBookRepository(
+            [matchingBook, nonMatchingBook]);
+
+        var service = new BookService(repository);
+
+        var result = await service.GetAllAsync(
+            new BookQuery(
+                Search: "  CLEAN  "));
+
+        Assert.Single(result.Items);
+        Assert.Equal(matchingBook.Id, result.Items[0].Id);
+    }
+
+    [Fact]
+    public async Task GetAllAsync_ShouldSearchSelectedFieldsUsingOrSemantics()
+    {
+        var titleMatch = CreateBook(
+            title: "Clean Architecture",
+            author: "Author One");
+
+        var authorMatch = CreateBook(
+            title: "Design Patterns",
+            author: "Clean Author");
+
+        var isbnMatch = CreateBook(
+            title: "Domain Driven Design",
+            author: "Author Three",
+            isbn: "978-CLEAN-123");
+
+        var noMatch = CreateBook(
+            title: "Refactoring",
+            author: "Martin Fowler",
+            isbn: "978-1234567890");
+
+        var repository = new FakeBookRepository(
+            [titleMatch, authorMatch, isbnMatch, noMatch]);
+
+        var service = new BookService(repository);
+
+        var result = await service.GetAllAsync(
+            new BookQuery(
+                Search: "clean",
+                SearchBy: "title,author,isbn"));
+
+        Assert.Equal(3, result.Items.Count);
+
+        Assert.Contains(
+            result.Items,
+            book => book.Id == titleMatch.Id);
+
+        Assert.Contains(
+            result.Items,
+            book => book.Id == authorMatch.Id);
+
+        Assert.Contains(
+            result.Items,
+            book => book.Id == isbnMatch.Id);
+
+        Assert.DoesNotContain(
+            result.Items,
+            book => book.Id == noMatch.Id);
     }
 
     [Fact]
     public async Task GetByIdAsync_WhenBookExists_ShouldReturnMappedBook()
     {
         var book = CreateBook();
+
         var repository = new FakeBookRepository([book]);
+
         var service = new BookService(repository);
 
         var result = await service.GetByIdAsync(book.Id);
 
         Assert.NotNull(result);
+
         Assert.Equal(book.Id, result.Id);
         Assert.Equal(book.ISBN, result.ISBN);
         Assert.Equal(book.Title, result.Title);
@@ -65,6 +197,7 @@ public sealed class BookServiceTests
     public async Task GetByIdAsync_WhenBookDoesNotExist_ShouldReturnNull()
     {
         var repository = new FakeBookRepository();
+
         var service = new BookService(repository);
 
         var result = await service.GetByIdAsync(Guid.NewGuid());
@@ -76,6 +209,7 @@ public sealed class BookServiceTests
     public async Task CreateAsync_ShouldCreateAndPersistBook()
     {
         var repository = new FakeBookRepository();
+
         var service = new BookService(repository);
 
         var request = new CreateBookRequest(
@@ -110,6 +244,7 @@ public sealed class BookServiceTests
     public async Task CreateAsync_WithNullDescription_ShouldPreserveNullDescription()
     {
         var repository = new FakeBookRepository();
+
         var service = new BookService(repository);
 
         var request = new CreateBookRequest(
@@ -126,15 +261,20 @@ public sealed class BookServiceTests
         Assert.Null(repository.Books[0].Description);
     }
 
-    private static Book CreateBook()
+    private static Book CreateBook(
+        string isbn = "978-1234567890",
+        string title = "Test Book",
+        string author = "Test Author",
+        int publishedYear = 2024,
+        string? description = "Test description.")
     {
         return new Book(
             Guid.NewGuid(),
-            "978-1234567890",
-            "Test Book",
-            "Test Author",
-            2024,
-            "Test description.");
+            isbn,
+            title,
+            author,
+            publishedYear,
+            description);
     }
 
     private sealed class FakeBookRepository(
@@ -145,18 +285,58 @@ public sealed class BookServiceTests
 
         public IReadOnlyList<Book> Books => _books;
 
-        public Task<IReadOnlyList<Book>> GetAllAsync(
+        public Task<(IReadOnlyList<Book> Items, int TotalItems)> GetAsync(
+            BookQuery query,
             CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<Book> result = _books.ToList();
+            cancellationToken.ThrowIfCancellationRequested();
 
-            return Task.FromResult(result);
+            IEnumerable<Book> filteredBooks = _books;
+
+            var search = query.Search?.Trim();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchFields = ParseSearchFields(query.SearchBy);
+
+                filteredBooks = filteredBooks.Where(book =>
+                    (searchFields.Contains(BookSearchField.Title) &&
+                     book.Title.Contains(
+                         search,
+                         StringComparison.OrdinalIgnoreCase))
+                    ||
+                    (searchFields.Contains(BookSearchField.Author) &&
+                     book.Author.Contains(
+                         search,
+                         StringComparison.OrdinalIgnoreCase))
+                    ||
+                    (searchFields.Contains(BookSearchField.ISBN) &&
+                     book.ISBN.Contains(
+                         search,
+                         StringComparison.OrdinalIgnoreCase)));
+            }
+
+            var totalItems = filteredBooks.Count();
+
+            var items = filteredBooks
+                .OrderBy(book => book.Title)
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
+            return Task.FromResult(
+                (
+                    (IReadOnlyList<Book>)items,
+                    totalItems
+                ));
         }
 
         public Task<Book?> GetByIdAsync(
             Guid id,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             return Task.FromResult(
                 _books.FirstOrDefault(x => x.Id == id));
         }
@@ -165,9 +345,46 @@ public sealed class BookServiceTests
             Book book,
             CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             _books.Add(book);
 
             return Task.CompletedTask;
+        }
+
+        private static HashSet<BookSearchField> ParseSearchFields(
+            string? searchBy)
+        {
+            if (string.IsNullOrWhiteSpace(searchBy))
+            {
+                return [BookSearchField.Title];
+            }
+
+            var fields = new HashSet<BookSearchField>();
+
+            foreach (var value in searchBy.Split(
+                         ',',
+                         StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (Enum.TryParse<BookSearchField>(
+                        value.Trim(),
+                        ignoreCase: true,
+                        out var field))
+                {
+                    fields.Add(field);
+                }
+            }
+
+            return fields.Count == 0
+                ? [BookSearchField.Title]
+                : fields;
+        }
+
+        private enum BookSearchField
+        {
+            Title,
+            Author,
+            ISBN
         }
     }
 }

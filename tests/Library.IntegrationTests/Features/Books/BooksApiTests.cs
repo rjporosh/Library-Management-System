@@ -10,26 +10,25 @@ public sealed class BooksApiTests
     [Fact]
     public async Task GetAll_ShouldReturnSeededBooks()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new   WebApplicationFactory<Program>();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/books");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.   StatusCode);
 
-        var books = await response.Content
-            .ReadFromJsonAsync<List<BookResponse>>();
+        var result = await response.Content
+            .ReadFromJsonAsync<PagedBookResponse>();
 
-        Assert.NotNull(books);
-        Assert.NotEmpty(books);
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.Items);
 
         Assert.Contains(
-            books,
+            result.Items,
             book => book.ISBN == "9780132350884"
                 && book.Title == "Clean Code"
                 && book.Author == "Robert C. Martin");
     }
-
     [Fact]
     public async Task GetById_WhenBookDoesNotExist_ShouldReturnNotFound()
     {
@@ -42,36 +41,37 @@ public sealed class BooksApiTests
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    [Fact]
-    public async Task GetById_WhenBookExists_ShouldReturnBook()
+     [Fact]
+    public async Task   GetById_WhenBookExists_ShouldReturnBook()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new   WebApplicationFactory<Program>();
         using var client = factory.CreateClient();
 
-        var books = await client.GetFromJsonAsync<List<BookResponse>>(
+        var result = await client.  GetFromJsonAsync<PagedBookResponse>(
             "/api/books");
 
-        Assert.NotNull(books);
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.Items);
 
-        var expectedBook = books.First();
+        var expectedBook = result.Items.First();
 
         var response = await client.GetAsync(
             $"/api/books/{expectedBook.Id}");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.   StatusCode);
 
         var book = await response.Content
             .ReadFromJsonAsync<BookResponse>();
 
         Assert.NotNull(book);
+
         Assert.Equal(expectedBook.Id, book.Id);
         Assert.Equal(expectedBook.ISBN, book.ISBN);
         Assert.Equal(expectedBook.Title, book.Title);
         Assert.Equal(expectedBook.Author, book.Author);
-        Assert.Equal(expectedBook.Description, book.Description);
-        Assert.Equal(expectedBook.PublishedYear, book.PublishedYear);
+        Assert.Equal(expectedBook.Description, book.    Description);
+        Assert.Equal(expectedBook.PublishedYear, book.  PublishedYear);
     }
-
     [Fact]
     public async Task Create_ShouldReturnCreatedBook()
     {
