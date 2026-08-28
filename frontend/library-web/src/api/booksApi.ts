@@ -30,7 +30,7 @@ export interface GetBooksParams {
 
 export const booksApi = {
   async getAll(
-    params?: GetBooksParams,
+    params?: GetBooksParams
   ): Promise<PagedResult<Book>> {
     const response = await httpClient.get<PagedResult<Book>>(
       '/books',

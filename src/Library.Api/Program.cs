@@ -15,7 +15,22 @@ builder.Services.AddControllers();
 // OpenAPI
 builder.Services.AddOpenApi();
 
+// Add CORS policy for frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 var app = builder.Build();
+    
+// Use the CORS policy
+app.UseCors("Frontend");
 
 if (app.Environment.IsDevelopment())
 {

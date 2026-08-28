@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { booksApi } from "../../api/booksApi";
+import { Link } from "react-router-dom";
 
 const SEARCH_OPTIONS = [
   { value: "title", label: "Title" },
@@ -120,10 +121,21 @@ export default function BooksPage() {
     setPageNumber(1);
   };
 
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
+  const toggleSortField = (value: string) => {
+    setSortBy((current) => {
+      // Never allow zero sort fields.
+      if (current.includes(value) && current.length === 1) {
+        return current;
+      }
+
+      if (current.includes(value)) {
+        return current.filter((item) => item !== value);
+      }
+
+      return [...current, value];
+    });
+
     setPageNumber(1);
-    setSortOpen(false);
   };
 
   const handleDirectionChange = (direction: "asc" | "desc") => {
@@ -159,10 +171,14 @@ export default function BooksPage() {
           </p>
         </div>
 
-        <button className="books-add-button" type="button">
+        <Link
+          className="books-add-button"
+          to="/books/add"
+          style={{ textDecoration: "none" }}
+        >
           <BookOpen size={17} />
           Add Book
-        </button>
+        </Link>
       </header>
 
       {/* Toolbar */}
@@ -451,10 +467,14 @@ export default function BooksPage() {
 
                   {/* Actions */}
                   <div className="book-card__footer">
-                    <button className="book-card__details" type="button">
+                    <Link
+                      className="book-card__details"
+                      to={`/books/${book.id}`}
+                      style={{ textDecoration: "none" }}
+                    >
                       View details
                       <ArrowUpRight size={15} />
-                    </button>
+                    </Link>
 
                     <button className="book-card__issue" type="button">
                       Issue

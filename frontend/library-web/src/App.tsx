@@ -8,57 +8,58 @@ import {
   Menu,
   Users,
   X,
-} from 'lucide-react'
-import { useState } from 'react'
-import './App.css'
-import { NavLink, Route, Routes } from 'react-router-dom'
-import DashboardPage from './pages/dashboard/DashboardPage'
-import BooksPage from './pages/books/BooksPage'
-import BookCopiesPage from './pages/book-copies/BookCopiesPage'
-import MembersPage from './pages/members/MembersPage'
-import BorrowingPage from './pages/borrowing/BorrowingPage'
-
+} from "lucide-react";
+import { useState } from "react";
+import "./App.css";
+import { NavLink, Route, Routes } from "react-router-dom";
+import DashboardPage from "./pages/dashboard/DashboardPage";
+import BooksPage from "./pages/books/BooksPage";
+import BookCopiesPage from "./pages/book-copies/BookCopiesPage";
+import MembersPage from "./pages/members/MembersPage";
+import BorrowingPage from "./pages/borrowing/BorrowingPage";
+import BookDetailsPage from "./pages/books/BookDetailsPage";
+import AddBookPage from "./pages/books/AddBookPage";
 
 const navigation = [
   {
-    label: 'Overview',
+    label: "Overview",
     items: [
       {
-        label: 'Dashboard',
-        path: '/',
+        label: "Dashboard",
+        path: "/",
         icon: LayoutDashboard,
       },
     ],
   },
   {
-    label: 'Library',
+    label: "Library",
     items: [
       {
-        label: 'Books',
-        path: '/books',
+        label: "Books",
+        path: "/books",
         icon: BookOpen,
       },
       {
-        label: 'Book Copies',
-        path: '/book-copies',
+        label: "Book Copies",
+        path: "/book-copies",
         icon: BookMarked,
       },
       {
-        label: 'Members',
-        path: '/members',
+        label: "Members",
+        path: "/members",
         icon: Users,
       },
       {
-        label: 'Borrowing',
-        path: '/borrowing',
+        label: "Borrowing",
+        path: "/borrowing",
         icon: Library,
       },
     ],
   },
-]
+];
 
 function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="app-shell">
@@ -71,7 +72,7 @@ function App() {
         />
       )}
 
-      <aside className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
+      <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""}`}>
         <div className="sidebar__header">
           <NavLink
             to="/"
@@ -105,22 +106,22 @@ function App() {
 
               <div className="nav-section__items">
                 {section.items.map((item) => {
-                  const Icon = item.icon
+                  const Icon = item.icon;
 
                   return (
                     <NavLink
                       key={item.path}
                       to={item.path}
-                      end={item.path === '/'}
+                      end={item.path === "/"}
                       className={({ isActive }) =>
-                        `nav-item ${isActive ? 'nav-item--active' : ''}`
+                        `nav-item ${isActive ? "nav-item--active" : ""}`
                       }
                       onClick={() => setSidebarOpen(false)}
                     >
                       <Icon size={19} strokeWidth={1.9} />
                       <span>{item.label}</span>
                     </NavLink>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -173,18 +174,20 @@ function App() {
           </div>
         </header>
 
-      <main className="page-content">
-        <Routes>
-          <Route path="/" element=      {<DashboardPage />} />
-          <Route path="/books" element=     {<BooksPage />} />
-          <Route path="/book-copies" element=     {<BookCopiesPage />} />
-          <Route path="/members" element=     {<MembersPage />} />
-          <Route path="/borrowing" element=     {<BorrowingPage />} />
-        </Routes>
-      </main>
+        <main className="page-content">
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/books" element={<BooksPage />} />
+            <Route path="/books/add" element={<AddBookPage />} />
+            <Route path="/books/:id" element={<BookDetailsPage />} />
+            <Route path="/book-copies" element={<BookCopiesPage />} />
+            <Route path="/members" element={<MembersPage />} />
+            <Route path="/borrowing" element={<BorrowingPage />} />
+          </Routes>
+        </main>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
