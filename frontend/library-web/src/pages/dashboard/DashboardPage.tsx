@@ -12,6 +12,9 @@ import { useQuery } from '@tanstack/react-query'
 import { booksApi } from '../../api/booksApi'
 import { bookCopiesApi } from '../../api/bookCopiesApi'
 import { useMemo } from 'react'
+import {
+  BookCopyStatus,
+} from '../../types/bookCopy'
 
 function DashboardPage() {
   const booksQuery = useQuery({
@@ -41,12 +44,18 @@ function DashboardPage() {
   const copies = copiesQuery.data ?? []
 
   const availableCopies = useMemo(
-    () => copies.filter((copy) => copy.status === 'Available').length,
+    () =>
+      copies.filter(
+        (copy) => copy.status ===   BookCopyStatus.Available,
+      ).length,
     [copies],
   )
-
+  
   const borrowedCopies = useMemo(
-    () => copies.filter((copy) => copy.status === 'Borrowed').length,
+    () =>
+      copies.filter(
+        (copy) => copy.status ===   BookCopyStatus.Borrowed,
+      ).length,
     [copies],
   )
 
