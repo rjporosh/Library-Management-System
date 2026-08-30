@@ -6,8 +6,6 @@ import {
   Copy,
   Hash,
   Loader2,
-  Mail,
-  User,
 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { booksApi } from '../../api/booksApi'

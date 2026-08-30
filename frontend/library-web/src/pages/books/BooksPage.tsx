@@ -121,22 +121,6 @@ export default function BooksPage() {
     setPageNumber(1);
   };
 
-  const toggleSortField = (value: string) => {
-    setSortBy((current) => {
-      // Never allow zero sort fields.
-      if (current.includes(value) && current.length === 1) {
-        return current;
-      }
-
-      if (current.includes(value)) {
-        return current.filter((item) => item !== value);
-      }
-
-      return [...current, value];
-    });
-
-    setPageNumber(1);
-  };
 
   const handleDirectionChange = (direction: "asc" | "desc") => {
     setSortDirection(direction);
