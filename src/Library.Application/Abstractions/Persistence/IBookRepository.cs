@@ -16,4 +16,12 @@ public interface IBookRepository
     Task AddAsync(
         Book book,
         CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(
+        Book book,
+        CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        Book book,
+        CancellationToken cancellationToken = default);
 }

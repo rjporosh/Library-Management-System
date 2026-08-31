@@ -71,11 +71,37 @@ public sealed class InMemoryBookRepository : IBookRepository
         return Task.CompletedTask;
     }
 
+    public Task UpdateAsync(
+        Book book,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var index = _books.FindIndex(x => x.Id == book.Id);
+
+        if (index >= 0)
+        {
+            _books[index] = book;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(
+        Book book,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _books.Remove(book);
+
+        return Task.CompletedTask;
+    }
+
     public void Seed(IEnumerable<Book> books)
     {
         _books.AddRange(books);
     }
-
 
     private static HashSet<BookSearchField> ParseSearchFields(
         string? searchBy)
@@ -87,7 +113,9 @@ public sealed class InMemoryBookRepository : IBookRepository
 
         var fields = new HashSet<BookSearchField>();
 
-        foreach (var value in searchBy.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var value in searchBy.Split(
+                     ',',
+                     StringSplitOptions.RemoveEmptyEntries))
         {
             if (Enum.TryParse<BookSearchField>(
                     value.Trim(),
@@ -131,33 +159,33 @@ public sealed class InMemoryBookRepository : IBookRepository
 
         return orderedBooks!;
     }
-    
-        private static IOrderedEnumerable<Book>         ApplyFirstSort(
-            IEnumerable<Book> books,
-            BookSortField field,
-            bool descending)
+
+    private static IOrderedEnumerable<Book> ApplyFirstSort(
+        IEnumerable<Book> books,
+        BookSortField field,
+        bool descending)
+    {
+        return field switch
         {
-            return field switch
-            {
-                BookSortField.Title => descending
-                    ? books.OrderByDescending(book => book.     Title)
-                    : books.OrderBy(book => book.Title),
-        
-                BookSortField.Author => descending
-                    ? books.OrderByDescending(book => book.     Author)
-                    : books.OrderBy(book => book.Author),
-        
-                BookSortField.ISBN => descending
-                    ? books.OrderByDescending(book => book.     ISBN)
-                    : books.OrderBy(book => book.ISBN),
-        
-                BookSortField.PublishedYear => descending
-                    ? books.OrderByDescending(book => book.     PublishedYear)
-                    : books.OrderBy(book => book.       PublishedYear),
-        
-                _ => books.OrderBy(book => book.Title)
-            };
-        }
+            BookSortField.Title => descending
+                ? books.OrderByDescending(book => book.Title)
+                : books.OrderBy(book => book.Title),
+
+            BookSortField.Author => descending
+                ? books.OrderByDescending(book => book.Author)
+                : books.OrderBy(book => book.Author),
+
+            BookSortField.ISBN => descending
+                ? books.OrderByDescending(book => book.ISBN)
+                : books.OrderBy(book => book.ISBN),
+
+            BookSortField.PublishedYear => descending
+                ? books.OrderByDescending(book => book.PublishedYear)
+                : books.OrderBy(book => book.PublishedYear),
+
+            _ => books.OrderBy(book => book.Title)
+        };
+    }
 
     private static IOrderedEnumerable<Book> ApplyThenSort(
         IOrderedEnumerable<Book> books,
@@ -185,32 +213,31 @@ public sealed class InMemoryBookRepository : IBookRepository
             _ => books.ThenBy(book => book.Title)
         };
     }
-        
-        private static List<BookSortField> ParseSortFields(
-    string? sortBy)
-{
-    if (string.IsNullOrWhiteSpace(sortBy))
-    {
-        return [];
-    }
 
-    var fields = new List<BookSortField>();
-
-    foreach (var value in sortBy.Split(
-        ',',
-        StringSplitOptions.RemoveEmptyEntries))
+    private static List<BookSortField> ParseSortFields(
+        string? sortBy)
     {
-        if (Enum.TryParse<BookSortField>(
-                value.Trim(),
-                ignoreCase: true,
-                out var field)
-            && !fields.Contains(field))
+        if (string.IsNullOrWhiteSpace(sortBy))
         {
-            fields.Add(field);
+            return [];
         }
+
+        var fields = new List<BookSortField>();
+
+        foreach (var value in sortBy.Split(
+                     ',',
+                     StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (Enum.TryParse<BookSortField>(
+                    value.Trim(),
+                    ignoreCase: true,
+                    out var field)
+                && !fields.Contains(field))
+            {
+                fields.Add(field);
+            }
+        }
+
+        return fields;
     }
-
-    return fields;
-}
-
 }

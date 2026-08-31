@@ -381,7 +381,8 @@ public sealed class BorrowingServiceTests
             BookCopy bookCopy,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+                cancellationToken.ThrowIfCancellationRequested();
+                return Task.CompletedTask;
         }
 
         public Task UpdateAsync(

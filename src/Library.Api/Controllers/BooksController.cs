@@ -122,4 +122,55 @@ public sealed class BooksController(BookService bookService) : ControllerBase
             new { id = book.Id },
             book);
     }
+
+        /// <summary>
+    /// Updates an existing book in the library catalog.
+    /// </summary>
+    /// <param name="id">The unique identifier of the book.</param>
+    /// <param name="request">The updated book information.</param>
+    /// <response code="200">The book was successfully updated.</response>
+    /// <response code="404">No book exists with the specified identifier.</response>
+    /// <response code="400">The supplied book information is invalid.</response>
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(BookResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BookResponse>> Update(
+        Guid id,
+        UpdateBookRequest request,
+        CancellationToken cancellationToken)
+    {
+        var book = await bookService.UpdateAsync(
+            id,
+            request,
+            cancellationToken);
+
+        return book is null
+            ? NotFound()
+            : Ok(book);
+    }
+
+    /// <summary>
+    /// Deletes an existing book from the library catalog.
+    /// </summary>
+    /// <param name="id">The unique identifier of the book.</param>
+    /// <response code="204">The book was successfully deleted.</response>
+    /// <response code="404">No book exists with the specified identifier.</response>
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var deleted = await bookService.DeleteAsync(
+            id,
+            cancellationToken);
+
+        return deleted
+            ? NoContent()
+            : NotFound();
+    }
 }

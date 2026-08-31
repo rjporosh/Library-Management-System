@@ -14,7 +14,7 @@ public sealed class BookService(IBookRepository bookRepository)
         var normalizedPageNumber = Math.Max(
             query.PageNumber,
             PaginationDefaults.DefaultPageNumber);
-        
+
         var normalizedPageSize = Math.Clamp(
             query.PageSize,
             PaginationDefaults.MinPageSize,
@@ -48,6 +48,7 @@ public sealed class BookService(IBookRepository bookRepository)
             normalizedPageNumber < totalPages,
             normalizedPageNumber > 1);
     }
+
     public async Task<BookResponse?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -76,6 +77,54 @@ public sealed class BookService(IBookRepository bookRepository)
             cancellationToken);
 
         return Map(book);
+    }
+
+    public async Task<BookResponse?> UpdateAsync(
+        Guid id,
+        UpdateBookRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var book = await bookRepository.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (book is null)
+        {
+            return null;
+        }
+
+        book.Update(
+            request.ISBN,
+            request.Title,
+            request.Author,
+            request.PublishedYear,
+            request.Description);
+
+        await bookRepository.UpdateAsync(
+            book,
+            cancellationToken);
+
+        return Map(book);
+    }
+
+    public async Task<bool> DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var book = await bookRepository.GetByIdAsync(
+            id,
+            cancellationToken);
+
+        if (book is null)
+        {
+            return false;
+        }
+
+        await bookRepository.DeleteAsync(
+            book,
+            cancellationToken);
+
+        return true;
     }
 
     private static BookResponse Map(Book book)

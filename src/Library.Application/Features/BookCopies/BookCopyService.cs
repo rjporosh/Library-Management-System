@@ -4,8 +4,7 @@ using Library.Domain.Entities;
 
 namespace Library.Application.Features.BookCopies;
 
-public sealed class BookCopyService(
-    IBookCopyRepository bookCopyRepository)
+public sealed class BookCopyService( IBookCopyRepository bookCopyRepository)
 {
     public async Task<IReadOnlyList<BookCopyResponse>> GetByBookIdAsync(
         Guid bookId,

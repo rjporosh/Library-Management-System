@@ -352,6 +352,33 @@ var result = await service.GetAllAsync(
             return Task.CompletedTask;
         }
 
+                public Task UpdateAsync(
+            Book book,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        
+            var index = _books.FindIndex(x => x.Id ==       book.Id);
+        
+            if (index >= 0)
+            {
+                _books[index] = book;
+            }
+        
+            return Task.CompletedTask;
+        }
+        
+        public Task DeleteAsync(
+            Book book,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        
+            _books.RemoveAll(x => x.Id == book.Id);
+        
+            return Task.CompletedTask;
+        }
+
         private static HashSet<BookSearchField> ParseSearchFields(
             string? searchBy)
         {

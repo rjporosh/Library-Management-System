@@ -23,6 +23,21 @@ public sealed class Book
         string? description = null)
     {
         Id = id;
+        Update(
+            isbn,
+            title,
+            author,
+            publishedYear,
+            description);
+    }
+
+    public void Update(
+        string isbn,
+        string title,
+        string author,
+        int publishedYear,
+        string? description = null)
+    {
         ISBN = isbn;
         Title = title;
         Author = author;
