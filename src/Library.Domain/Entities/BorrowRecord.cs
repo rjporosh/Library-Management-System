@@ -25,9 +25,6 @@ public sealed class BorrowRecord
         DateTime borrowedAt,
         DateTime dueAt)
     {
-        if (dueAt <= borrowedAt)
-            throw new ArgumentException(
-                "Due date must be after borrowed date.");
 
         Id = id;
         BookCopyId = bookCopyId;
@@ -45,5 +42,14 @@ public sealed class BorrowRecord
 
         ReturnedAt = returnedAt;
         Status = BorrowStatus.Returned;
+    }
+
+    /// <summary>
+    /// True when this borrow is still active and its due date has
+    /// already passed as of <paramref name="asOfUtc"/>.
+    /// </summary>
+    public bool IsOverdue(DateTime asOfUtc)
+    {
+        return Status == BorrowStatus.Active && DueAt < asOfUtc;
     }
 }
