@@ -31,4 +31,25 @@ public sealed class InMemoryBorrowRecordRepository : IBorrowRecordRepository
     {
         return Task.CompletedTask;
     }
+
+    public Task<bool> HasActiveBorrowAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default)
+    {
+        var hasActive = _records.Any(x =>
+            x.MemberId == memberId &&
+            x.Status == Domain.Enums.BorrowStatus.Active);
+
+        return Task.FromResult(hasActive);
+    }
+
+    public Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(
+        DateTime asOfUtc,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<BorrowRecord> overdue =
+            [.. _records.Where(x => x.IsOverdue(asOfUtc))];
+
+        return Task.FromResult(overdue);
+    }
 }
