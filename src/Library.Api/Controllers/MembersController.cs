@@ -64,4 +64,68 @@ public sealed class MembersController(MemberService memberService) : ControllerB
             new { id = member.Id },
             member);
     }
+
+    /// <summary>
+    /// Administratively suspends a member (e.g. the same action the
+    /// midnight member-suspension job performs automatically for
+    /// overdue borrowers).
+    /// </summary>
+    /// <param name="id">The unique identifier of the member.</param>
+    /// <response code="200">The member was suspended.</response>
+    /// <response code="404">No member exists with the specified identifier.</response>
+    [HttpPost("{id:guid}/suspend")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(MemberResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<MemberResponse>> Suspend(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var member = await memberService.SuspendAsync(id, cancellationToken);
+
+        return Ok(member);
+    }
+
+    /// <summary>
+    /// Sets a member back to Active without recording it as a
+    /// membership renewal (administrative override).
+    /// </summary>
+    /// <param name="id">The unique identifier of the member.</param>
+    /// <response code="200">The member was set to Active.</response>
+    /// <response code="404">No member exists with the specified identifier.</response>
+    [HttpPost("{id:guid}/reactivate")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(MemberResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<MemberResponse>> Reactivate(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var member = await memberService.ReactivateAsync(id, cancellationToken);
+
+        return Ok(member);
+    }
+
+    /// <summary>
+    /// Renews a member's membership: clears any suspension and stamps
+    /// the renewal date.
+    /// </summary>
+    /// <param name="id">The unique identifier of the member.</param>
+    /// <response code="200">The member's membership was renewed.</response>
+    /// <response code="404">No member exists with the specified identifier.</response>
+    [HttpPost("{id:guid}/renew")]
+    [ProducesResponseType(
+        StatusCodes.Status200OK,
+        Type = typeof(MemberResponse))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<MemberResponse>> Renew(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var member = await memberService.RenewAsync(id, cancellationToken);
+
+        return Ok(member);
+    }
 }
