@@ -95,6 +95,73 @@ public sealed class MemberServiceTests
         Assert.Equal(2, repository.Members.Count);
     }
 
+    [Fact]
+    public async Task SuspendAsync_WhenMemberExists_ShouldSuspendAndStampTimestamp()
+    {
+        var member = new Member(
+            Guid.NewGuid(),
+            "MEM-001",
+            "John Doe",
+            "john@example.com");
+
+        var repository = new FakeMemberRepository(member);
+        var service = new MemberService(repository);
+
+        var result = await service.SuspendAsync(member.Id);
+
+        Assert.Equal(MemberStatus.Suspended, result.Status);
+        Assert.NotNull(result.SuspendedAt);
+    }
+
+    [Fact]
+    public async Task SuspendAsync_WhenMemberDoesNotExist_ShouldThrow()
+    {
+        var repository = new FakeMemberRepository();
+        var service = new MemberService(repository);
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(
+            () => service.SuspendAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task ReactivateAsync_WhenMemberIsSuspended_ShouldSetActiveAndClearSuspendedAt()
+    {
+        var member = new Member(
+            Guid.NewGuid(),
+            "MEM-001",
+            "John Doe",
+            "john@example.com");
+        member.Suspend();
+
+        var repository = new FakeMemberRepository(member);
+        var service = new MemberService(repository);
+
+        var result = await service.ReactivateAsync(member.Id);
+
+        Assert.Equal(MemberStatus.Active, result.Status);
+        Assert.Null(result.SuspendedAt);
+    }
+
+    [Fact]
+    public async Task RenewAsync_WhenMemberIsSuspended_ShouldSetActiveAndStampRenewal()
+    {
+        var member = new Member(
+            Guid.NewGuid(),
+            "MEM-001",
+            "John Doe",
+            "john@example.com");
+        member.Suspend();
+
+        var repository = new FakeMemberRepository(member);
+        var service = new MemberService(repository);
+
+        var result = await service.RenewAsync(member.Id);
+
+        Assert.Equal(MemberStatus.Active, result.Status);
+        Assert.Null(result.SuspendedAt);
+        Assert.NotNull(result.LastRenewedAt);
+    }
+
     private sealed class FakeMemberRepository(Member? initialMember = null)
         : IMemberRepository
     {
@@ -117,6 +184,20 @@ public sealed class MemberServiceTests
         {
             Members.Add(member);
             return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(
+            Member member,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<Member>> GetAllAsync(
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Member> members = [.. Members];
+            return Task.FromResult(members);
         }
     }
 }

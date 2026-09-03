@@ -108,6 +108,56 @@ public sealed class BorrowingServiceTests
     }
 
     [Fact]
+    public async Task IssueAsync_WhenMemberAlreadyHasActiveBorrow_ShouldThrow()
+    {
+        var memberId = Guid.NewGuid();
+
+        var member = new Member(
+            memberId,
+            "MEM-001",
+            "John Doe",
+            "john@example.com");
+
+        var existingCopy = new BookCopy(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "BC-000");
+        existingCopy.Issue();
+
+        var existingActiveRecord = new BorrowRecord(
+            Guid.NewGuid(),
+            existingCopy.Id,
+            memberId,
+            DateTime.UtcNow.AddDays(-1),
+            DateTime.UtcNow.AddDays(13));
+
+        var newCopy = new BookCopy(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "BC-001");
+
+        var memberRepository = new FakeMemberRepository(member);
+        var copyRepository = new FakeBookCopyRepository(newCopy);
+        var borrowRepository = new FakeBorrowRecordRepository(existingActiveRecord);
+
+        var service = new BorrowingService(
+            memberRepository,
+            copyRepository,
+            borrowRepository);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.IssueAsync(
+                new IssueBookRequest(
+                    memberId,
+                    newCopy.Id,
+                    DateTime.UtcNow.AddDays(14))));
+
+        Assert.Contains("one active borrow", exception.Message);
+        Assert.Single(borrowRepository.Records);
+        Assert.Equal(BookCopyStatus.Available, newCopy.Status);
+    }
+
+    [Fact]
     public async Task IssueAsync_WhenCopyDoesNotExist_ShouldThrow()
     {
         var memberId = Guid.NewGuid();
@@ -352,6 +402,20 @@ public sealed class BorrowingServiceTests
         {
             throw new NotImplementedException();
         }
+
+        public Task UpdateAsync(
+            Member member,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<Member>> GetAllAsync(
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<Member> members = member is null ? [] : [member];
+            return Task.FromResult(members);
+        }
     }
 
     private sealed class FakeBookCopyRepository(BookCopy? copy = null)
@@ -377,12 +441,13 @@ public sealed class BorrowingServiceTests
                 copy?.Id == id ? copy : null);
         }
 
+
         public Task AddAsync(
             BookCopy bookCopy,
             CancellationToken cancellationToken = default)
         {
                 cancellationToken.ThrowIfCancellationRequested();
-                return Task.CompletedTask;
+                 return Task.CompletedTask;
         }
 
         public Task UpdateAsync(
@@ -422,6 +487,27 @@ public sealed class BorrowingServiceTests
             CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+
+        public Task<bool> HasActiveBorrowAsync(
+            Guid memberId,
+            CancellationToken cancellationToken = default)
+        {
+            var hasActive = Records.Any(x =>
+                x.MemberId == memberId &&
+                x.Status == BorrowStatus.Active);
+
+            return Task.FromResult(hasActive);
+        }
+
+        public Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(
+            DateTime asOfUtc,
+            CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<BorrowRecord> overdue =
+                [.. Records.Where(x => x.IsOverdue(asOfUtc))];
+
+            return Task.FromResult(overdue);
         }
     }
 }
