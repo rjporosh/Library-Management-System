@@ -7,4 +7,6 @@ public sealed record MemberResponse(
     string MembershipNumber,
     string Name,
     string Email,
-    MemberStatus Status);
+    MemberStatus Status,
+    DateTime? SuspendedAt = null,
+    DateTime? LastRenewedAt = null);

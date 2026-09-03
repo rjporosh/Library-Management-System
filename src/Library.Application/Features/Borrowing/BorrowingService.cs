@@ -24,6 +24,13 @@ public sealed class BorrowingService(
             throw new InvalidOperationException(
                 "Member is not allowed to borrow books.");
 
+        if (await borrowRecordRepository.HasActiveBorrowAsync(
+                member.Id,
+                cancellationToken))
+            throw new InvalidOperationException(
+                "Member already has an active borrowed book. " +
+                "Only one active borrow is allowed per member.");
+
         var copy = await bookCopyRepository.GetByIdAsync(
             request.BookCopyId,
             cancellationToken);
