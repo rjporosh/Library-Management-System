@@ -14,7 +14,118 @@ and release verification.
 
 ------------------------------------------------------------------------
 
-# Release 0.1.0 --- MVP Baseline
+# Release 0.2.0 --- Observability, Cron & Member Lifecycle
+
+**Release date:** 2026-09-03\
+**Status:** In progress (backend written, NOT YET BUILT/TESTED -\
+see AI Handover note at the end of this file)\
+**Release type:** Feature + hardening
+
+## Purpose
+
+Close the "ops readiness" gap identified in the 0.1.0 hardening
+checklist: centralized exception handling, structured file logging,
+a scheduled job for member suspension, a health-check endpoint, and
+a way to download log files for manual inspection - all toggleable
+per-feature from `appsettings.json`.
+
+## Included
+
+### Business rule fixes
+- **One active borrow per member.** `BorrowingService.IssueAsync` now
+  rejects a second issue while a member already has a book out
+  (`InvalidOperationException`, mapped to HTTP 409).
+- **Member status is now a real lifecycle**, not just a flag:
+  `Suspend()` / `Reactivate()` / `Renew()` on the `Member` entity,
+  each stamping `SuspendedAt` / `LastRenewedAt`. New endpoints:
+  `POST /api/members/{id}/suspend`, `/reactivate`, `/renew`.
+- **Enum values now serialize as names, not numbers**
+  (`JsonStringEnumConverter` registered globally) - this was silently
+  broken before; the frontend `Member.status: string` type was
+  actually receiving an integer.
+
+### Centralized exception handling
+- `CorrelationIdMiddleware` - tags every request/response/log entry
+  with an `X-Correlation-Id`.
+- `GlobalExceptionHandlingMiddleware` - anticipated exceptions
+  (`KeyNotFoundException` -> 404, `ArgumentException` -> 400,
+  `InvalidOperationException` -> 409) get the standard
+  `ApiErrorResponse` envelope and log to `exception-logs`; anything
+  unexpected returns the generic support message below and logs
+  full diagnostic detail to `runtime-error-logs`. **Existing
+  controllers that already had their own try/catch are untouched**
+  (no regression risk) - this middleware is the safety net for
+  everything else and the pattern new endpoints should rely on.
+- User-facing message for unexpected errors: *"Something went wrong.
+  Please contact service provider MD. IKRAMUL ISLAM SIDDIQUE POROSH,
+  phone: +8801672896992 for details."*
+
+### Structured file logging (4 categories, JSON-lines)
+- `logs/runtime-error-logs/runtime-error-logs-dd-MM-yyyy.txt`
+- `logs/build-error-logs/build-error-logs-dd-MM-yyyy.txt`
+- `logs/query-logs/query-logs-dd-MM-yyyy.txt`
+- `logs/exception-logs/exception-logs-dd-MM-yyyy.logs`
+
+Each entry carries file name/location, method name, cron-job name
+(when applicable), line number, root cause, a suggested fix,
+generated query text, execution start/end time and elapsed
+milliseconds - so slow queries and faults can be diagnosed from the
+files alone. Startup failures (DB down, bad config) are caught
+around `Program.cs`'s `builder.Build()`/`app.Run()` and logged to
+`build-error-logs` via a DI-independent fallback writer.
+
+### Scheduled job
+- `MemberSuspensionCronJob` runs once daily at local midnight,
+  suspends members with an overdue active borrow, and logs its own
+  query + any faults. Fully toggleable and self-disabling via
+  `FeatureFlags.EnableMemberSuspensionCronJob`.
+
+### Operability endpoints
+- `GET /health` - structured JSON health report (extensible
+  `PersistenceHealthCheck`, placeholder until a real DB lands).
+- `GET /api/logs/available?category=` - lists downloadable log
+  files.
+- `GET /api/logs/download?category=&date=` - downloads the exact
+  dated log file (path-traversal guarded).
+
+### Configuration
+New `FeatureFlags` section in `appsettings.json` toggles every
+feature above independently: `EnableRuntimeErrorLogging`,
+`EnableBuildErrorLogging`, `EnableQueryLogging`,
+`EnableExceptionLogging`, `EnableMemberSuspensionCronJob`,
+`EnableHealthCheckEndpoint`, `EnableLogDownloadEndpoint`, and
+`LogsRootPath`.
+
+### Tests
+- Updated `FakeMemberRepository` / `FakeBorrowRecordRepository` test
+  doubles for the new repository members.
+- New unit tests: `SuspendAsync`/`ReactivateAsync`/`RenewAsync`
+  behavior, and `IssueAsync` rejecting a second concurrent borrow.
+
+## Explicitly NOT included in this release
+- Bulk Excel import/export.
+- Advanced GitLab-style multi-field/operator search (equals/not
+  equals/contains/excludes) with independent sort-before/after-filter
+  ordering.
+- Full Members/Book-Copies CRUD+search parity with Books.
+- OpenTelemetry/Jaeger tracing.
+- Dapper/EF Core + multi-RDBMS provider abstraction.
+- Frontend SweetAlert wiring for the generic error message (backend
+  message exists; frontend interceptor not yet written).
+- **Build/test verification** - see AI Handover note below.
+
+------------------------------------------------------------------------
+
+## AI Handover Note (2026-09-03)
+
+This release was written in a sandboxed session with **no .NET SDK
+and no NuGet access**, so none of the C# above has been compiled or
+tested by the agent that wrote it. Everything was written to
+compile-correct standards and manually re-read line-by-line for
+syntax errors, but it must be verified before being trusted. See
+`docs/ai-handover.md` for the exact commands and the full list of
+what to check first.
+
 
 **Release date:** 2026-08-31\
 **Status:** MVP hardening / baseline\
