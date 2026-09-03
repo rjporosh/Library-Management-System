@@ -6,7 +6,7 @@ using Library.Application.Common.Options;
 using Library.Application.DependencyInjection;
 using Library.Infrastructure.DependencyInjection;
 using Library.Infrastructure.Persistence.Repositories.InMemory.Seed;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
