@@ -1,6 +1,7 @@
 using Library.Application.Abstractions.Persistence;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
+using Library.Domain.Enums;
 
 namespace Library.Infrastructure.Persistence.Repositories.InMemory;
 

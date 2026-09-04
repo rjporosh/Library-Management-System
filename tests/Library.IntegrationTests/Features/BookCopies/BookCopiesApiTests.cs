@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Library.Application.Features.BookCopies.Models;
 using Library.Domain.Enums;
+using Library.IntegrationTests.Common;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Library.Application.Features.Books.Models;
 
@@ -43,7 +44,7 @@ public sealed class BookCopiesApiTests
             response.StatusCode);
 
         var copies =
-            await response.Content.ReadFromJsonAsync<
+            await response.ReadModelAsync<
                 List<BookCopyResponse>>();
 
         Assert.NotNull(copies);
@@ -72,7 +73,7 @@ public sealed class BookCopiesApiTests
             $"/api/book-copies/book/{bookId}");
 
         var copies =
-            await copiesResponse.Content.ReadFromJsonAsync<
+            await copiesResponse.ReadModelAsync<
                 List<BookCopyResponse>>();
 
         Assert.NotNull(copies);
@@ -88,7 +89,7 @@ public sealed class BookCopiesApiTests
             response.StatusCode);
 
         var copy =
-            await response.Content.ReadFromJsonAsync<
+            await response.ReadModelAsync<
                 BookCopyResponse>();
 
         Assert.NotNull(copy);
@@ -136,7 +137,7 @@ public sealed class BookCopiesApiTests
             response.StatusCode);
 
         var copy =
-            await response.Content.ReadFromJsonAsync<
+            await response.ReadModelAsync<
                 BookCopyResponse>();
 
         Assert.NotNull(copy);
@@ -173,7 +174,7 @@ public sealed class BookCopiesApiTests
             createResponse.StatusCode);
 
         var created =
-            await createResponse.Content.ReadFromJsonAsync<
+            await createResponse.ReadModelAsync<
                 BookCopyResponse>();
 
         Assert.NotNull(created);
@@ -186,7 +187,7 @@ public sealed class BookCopiesApiTests
             getResponse.StatusCode);
 
         var retrieved =
-            await getResponse.Content.ReadFromJsonAsync<
+            await getResponse.ReadModelAsync<
                 BookCopyResponse>();
 
         Assert.NotNull(retrieved);
