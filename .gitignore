@@ -37,3 +37,6 @@ coverage/
 *.db
 *.db-shm
 *.db-wal
+
+# NBomber load-test reports
+tests/Library.LoadTests/reports/

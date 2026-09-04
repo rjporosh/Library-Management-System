@@ -1,6 +1,6 @@
 # AI Handover --- Library Management System
 
-**Last updated:** 2026-09-04
+**Last updated:** 2026-09-04 (second checkpoint - EF Core + ops + docs added)
 **Written by:** Claude (principal-engineer role), in a sandbox **with a
 working .NET 10 SDK, NuGet, Node 26 and Docker** - so unlike the 0.2.0
 session, everything below is **built, tested and smoke-verified**.
@@ -18,6 +18,8 @@ describe the long-term plan; this file is exactly where execution stands.
 | `dotnet test` | **60 pass** (50 unit + 10 integration), 0 fail |
 | `npm run build` / `npm run lint` (frontend) | clean |
 | End-to-end (headless browser, API + web) | 0 console errors, 0 failed requests, every page renders and flows work |
+| `docker compose up --build` | all 4 services up; `/health` "Postgres database is reachable"; web proxies API; Jaeger receives `Library.Api` traces |
+| EF Core against a real PostgreSQL 17 | migration applies, seed runs, advanced search translates to SQL (enum-by-name), bulk-import rollback, query log written |
 
 Branch: `feat/enterprise-completion` (off `main`). Commits are one-per-milestone
 with full messages.
@@ -103,28 +105,42 @@ CSS and the stale numeric-enum handling are gone.
   controller rewrite while every new endpoint returns the standard
   `{success:false, errors:[…]}` shape the frontend already handles.
 
-## 3. What is NOT done yet (in priority order)
+## 3. Completed since the first checkpoint
 
-1. **EF Core + PostgreSQL + provider abstraction + Dapper toggle.** Still
-   100% in-memory. Plan: `DatabaseOptions` POCO (`Provider` Postgres(default)
-   |SqlServer|MySql|Sqlite|Oracle|InMemory, `Orm` EfCore|Dapper),
-   `LibraryDbContext` + configs (enums as string columns, unique indexes,
-   `xmin` concurrency, audit cols), provider factory, `IUnitOfWork`/
-   `ITransaction`, Ef repositories, `DbCommandInterceptor` -> QueryLogScope,
-   DB-down structured build-error diagnostics, Npgsql health check, EF
-   seeder reproducing the exact seed literals, Testcontainers integration
-   tests. Postgres-only committed migrations; other providers documented.
-   `appsettings.{Development,Production}.json` connection strings.
-2. **OpenTelemetry + Jaeger** (traces + metrics, OTLP, appsettings-toggled).
-3. **Docker**: multi-stage API Dockerfile, frontend Dockerfile + nginx,
-   root `docker-compose.yml` (postgres + jaeger + api + web).
-4. **CI/CD**: `.github/workflows/ci.yml` (build/test/lint/docker).
-5. **Load/stress tests**: `tests/Library.LoadTests` (NBomber).
-6. `GET /api/release-notes/current` endpoint (served from a JSON sidecar).
-7. Domain fields deferred to keep churn down: `Book.Category`/`Publisher`,
-   `Member.Phone`/`Address`. Add with a migration + DTO + template update.
-8. Docs: `docs/programmers-guide/*`, root `guide.md` + `MIGRATIONS.md`,
-   per-project `DEVELOPERS-GUIDE.md`, ADRs, `docs/database/schema.sql`.
+- **EF Core + PostgreSQL primary + provider abstraction.** `DatabaseOptions`,
+  `LibraryDbContext` (enums as string columns, unique indexes, FKs, composite
+  indexes, shadow audit cols), `DatabaseProviderConfigurator` (Postgres/
+  SqlServer/Sqlite; MySql/Oracle/Access/Mongo throw), `IUnitOfWork`/
+  `ITransaction` (+ `NoOpUnitOfWork` for in-memory), `Ef*Repository`,
+  `QueryLoggingInterceptor`, startup DB-down diagnostics, real
+  `PersistenceHealthCheck`, `DatabaseSeeder`, `InitialCreate` migration,
+  design-time factory. Integration tests pinned to InMemory via
+  `LibraryApiFactory`. `appsettings.{Development,Production}.json`.
+- **OpenTelemetry + Jaeger** - `OpenTelemetryExtensions`, appsettings-toggled.
+- **Docker** - API + web Dockerfiles, `nginx.conf`, `docker-compose.yml`
+  (db + jaeger + api + web), `.dockerignore`.
+- **CI** - `.github/workflows/ci.yml` (backend build/test + ef drift check,
+  frontend lint/build, docker image builds + compose smoke test).
+- **Load tests** - `tests/Library.LoadTests` (NBomber, 3 scenarios).
+- **Docs** - `guide.md`, `MIGRATIONS.md`, `docs/programmers-guide/` (12 files),
+  per-project `DEVELOPERS-GUIDE.md`, `docs/database/schema.sql`.
+
+## 3b. What is NOT done yet (in priority order)
+
+1. `GET /api/release-notes/current` endpoint (serve a committed
+   `src/Library.Api/release-notes.json` sidecar kept in sync with
+   `docs/RELEASE-NOTES.md`).
+2. **Dapper read-path** - `Database:Orm=Dapper` currently just falls back to
+   EF Core. Add `Dapper*ReadStore` for the simple list + dashboard queries.
+3. **MySql / Oracle** EF drivers when EF Core 10-compatible packages ship
+   (Pomelo 9 requires EF Core 9). The provider slots + docs are ready.
+4. Domain fields deferred to keep churn down: `Book.Category`/`Publisher`,
+   `Member.Phone`/`Address` (migration + DTO + template update + frontend forms).
+5. Frontend tests (Vitest + Testing Library); more backend integration tests
+   (members lifecycle endpoints, jobs, middleware, `/health`, `/api/logs/*`).
+6. ADRs, C4 diagrams, `docs/database/seed-data.sql`, ER diagram.
+7. Rate limiting, RFC 7807 ProblemDetails, localization (English/Bangla) -
+   MASTER_SPECIFICATION additional requirements, not started.
 
 ## 4. Exact commands to pick up
 
@@ -146,22 +162,20 @@ curl -X POST localhost:5254/api/jobs/member-maintenance/run
 curl -OJ localhost:5254/api/books/import/template
 curl -X POST localhost:5254/api/books/import -F file=@book.xlsx
 
-# frontend
-cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
-# (needs the API running; base URL from .env -> VITE_API_BASE_URL)
+# full stack
+docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
 
-# NEXT MILESTONE - EF Core. Start here:
-dotnet add src/Library.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL
-dotnet add src/Library.Infrastructure package Microsoft.EntityFrameworkCore.Sqlite
-dotnet add src/Library.Api            package Microsoft.EntityFrameworkCore.Design
-docker run -d --name lms-pg -e POSTGRES_DB=library -e POSTGRES_USER=library \
-  -e POSTGRES_PASSWORD=library -p 5432:5432 postgres:17
-# then: LibraryDbContext + configs, DatabaseOptions, provider factory in
-# InfrastructureServiceExtensions, swap the InMemory registrations behind
-# Provider=InMemory, add IUnitOfWork calls to the services, update the
-# unit-test fakes (or use the real InMemory repos - unit tests already
-# reference Library.Infrastructure). Keep the frozen API contracts.
-dotnet ef migrations add InitialCreate --project src/Library.Infrastructure --startup-project src/Library.Api
+# frontend only
+cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
+
+# NEXT MILESTONE - GET /api/release-notes/current. Start here:
+#  1. add src/Library.Api/release-notes.json (version, releaseDate, features[],
+#     fixed[], qaChecklist[], knownIssues[]) as a content file (CopyToOutputDirectory).
+#  2. Features/ReleaseNotes/ReleaseNotesService.cs reads it; ReleaseNotesController
+#     exposes GET /api/release-notes/current.
+#  3. integration test asserts 200 + non-empty version/date.
+# Then: Dapper read stores (Database:Orm=Dapper), then Book.Category/Publisher +
+# Member.Phone/Address (one migration + DTO + template + frontend form update).
 ```
 
 ## 5. Landmines

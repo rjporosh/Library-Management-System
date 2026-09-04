@@ -17,12 +17,13 @@ it into an enterprise-grade product.
 | 9 Result pattern + central error handling | **Done** (new features); old controllers migrated opportunistically |
 | 10 Logging | file logging + correlation id done; **OpenTelemetry pending** |
 | 12 Excel bulk import | **Done** - all-or-nothing, all §21 scenarios |
-| 6 EF Core / DB foundation | **Not started** - next milestone |
-| 11 EF Core + Dapper split | Not started |
-| 13 Security & resilience | Not started (CORS only) |
-| 14 Docs (ADR/C4/SQL) | Partial (spec/roadmap/release-notes/handover) |
-| 15 Release Notes API | Not started |
-| 16 Release engineering / Docker / CI | Not started |
+| 6 EF Core / DB foundation | **Done** - EF Core, PostgreSQL primary, provider factory, unit of work, migration, DB-down diagnostics, real health check, EF seeder |
+| 10 Observability (OpenTelemetry) | **Done** - OTLP traces + metrics to Jaeger, appsettings-toggled |
+| 11 EF Core + Dapper split | Partial - EF Core done; Dapper read stores pending (`Orm=Dapper` falls back to EF) |
+| 13 Security & resilience | Not started (CORS only; rate limiting / ProblemDetails / localization pending) |
+| 14 Docs (ADR/C4/SQL) | Partial - guide.md, MIGRATIONS.md, programmer's guide (12 files), schema.sql; ADR/C4/ER pending |
+| 15 Release Notes API | Not started - next milestone |
+| 16 Release engineering / Docker / CI | **Done** - multi-stage Dockerfiles, docker-compose (db+jaeger+api+web), GitHub Actions CI, NBomber load tests |
 
 See `docs/ai-handover.md` §3-4 for the exact next steps and commands.
 

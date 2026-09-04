@@ -77,13 +77,36 @@ before the persistence layer is introduced.
   change (the test client now deserializes enums by name).
 - The 0.2.0 backend is now actually built and tested (it never was).
 
-## Known limitations / not in 0.3.0
+## Added after the first 0.3.0 cut (same release line)
 
-- Persistence is still in-memory (EF Core + PostgreSQL + provider
-  abstraction + Dapper toggle is the next milestone).
-- No OpenTelemetry/Jaeger, Docker, CI/CD, or load tests yet.
+- **EF Core + PostgreSQL (primary) + provider abstraction.** `Database:Provider`
+  selects `InMemory` (default) / `Postgres` / `SqlServer` / `Sqlite` by config
+  only; MySql/Oracle/Access/Mongo are acknowledged slots that fail clearly.
+  `LibraryDbContext` (enums as string columns, unique indexes, FKs, audit
+  columns), `IUnitOfWork`/`ITransaction`, `InitialCreate` migration,
+  design-time factory, EF seeder. `MIGRATIONS.md` at the repo root.
+- **DB-down diagnostics** - a startup connection failure is classified (server
+  unreachable / database missing / auth failed / schema stale) and written to
+  `logs/build-error-logs/` with the provider, host, database and a fix hint.
+- **Query logging** - `DbCommandInterceptor` writes every SQL command (text,
+  parameter names+types only, duration, rows, provider) to `logs/query-logs/`.
+- **OpenTelemetry** - traces + metrics over OTLP to Jaeger, toggled by
+  `FeatureFlags:EnableOpenTelemetry`.
+- **Docker** - multi-stage API + web Dockerfiles, `docker-compose.yml`
+  (postgres + jaeger + api + web); `docker compose up --build`.
+- **CI** - `.github/workflows/ci.yml` (build/test + migration drift check,
+  frontend lint/build, image builds + compose smoke test).
+- **Load tests** - `tests/Library.LoadTests` (NBomber, 3 scenarios).
+- **Docs** - `guide.md`, `docs/programmers-guide/` (12 guides), per-project
+  `DEVELOPERS-GUIDE.md`, `docs/database/schema.sql`.
+
+## Known limitations
+
+- `Database:Orm=Dapper` currently falls back to EF Core (Dapper read stores pending).
+- No EF Core 10 driver for MySQL/Oracle yet (provider slots + docs are ready).
 - `Book.Category`/`Publisher` and `Member.Phone`/`Address` deferred.
 - `GET /api/release-notes/current` not yet implemented.
+- No frontend unit tests; rate limiting / RFC 7807 / localization not started.
 
 ## QA checklist
 
