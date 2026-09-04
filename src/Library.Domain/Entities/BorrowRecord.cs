@@ -18,6 +18,9 @@ public sealed class BorrowRecord
 
     public BorrowStatus Status { get; private set; }
 
+    // EF Core materialisation only.
+    private BorrowRecord() { }
+
     public BorrowRecord(
         Guid id,
         Guid bookCopyId,

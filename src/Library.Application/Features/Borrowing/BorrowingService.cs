@@ -10,7 +10,8 @@ namespace Library.Application.Features.Borrowing;
 public sealed class BorrowingService(
     IMemberRepository memberRepository,
     IBookCopyRepository bookCopyRepository,
-    IBorrowRecordRepository borrowRecordRepository)
+    IBorrowRecordRepository borrowRecordRepository,
+    IUnitOfWork unitOfWork)
 {
     public Result<PagedResult<BorrowRecordResponse>> Search(SearchRequest request)
     {
@@ -66,6 +67,9 @@ public sealed class BorrowingService(
             borrowedAt,
             request.DueAt);
 
+        // Copy-status change and record insert must be atomic.
+        await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         await bookCopyRepository.UpdateAsync(
             copy,
             cancellationToken);
@@ -73,6 +77,8 @@ public sealed class BorrowingService(
         await borrowRecordRepository.AddAsync(
             record,
             cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
 
         return Map(record);
     }
@@ -103,6 +109,8 @@ public sealed class BorrowingService(
         copy.Return();
         record.Return(returnedAt);
 
+        await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
+
         await bookCopyRepository.UpdateAsync(
             copy,
             cancellationToken);
@@ -110,6 +118,8 @@ public sealed class BorrowingService(
         await borrowRecordRepository.UpdateAsync(
             record,
             cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
 
         return Map(record);
     }

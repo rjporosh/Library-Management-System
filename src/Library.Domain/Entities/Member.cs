@@ -34,6 +34,9 @@ public sealed class Member
     /// <summary>Default membership term applied on creation and renewal.</summary>
     public const int MembershipTermDays = 365;
 
+    // EF Core materialisation only.
+    private Member() { }
+
     public Member(
         Guid id,
         string membershipNumber,

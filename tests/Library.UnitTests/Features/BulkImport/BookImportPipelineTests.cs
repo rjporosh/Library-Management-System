@@ -4,6 +4,8 @@ using Library.Application.Features.BulkImport.Definitions;
 using Library.Domain.Entities;
 using Library.UnitTests.Common;
 
+using Library.Infrastructure.Persistence;
+
 namespace Library.UnitTests.Features.BulkImport;
 
 /// <summary>Covers the ten bulk-import acceptance scenarios from MASTER_SPECIFICATION.md §21.</summary>
@@ -15,7 +17,7 @@ public sealed class BookImportPipelineTests
     {
         var books = new StubBookRepository(treatAllIdsAsExisting: false);
         var reader = new FakeWorkbookReader(workbook);
-        var pipeline = new BulkImportPipeline(reader, new BulkImportOptions());
+        var pipeline = new BulkImportPipeline(reader, new BulkImportOptions(), new NoOpUnitOfWork());
         return (pipeline, books);
     }
 

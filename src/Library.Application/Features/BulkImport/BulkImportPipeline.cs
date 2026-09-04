@@ -1,3 +1,4 @@
+using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Errors;
 
 namespace Library.Application.Features.BulkImport;
@@ -9,7 +10,10 @@ namespace Library.Application.Features.BulkImport;
 /// is written and every detectable error is returned together, each carrying
 /// its exact Excel row, field, code, message and accepted values.
 /// </summary>
-public sealed class BulkImportPipeline(IWorkbookReader workbookReader, BulkImportOptions options)
+public sealed class BulkImportPipeline(
+    IWorkbookReader workbookReader,
+    BulkImportOptions options,
+    IUnitOfWork unitOfWork)
 {
     private static readonly char[] FormulaTriggers = ['=', '+', '@', '\t', '\r'];
 
@@ -133,7 +137,10 @@ public sealed class BulkImportPipeline(IWorkbookReader workbookReader, BulkImpor
 
         try
         {
+            await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
             await definition.PersistAsync([.. parsed.Select(p => p.Entity)], cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await tx.CommitAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

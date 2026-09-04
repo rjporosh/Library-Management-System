@@ -29,3 +29,11 @@ coverage/
 .env
 .env.*
 !.env.example
+
+# Runtime logs (structured file logging)
+**/logs/
+
+# EF / test artifacts
+*.db
+*.db-shm
+*.db-wal

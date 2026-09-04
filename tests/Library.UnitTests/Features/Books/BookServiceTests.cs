@@ -3,6 +3,8 @@ using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
 
+using Library.Infrastructure.Persistence;
+
 namespace Library.UnitTests.Features.Books;
 
 public sealed class BookServiceTests
@@ -21,7 +23,7 @@ public sealed class BookServiceTests
         var repository = new FakeBookRepository(
             [firstBook, secondBook]);
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
 var result = await service.GetAllAsync(
     new BookQuery(),
@@ -56,7 +58,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(),
@@ -82,7 +84,7 @@ var result = await service.GetAllAsync(
 
         var repository = new FakeBookRepository(books);
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -112,7 +114,7 @@ var result = await service.GetAllAsync(
         var repository = new FakeBookRepository(
             [matchingBook, nonMatchingBook]);
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -146,7 +148,7 @@ var result = await service.GetAllAsync(
         var repository = new FakeBookRepository(
             [titleMatch, authorMatch, isbnMatch, noMatch]);
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -179,7 +181,7 @@ var result = await service.GetAllAsync(
 
         var repository = new FakeBookRepository([book]);
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(book.Id);
 
@@ -198,7 +200,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(Guid.NewGuid());
 
@@ -210,7 +212,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var request = new CreateBookRequest(
             "978-0132350884",
@@ -245,7 +247,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository);
+        var service = new BookService(repository, new NoOpUnitOfWork());
 
         var request = new CreateBookRequest(
             "978-1234567890",

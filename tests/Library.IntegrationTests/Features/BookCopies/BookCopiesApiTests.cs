@@ -9,12 +9,12 @@ using Library.Application.Features.Books.Models;
 namespace Library.IntegrationTests.Features.BookCopies;
 
 public sealed class BookCopiesApiTests
-    : IClassFixture<WebApplicationFactory<Program>>
+    : IClassFixture<LibraryApiFactory>
 {
     private readonly HttpClient _client;
 
     public BookCopiesApiTests(
-        WebApplicationFactory<Program> factory)
+        LibraryApiFactory factory)
     {
         _client = factory.CreateClient();
     }

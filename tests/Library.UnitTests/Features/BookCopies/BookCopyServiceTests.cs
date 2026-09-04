@@ -5,6 +5,8 @@ using Library.Domain.Entities;
 using Library.Domain.Enums;
 using Library.UnitTests.Common;
 
+using Library.Infrastructure.Persistence;
+
 namespace Library.UnitTests.Features.BookCopies;
 
 public sealed class BookCopyServiceTests
@@ -23,7 +25,7 @@ public sealed class BookCopyServiceTests
             };
 
         var repository = new FakeBookCopyRepository(copies);
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByBookIdAsync(bookId);
 
@@ -37,7 +39,7 @@ public sealed class BookCopyServiceTests
     public async Task GetByBookIdAsync_WhenNoCopiesExist_ShouldReturnEmptyList()
     {
         var repository = new FakeBookCopyRepository();
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByBookIdAsync(Guid.NewGuid());
 
@@ -53,7 +55,7 @@ public sealed class BookCopyServiceTests
             "BC-001");
 
         var repository = new FakeBookCopyRepository([copy]);
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(copy.Id);
 
@@ -68,7 +70,7 @@ public sealed class BookCopyServiceTests
     public async Task GetByIdAsync_WhenCopyDoesNotExist_ShouldReturnNull()
     {
         var repository = new FakeBookCopyRepository();
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(Guid.NewGuid());
 
@@ -80,7 +82,7 @@ public sealed class BookCopyServiceTests
     {
         var bookId = Guid.NewGuid();
         var repository = new FakeBookCopyRepository();
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var outcome = await service.CreateAsync(
             new CreateBookCopyRequest(
@@ -114,7 +116,7 @@ public sealed class BookCopyServiceTests
         copy.Issue();
 
         var repository = new FakeBookCopyRepository([copy]);
-        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository());
+        var service = new BookCopyService(repository, new StubBookRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(copy.Id);
 

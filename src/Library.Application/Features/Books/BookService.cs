@@ -10,7 +10,7 @@ using Library.Domain.Entities;
 
 namespace Library.Application.Features.Books;
 
-public sealed class BookService(IBookRepository bookRepository)
+public sealed class BookService(IBookRepository bookRepository, IUnitOfWork unitOfWork)
 {
     public Result<PagedResult<BookResponse>> Search(SearchRequest request)
     {
@@ -91,6 +91,7 @@ public sealed class BookService(IBookRepository bookRepository)
         await bookRepository.AddAsync(
             book,
             cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(book);
     }
@@ -121,6 +122,7 @@ public sealed class BookService(IBookRepository bookRepository)
         await bookRepository.UpdateAsync(
             book,
             cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Map(book);
     }
@@ -141,6 +143,7 @@ public sealed class BookService(IBookRepository bookRepository)
         await bookRepository.DeleteAsync(
             book,
             cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;
     }

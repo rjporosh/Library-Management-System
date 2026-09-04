@@ -7,6 +7,7 @@ using Library.Application.DependencyInjection;
 using Library.Infrastructure.DependencyInjection;
 using Library.Infrastructure.Persistence.Repositories.InMemory.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,10 +20,15 @@ var observabilitySettings =
     builder.Configuration.GetSection("FeatureFlags").Get<ObservabilitySettings>()
     ?? new ObservabilitySettings();
 
+var databaseOptions =
+    builder.Configuration.GetSection("Database").Get<DatabaseOptions>()
+    ?? new DatabaseOptions();
+
 // Application & Infrastructure
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
     observabilitySettings,
+    databaseOptions,
     builder.Environment.ContentRootPath);
 
 // MVC Controllers - enums serialize as their string name (e.g. "Active",
@@ -130,15 +136,38 @@ if (observabilitySettings.EnableHealthCheckEndpoint)
     });
 }
 
-// Seed demo data
+// Migrate + seed. Any failure here (database unreachable / missing / bad
+// credentials) is written to build-error-logs with a diagnosed root cause
+// and a fix hint, then rethrown so the host fails loudly.
 try
 {
-    var seeder = app.Services.GetRequiredService<InMemoryDataSeeder>();
-    seeder.Seed();
+    using var scope = app.Services.CreateScope();
+
+    if (databaseOptions.IsRelational)
+    {
+        var db = scope.ServiceProvider
+            .GetRequiredService<Library.Infrastructure.Persistence.LibraryDbContext>();
+
+        if (databaseOptions.MigrateOnStartup)
+        {
+            await db.Database.MigrateAsync();
+        }
+
+        if (databaseOptions.SeedOnStartup && app.Environment.IsDevelopment())
+        {
+            await scope.ServiceProvider
+                .GetRequiredService<Library.Infrastructure.Persistence.Seed.DatabaseSeeder>()
+                .SeedAsync();
+        }
+    }
+    else
+    {
+        scope.ServiceProvider.GetRequiredService<InMemoryDataSeeder>().Seed();
+    }
 }
 catch (Exception ex)
 {
-    WriteBuildErrorFallback(ex, app.Environment.ContentRootPath, observabilitySettings);
+    WriteDatabaseDiagnostic(ex, app.Environment.ContentRootPath, observabilitySettings, databaseOptions);
     throw;
 }
 
@@ -197,6 +226,78 @@ static void WriteBuildErrorFallback(
         Console.Error.WriteLine(
             $"[Program] Failed to write build-error log for startup failure: {ex}");
     }
+}
+
+// Startup database failure: classify the cause and write a build-error entry
+// that names the provider, host and database and suggests a concrete fix, so a
+// developer sees "PostgreSQL is not running / the database does not exist"
+// rather than a raw stack trace (spec: "DB down -> clear conscious cause").
+static void WriteDatabaseDiagnostic(
+    Exception ex,
+    string contentRootPath,
+    ObservabilitySettings settings,
+    DatabaseOptions database)
+{
+    var (cause, fix) = ex.GetType().Name switch
+    {
+        "NpgsqlException" or "SocketException" =>
+            ($"Cannot reach the '{database.Provider}' database server.",
+             "Is the database running? Start it (e.g. `docker compose up -d db`) and check Database:ConnectionString host/port."),
+        "PostgresException" when ex.Message.Contains("3D000") =>
+            ("The target database does not exist.",
+             "Create it, or run `dotnet ef database update` to create the schema."),
+        "SqlException" =>
+            ($"The '{database.Provider}' database could not be opened.",
+             "Verify the server is running and the connection string / credentials are correct."),
+        _ when ex.Message.Contains("password", StringComparison.OrdinalIgnoreCase)
+               || ex.Message.Contains("authentication", StringComparison.OrdinalIgnoreCase) =>
+            ("Database authentication failed.",
+             "Check the username/password in Database:ConnectionString."),
+        _ => ("The database is unavailable or the schema is out of date.",
+              "Check the database is reachable and migrations are applied (`dotnet ef database update`)."),
+    };
+
+    var host = "unknown";
+    var name = "unknown";
+    foreach (var part in (database.ConnectionString ?? string.Empty).Split(';'))
+    {
+        var kv = part.Split('=', 2);
+        if (kv.Length != 2) continue;
+        var key = kv[0].Trim().ToLowerInvariant();
+        if (key is "host" or "server" or "data source") host = kv[1].Trim();
+        if (key is "database" or "initial catalog") name = kv[1].Trim();
+    }
+
+    if (settings.EnableBuildErrorLogging)
+    {
+        try
+        {
+            var dir = Path.IsPathRooted(settings.LogsRootPath)
+                ? Path.Combine(settings.LogsRootPath, "build-error-logs")
+                : Path.Combine(contentRootPath, settings.LogsRootPath, "build-error-logs");
+            Directory.CreateDirectory(dir);
+            var file = Path.Combine(dir, $"build-error-logs-{DateTime.UtcNow:dd-MM-yyyy}.txt");
+            File.AppendAllText(file, System.Text.Json.JsonSerializer.Serialize(new
+            {
+                timestampUtc = DateTime.UtcNow,
+                component = "startup/database",
+                provider = database.Provider,
+                host,
+                database = name,
+                exceptionType = ex.GetType().FullName,
+                message = ex.Message,
+                rootCause = cause,
+                possibleBestFix = fix,
+                stackTrace = ex.StackTrace,
+            }) + Environment.NewLine);
+        }
+        catch
+        {
+            // never let logging the failure become a second failure
+        }
+    }
+
+    Console.Error.WriteLine($"[Startup] DATABASE UNAVAILABLE ({database.Provider} @ {host}/{name}): {cause} -> {fix}");
 }
 
 public partial class Program;

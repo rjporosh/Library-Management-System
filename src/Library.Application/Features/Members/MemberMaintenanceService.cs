@@ -10,7 +10,8 @@ namespace Library.Application.Features.Members;
 /// </summary>
 public sealed class MemberMaintenanceService(
     IMemberRepository memberRepository,
-    IBorrowRecordRepository borrowRecordRepository)
+    IBorrowRecordRepository borrowRecordRepository,
+    IUnitOfWork unitOfWork)
 {
     public async Task<MemberMaintenanceResult> RunAsync(CancellationToken cancellationToken = default)
     {
@@ -30,14 +31,27 @@ public sealed class MemberMaintenanceService(
             member.Suspend();
             await memberRepository.UpdateAsync(member, cancellationToken);
             suspended++;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         var allMembers = await memberRepository.GetAllAsync(cancellationToken);
-        foreach (var member in allMembers.Where(m => m.Status == Domain.Enums.MemberStatus.Active && m.IsExpired(now)))
+        var expiredIds = allMembers
+            .Where(m => m.Status == Domain.Enums.MemberStatus.Active && m.IsExpired(now))
+            .Select(m => m.Id)
+            .ToList();
+
+        foreach (var memberId in expiredIds)
         {
+            var member = await memberRepository.GetByIdAsync(memberId, cancellationToken);
+            if (member is null || member.Status != Domain.Enums.MemberStatus.Active)
+            {
+                continue;
+            }
+
             member.Deactivate();
             await memberRepository.UpdateAsync(member, cancellationToken);
             deactivated++;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         return new MemberMaintenanceResult(suspended, deactivated, now);

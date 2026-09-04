@@ -13,7 +13,8 @@ namespace Library.Application.Features.Members;
 
 public sealed class MemberService(
     IMemberRepository memberRepository,
-    IBorrowRecordRepository borrowRecordRepository)
+    IBorrowRecordRepository borrowRecordRepository,
+    IUnitOfWork unitOfWork)
 {
     public Result<PagedResult<MemberResponse>> Search(SearchRequest request)
     {
@@ -82,6 +83,7 @@ public sealed class MemberService(
 
         var member = new Member(Guid.NewGuid(), request.MembershipNumber.Trim(), request.Name.Trim(), request.Email.Trim());
         await memberRepository.AddAsync(member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(Map(member));
     }
 
@@ -118,6 +120,7 @@ public sealed class MemberService(
 
         member.UpdateProfile(request.MembershipNumber.Trim(), request.Name.Trim(), request.Email.Trim());
         await memberRepository.UpdateAsync(member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(Map(member));
     }
 
@@ -136,6 +139,7 @@ public sealed class MemberService(
         }
 
         await memberRepository.DeleteAsync(member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 
@@ -158,6 +162,7 @@ public sealed class MemberService(
 
         transition(member);
         await memberRepository.UpdateAsync(member, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Map(member);
     }
 

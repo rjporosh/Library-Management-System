@@ -12,7 +12,8 @@ namespace Library.Application.Features.BookCopies;
 public sealed class BookCopyService(
     IBookCopyRepository bookCopyRepository,
     IBookRepository bookRepository,
-    IBorrowRecordRepository borrowRecordRepository)
+    IBorrowRecordRepository borrowRecordRepository,
+    IUnitOfWork unitOfWork)
 {
     public Result<PagedResult<BookCopyResponse>> Search(SearchRequest request)
     {
@@ -64,6 +65,7 @@ public sealed class BookCopyService(
 
         var copy = new BookCopy(Guid.NewGuid(), request.BookId, request.Barcode.Trim());
         await bookCopyRepository.AddAsync(copy, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(Map(copy));
     }
 
@@ -87,6 +89,7 @@ public sealed class BookCopyService(
 
         copy.ChangeBarcode(request.Barcode.Trim());
         await bookCopyRepository.UpdateAsync(copy, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(Map(copy));
     }
 
@@ -115,6 +118,7 @@ public sealed class BookCopyService(
         }
 
         await bookCopyRepository.UpdateAsync(copy, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(Map(copy));
     }
 
@@ -134,6 +138,7 @@ public sealed class BookCopyService(
         }
 
         await bookCopyRepository.DeleteAsync(copy, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }
 

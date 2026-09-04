@@ -5,6 +5,8 @@ using Library.Domain.Entities;
 using Library.Domain.Enums;
 using Library.UnitTests.Common;
 
+using Library.Infrastructure.Persistence;
+
 namespace Library.UnitTests.Features.Members;
 
 public sealed class MemberServiceTests
@@ -19,7 +21,7 @@ public sealed class MemberServiceTests
             "john@example.com");
 
         var repository = new FakeMemberRepository(member);
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(member.Id);
 
@@ -35,7 +37,7 @@ public sealed class MemberServiceTests
     public async Task GetByIdAsync_WhenMemberDoesNotExist_ShouldReturnNull()
     {
         var repository = new FakeMemberRepository();
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(Guid.NewGuid());
 
@@ -46,7 +48,7 @@ public sealed class MemberServiceTests
     public async Task CreateAsync_ShouldCreateAndPersistMember()
     {
         var repository = new FakeMemberRepository();
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var outcome = await service.CreateAsync(
             new CreateMemberRequest(
@@ -78,7 +80,7 @@ public sealed class MemberServiceTests
     public async Task CreateAsync_ShouldGenerateUniqueMemberId()
     {
         var repository = new FakeMemberRepository();
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var first = await service.CreateAsync(
             new CreateMemberRequest(
@@ -111,7 +113,7 @@ public sealed class MemberServiceTests
             "john@example.com");
 
         var repository = new FakeMemberRepository(member);
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.SuspendAsync(member.Id);
 
@@ -123,7 +125,7 @@ public sealed class MemberServiceTests
     public async Task SuspendAsync_WhenMemberDoesNotExist_ShouldThrow()
     {
         var repository = new FakeMemberRepository();
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.SuspendAsync(Guid.NewGuid()));
@@ -140,7 +142,7 @@ public sealed class MemberServiceTests
         member.Suspend();
 
         var repository = new FakeMemberRepository(member);
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.ReactivateAsync(member.Id);
 
@@ -159,7 +161,7 @@ public sealed class MemberServiceTests
         member.Suspend();
 
         var repository = new FakeMemberRepository(member);
-        var service = new MemberService(repository, new StubBorrowRecordRepository());
+        var service = new MemberService(repository, new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.RenewAsync(member.Id);
 

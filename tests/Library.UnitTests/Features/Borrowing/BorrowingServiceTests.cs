@@ -3,6 +3,7 @@ using Library.Application.Features.Borrowing;
 using Library.Application.Features.Borrowing.Models;
 using Library.Domain.Entities;
 using Library.Domain.Enums;
+using Library.Infrastructure.Persistence;
 
 namespace Library.UnitTests.Features.Borrowing;
 
@@ -33,7 +34,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var dueAt = DateTime.UtcNow.AddDays(14);
 
@@ -61,7 +63,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.IssueAsync(
@@ -93,7 +96,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.IssueAsync(
@@ -143,7 +147,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.IssueAsync(
@@ -175,7 +180,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.IssueAsync(
@@ -213,7 +219,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.IssueAsync(
@@ -247,7 +254,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => service.IssueAsync(
@@ -293,7 +301,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
-            borrowRepository);
+            borrowRepository,
+            new NoOpUnitOfWork());
 
         var returnedAt = DateTime.UtcNow;
 
@@ -312,7 +321,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(),
-            new FakeBorrowRecordRepository());
+            new FakeBorrowRecordRepository(),
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.ReturnAsync(
@@ -340,7 +350,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(),
-            new FakeBorrowRecordRepository(record));
+            new FakeBorrowRecordRepository(record),
+            new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(
             () => service.ReturnAsync(
@@ -377,7 +388,8 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(copy),
-            new FakeBorrowRecordRepository(record));
+            new FakeBorrowRecordRepository(record),
+            new NoOpUnitOfWork());
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.ReturnAsync(

@@ -14,6 +14,9 @@ public sealed class Book
 
     public int PublishedYear { get; private set; }
 
+    // EF Core materialisation only.
+    private Book() { }
+
     public Book(
         Guid id,
         string isbn,

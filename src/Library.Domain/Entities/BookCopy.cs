@@ -12,6 +12,9 @@ public sealed class BookCopy
 
     public BookCopyStatus Status { get; private set; }
 
+    // EF Core materialisation only.
+    private BookCopy() { }
+
     public BookCopy(
         Guid id,
         Guid bookId,

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Library.Application.Features.Books.Models;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Library.IntegrationTests.Common;
 
 namespace Library.IntegrationTests.Features.Books;
 
@@ -10,7 +11,7 @@ public sealed class BooksApiTests
     [Fact]
     public async Task GetAll_ShouldReturnSeededBooks()
     {
-        await using var factory = new   WebApplicationFactory<Program>();
+        await using var factory = new LibraryApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync("/api/books");
@@ -32,7 +33,7 @@ public sealed class BooksApiTests
     [Fact]
     public async Task GetById_WhenBookDoesNotExist_ShouldReturnNotFound()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new LibraryApiFactory();
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync(
@@ -44,7 +45,7 @@ public sealed class BooksApiTests
      [Fact]
     public async Task   GetById_WhenBookExists_ShouldReturnBook()
     {
-        await using var factory = new   WebApplicationFactory<Program>();
+        await using var factory = new LibraryApiFactory();
         using var client = factory.CreateClient();
 
         var result = await client.  GetFromJsonAsync<PagedBookResponse>(
@@ -75,7 +76,7 @@ public sealed class BooksApiTests
     [Fact]
     public async Task Create_ShouldReturnCreatedBook()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new LibraryApiFactory();
         using var client = factory.CreateClient();
 
         var request = new CreateBookRequest(
@@ -106,7 +107,7 @@ public sealed class BooksApiTests
     [Fact]
     public async Task Create_ShouldMakeBookRetrievable()
     {
-        await using var factory = new WebApplicationFactory<Program>();
+        await using var factory = new LibraryApiFactory();
         using var client = factory.CreateClient();
 
         var request = new CreateBookRequest(

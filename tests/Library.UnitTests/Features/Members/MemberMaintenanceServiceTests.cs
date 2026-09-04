@@ -3,6 +3,8 @@ using Library.Domain.Entities;
 using Library.Domain.Enums;
 using Library.Infrastructure.Persistence.Repositories.InMemory;
 
+using Library.Infrastructure.Persistence;
+
 namespace Library.UnitTests.Features.Members;
 
 public sealed class MemberMaintenanceServiceTests
@@ -21,7 +23,7 @@ public sealed class MemberMaintenanceServiceTests
         borrows.Seed([new BorrowRecord(Guid.NewGuid(), Guid.NewGuid(), overdueBorrower.Id,
             DateTime.UtcNow.AddDays(-20), DateTime.UtcNow.AddDays(-5))]);
 
-        var result = await new MemberMaintenanceService(members, borrows).RunAsync();
+        var result = await new MemberMaintenanceService(members, borrows, new NoOpUnitOfWork()).RunAsync();
 
         Assert.Equal(1, result.OverdueSuspended);
         Assert.Equal(1, result.ExpiredDeactivated);
@@ -40,7 +42,7 @@ public sealed class MemberMaintenanceServiceTests
         suspended.Suspend();
         members.Seed([suspended]);
 
-        var result = await new MemberMaintenanceService(members, borrows).RunAsync();
+        var result = await new MemberMaintenanceService(members, borrows, new NoOpUnitOfWork()).RunAsync();
 
         Assert.Equal(0, result.ExpiredDeactivated);
         Assert.Equal(MemberStatus.Suspended, (await members.GetByIdAsync(suspended.Id))!.Status);
