@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.git
+**/.vs
+**/.vscode
+**/logs
+**/TestResults
+frontend/library-web/dist
+docs
+*.md

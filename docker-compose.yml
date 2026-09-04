@@ -1,0 +1,58 @@
+# Full local stack: PostgreSQL + Jaeger + API + web.
+#   docker compose up --build
+# Then: web http://localhost:8080 , API http://localhost:5254 , Jaeger http://localhost:16686
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: library
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U library -d library"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # UI
+      - "4317:4317"      # OTLP gRPC
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Library.Api/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      Database__Provider: Postgres
+      Database__ConnectionString: "Host=db;Port=5432;Database=library;Username=library;Password=library"
+      Database__MigrateOnStartup: "true"
+      Database__SeedOnStartup: "true"
+      FeatureFlags__EnableOpenTelemetry: "true"
+      FeatureFlags__OtlpEndpoint: "http://jaeger:4317"
+    ports:
+      - "5254:8080"
+
+  web:
+    build:
+      context: ./frontend/library-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  db-data:

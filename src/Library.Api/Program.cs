@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Library.Api.BackgroundJobs;
 using Library.Api.HealthChecks;
 using Library.Api.Middleware;
+using Library.Api.Observability;
 using Library.Application.Common.Options;
 using Library.Application.DependencyInjection;
 using Library.Infrastructure.DependencyInjection;
@@ -23,6 +24,10 @@ var observabilitySettings =
 var databaseOptions =
     builder.Configuration.GetSection("Database").Get<DatabaseOptions>()
     ?? new DatabaseOptions();
+
+// Observability (OpenTelemetry -> OTLP -> Jaeger). Off unless
+// FeatureFlags.EnableOpenTelemetry is true.
+builder.Services.AddLibraryObservability(observabilitySettings);
 
 // Application & Infrastructure
 builder.Services.AddApplication();
@@ -153,7 +158,7 @@ try
             await db.Database.MigrateAsync();
         }
 
-        if (databaseOptions.SeedOnStartup && app.Environment.IsDevelopment())
+        if (databaseOptions.SeedOnStartup)
         {
             await scope.ServiceProvider
                 .GetRequiredService<Library.Infrastructure.Persistence.Seed.DatabaseSeeder>()

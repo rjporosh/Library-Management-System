@@ -25,4 +25,13 @@ public sealed class ObservabilitySettings
     public bool EnableHealthCheckEndpoint { get; set; } = true;
 
     public bool EnableLogDownloadEndpoint { get; set; } = true;
+
+    /// <summary>Emit OpenTelemetry traces + metrics over OTLP (e.g. to Jaeger).</summary>
+    public bool EnableOpenTelemetry { get; set; }
+
+    /// <summary>OTLP gRPC endpoint. Default targets a local collector / Jaeger.</summary>
+    public string OtlpEndpoint { get; set; } = "http://localhost:4317";
+
+    /// <summary>Reported as the OpenTelemetry <c>service.name</c> resource attribute.</summary>
+    public string ServiceName { get; set; } = "Library.Api";
 }
