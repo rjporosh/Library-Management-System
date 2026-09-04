@@ -15,7 +15,7 @@ describe the long-term plan; this file is exactly where execution stands.
 | Check | Result |
 |---|---|
 | `dotnet build LibraryManagementSystem.slnx` | **0 warnings, 0 errors** (TreatWarningsAsErrors on) |
-| `dotnet test` | **60 pass** (50 unit + 10 integration), 0 fail |
+| `dotnet test` | **61 pass** (50 unit + 11 integration), 0 fail |
 | `npm run build` / `npm run lint` (frontend) | clean |
 | End-to-end (headless browser, API + web) | 0 console errors, 0 failed requests, every page renders and flows work |
 | `docker compose up --build` | all 4 services up; `/health` "Postgres database is reachable"; web proxies API; Jaeger receives `Library.Api` traces |
@@ -127,19 +127,16 @@ CSS and the stale numeric-enum handling are gone.
 
 ## 3b. What is NOT done yet (in priority order)
 
-1. `GET /api/release-notes/current` endpoint (serve a committed
-   `src/Library.Api/release-notes.json` sidecar kept in sync with
-   `docs/RELEASE-NOTES.md`).
-2. **Dapper read-path** - `Database:Orm=Dapper` currently just falls back to
+1. **Dapper read-path** - `Database:Orm=Dapper` currently just falls back to
    EF Core. Add `Dapper*ReadStore` for the simple list + dashboard queries.
-3. **MySql / Oracle** EF drivers when EF Core 10-compatible packages ship
+2. **MySql / Oracle** EF drivers when EF Core 10-compatible packages ship
    (Pomelo 9 requires EF Core 9). The provider slots + docs are ready.
-4. Domain fields deferred to keep churn down: `Book.Category`/`Publisher`,
+3. Domain fields deferred to keep churn down: `Book.Category`/`Publisher`,
    `Member.Phone`/`Address` (migration + DTO + template update + frontend forms).
-5. Frontend tests (Vitest + Testing Library); more backend integration tests
+4. Frontend tests (Vitest + Testing Library); more backend integration tests
    (members lifecycle endpoints, jobs, middleware, `/health`, `/api/logs/*`).
-6. ADRs, C4 diagrams, `docs/database/seed-data.sql`, ER diagram.
-7. Rate limiting, RFC 7807 ProblemDetails, localization (English/Bangla) -
+5. ADRs, C4 diagrams, `docs/database/seed-data.sql`, ER diagram.
+6. Rate limiting, RFC 7807 ProblemDetails, localization (English/Bangla) -
    MASTER_SPECIFICATION additional requirements, not started.
 
 ## 4. Exact commands to pick up
@@ -150,9 +147,10 @@ git checkout feat/enterprise-completion
 
 # backend - confirm green
 dotnet build LibraryManagementSystem.slnx      # expect 0/0
-dotnet test  LibraryManagementSystem.slnx      # expect 60 pass
+dotnet test  LibraryManagementSystem.slnx      # expect 61 pass
 
-# run the API (in-memory) + smoke the new features
+# run the API - Development uses Postgres (docker compose up -d db first);
+# for a no-database demo:  Database__Provider=InMemory dotnet run --project src/Library.Api
 dotnet run --project src/Library.Api            # http://localhost:5254  (/scalar for docs)
 curl -X POST localhost:5254/api/books/search -H 'content-type: application/json' \
   -d '{"filters":[{"field":"author","operator":"contains","value":"martin"}],"sort":[{"field":"publishedYear","direction":"desc"}]}'
@@ -168,7 +166,7 @@ docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
 # frontend only
 cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
 
-# NEXT MILESTONE - (done). Next: Dapper read stores. Start here:
+# NEXT MILESTONE - Dapper read stores. Start here:
 #  1. add src/Library.Api/release-notes.json (version, releaseDate, features[],
 #     fixed[], qaChecklist[], knownIssues[]) as a content file (CopyToOutputDirectory).
 #  2. Features/ReleaseNotes/ReleaseNotesService.cs reads it; ReleaseNotesController
