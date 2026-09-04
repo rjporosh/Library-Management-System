@@ -8,6 +8,16 @@ public interface IBorrowRecordRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Composable query root for the generic advanced-search builder.</summary>
+    IQueryable<BorrowRecord> Query();
+
+    Task<IReadOnlyList<BorrowRecord>> GetByMemberIdAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<BorrowRecord>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
     Task AddAsync(
         BorrowRecord record,
         CancellationToken cancellationToken = default);
@@ -25,8 +35,15 @@ public interface IBorrowRecordRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// True when the given book copy already has an active borrow.
+    /// </summary>
+    Task<bool> HasActiveBorrowForCopyAsync(
+        Guid bookCopyId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns every active borrow whose due date has passed as of
-    /// <paramref name="asOfUtc"/>. Used by the member-suspension cron job.
+    /// <paramref name="asOfUtc"/>. Used by the nightly maintenance job.
     /// </summary>
     Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(
         DateTime asOfUtc,

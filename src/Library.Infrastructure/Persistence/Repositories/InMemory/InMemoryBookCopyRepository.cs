@@ -18,6 +18,8 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         return Task.FromResult(copies);
     }
 
+    public IQueryable<BookCopy> Query() => _copies.AsQueryable();
+
     public Task<BookCopy?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -25,6 +27,18 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         var copy = _copies.FirstOrDefault(x => x.Id == id);
 
         return Task.FromResult(copy);
+    }
+
+    public Task<bool> ExistsByBarcodeAsync(
+        string barcode,
+        Guid? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = _copies.Any(x =>
+            string.Equals(x.Barcode, barcode, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || x.Id != excludingId));
+
+        return Task.FromResult(exists);
     }
 
     public Task AddAsync(
@@ -36,10 +50,34 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         return Task.CompletedTask;
     }
 
+    public Task AddRangeAsync(
+        IEnumerable<BookCopy> bookCopies,
+        CancellationToken cancellationToken = default)
+    {
+        _copies.AddRange(bookCopies);
+
+        return Task.CompletedTask;
+    }
+
     public Task UpdateAsync(
         BookCopy bookCopy,
         CancellationToken cancellationToken = default)
     {
+        var index = _copies.FindIndex(x => x.Id == bookCopy.Id);
+        if (index >= 0)
+        {
+            _copies[index] = bookCopy;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(
+        BookCopy bookCopy,
+        CancellationToken cancellationToken = default)
+    {
+        _copies.RemoveAll(x => x.Id == bookCopy.Id);
+
         return Task.CompletedTask;
     }
 

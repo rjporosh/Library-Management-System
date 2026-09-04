@@ -23,6 +23,12 @@ public sealed class BookCopy
         Status = BookCopyStatus.Available;
     }
 
+    /// <summary>Corrects the barcode label. Uniqueness is enforced by the service layer.</summary>
+    public void ChangeBarcode(string barcode)
+    {
+        Barcode = barcode;
+    }
+
     public void Issue()
     {
         if (Status != BookCopyStatus.Available)
@@ -37,5 +43,23 @@ public sealed class BookCopy
             throw new InvalidOperationException("Book copy is not currently borrowed.");
 
         Status = BookCopyStatus.Available;
+    }
+
+    /// <summary>
+    /// Moves the copy to a non-circulating condition (Lost / Damaged /
+    /// Maintenance) or back to Available. A borrowed copy must be
+    /// returned before its condition can be changed.
+    /// </summary>
+    public void ChangeStatus(BookCopyStatus status)
+    {
+        if (status == BookCopyStatus.Borrowed)
+            throw new InvalidOperationException(
+                "Use Issue() to lend a copy; 'Borrowed' cannot be set directly.");
+
+        if (Status == BookCopyStatus.Borrowed)
+            throw new InvalidOperationException(
+                "Return the copy before changing its condition.");
+
+        Status = status;
     }
 }

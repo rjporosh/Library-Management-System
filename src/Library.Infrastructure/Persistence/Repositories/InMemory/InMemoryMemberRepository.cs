@@ -16,6 +16,32 @@ public sealed class InMemoryMemberRepository : IMemberRepository
         return Task.FromResult(member);
     }
 
+    public IQueryable<Member> Query() => _members.AsQueryable();
+
+    public Task<bool> ExistsByMembershipNumberAsync(
+        string membershipNumber,
+        Guid? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = _members.Any(x =>
+            string.Equals(x.MembershipNumber, membershipNumber, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || x.Id != excludingId));
+
+        return Task.FromResult(exists);
+    }
+
+    public Task<bool> ExistsByEmailAsync(
+        string email,
+        Guid? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var exists = _members.Any(x =>
+            string.Equals(x.Email, email, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || x.Id != excludingId));
+
+        return Task.FromResult(exists);
+    }
+
     public Task AddAsync(
         Member member,
         CancellationToken cancellationToken = default)
@@ -25,15 +51,37 @@ public sealed class InMemoryMemberRepository : IMemberRepository
         return Task.CompletedTask;
     }
 
+    public Task AddRangeAsync(
+        IEnumerable<Member> members,
+        CancellationToken cancellationToken = default)
+    {
+        _members.AddRange(members);
+
+        return Task.CompletedTask;
+    }
+
     public Task UpdateAsync(
         Member member,
         CancellationToken cancellationToken = default)
     {
-        // In-memory: the tracked instance is the same reference held
-        // in _members, so mutations already applied via the entity's
-        // methods (Suspend/Reactivate/Renew) are already visible.
-        // A real (EF Core/Dapper) repository will persist the change
-        // here instead - see ROADMAP Phase 6/11.
+        // In-memory: the tracked instance is the same reference held in
+        // _members, so mutations applied via the entity's methods are
+        // already visible. A real (EF Core) repository persists here.
+        var index = _members.FindIndex(x => x.Id == member.Id);
+        if (index >= 0)
+        {
+            _members[index] = member;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(
+        Member member,
+        CancellationToken cancellationToken = default)
+    {
+        _members.RemoveAll(x => x.Id == member.Id);
+
         return Task.CompletedTask;
     }
 

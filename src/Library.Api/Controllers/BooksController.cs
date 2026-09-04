@@ -1,4 +1,7 @@
+using Library.Api.Common;
+using Library.Api.Contracts;
 using Library.Application.Common.Pagination;
+using Library.Application.Common.Results;
 using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +12,20 @@ namespace Library.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class BooksController(BookService bookService) : ControllerBase
 {
+    /// <summary>Advanced multi-field search for the book catalog.</summary>
+    /// <remarks>
+    /// POST a filter set (field / operator / value(s)), an AND/OR match mode, multi-field sort and paging.
+    /// Operators: eq, neq, contains, notContains, startsWith, endsWith, gt, gte, lt, lte, in, notIn, between.
+    /// Example: filter title contains "clean" OR author contains "martin", sorted by publishedYear desc.
+    /// </remarks>
+    /// <response code="200">A page of matching books.</response>
+    /// <response code="400">A filter references an unknown field, operator or unparseable value.</response>
+    [HttpPost("search")]
+    [ProducesResponseType(typeof(PagedResult<BookResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult Search([FromBody] SearchRequestDto request) =>
+        bookService.Search(request.ToDomain()).ToActionResult(this);
+
       /// <summary>
     /// Retrieves a paginated and optionally    filtered collection of books.
     /// </summary>

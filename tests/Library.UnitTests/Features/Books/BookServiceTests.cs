@@ -373,9 +373,26 @@ var result = await service.GetAllAsync(
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-        
+
             _books.RemoveAll(x => x.Id == book.Id);
-        
+
+            return Task.CompletedTask;
+        }
+
+        public IQueryable<Book> Query() => _books.AsQueryable();
+
+        public Task<Book?> GetByIsbnAsync(string isbn, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_books.FirstOrDefault(x =>
+                string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase)));
+
+        public Task<bool> ExistsByIsbnAsync(string isbn, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(_books.Any(x =>
+                string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase)
+                && (excludingId is null || x.Id != excludingId)));
+
+        public Task AddRangeAsync(IEnumerable<Book> books, CancellationToken cancellationToken = default)
+        {
+            _books.AddRange(books);
             return Task.CompletedTask;
         }
 

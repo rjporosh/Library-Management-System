@@ -1,6 +1,7 @@
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.Books;
 using Library.Application.Features.Borrowing;
+using Library.Application.Features.Dashboard;
 using Library.Application.Features.Members;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<BookCopyService>();
         services.AddScoped<MemberService>();
         services.AddScoped<BorrowingService>();
+        services.AddScoped<DashboardService>();
 
         return services;
     }

@@ -1,6 +1,9 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Errors;
 using Library.Application.Common.Exceptions;
 using Library.Application.Common.Pagination;
+using Library.Application.Common.Results;
+using Library.Application.Common.Search;
 using Library.Application.Common.Validation;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
@@ -9,6 +12,15 @@ namespace Library.Application.Features.Books;
 
 public sealed class BookService(IBookRepository bookRepository)
 {
+    public Result<PagedResult<BookResponse>> Search(SearchRequest request)
+    {
+        var result = QueryableSearchBuilder.Apply(bookRepository.Query(), request, BookSearchMap.Fields);
+
+        return result.IsSuccess
+            ? Result.Success(result.Value!.Map(Map))
+            : Result.Failure<PagedResult<BookResponse>>(result.Errors);
+    }
+
     public async Task<PagedBookResponse> GetAllAsync(
         BookQuery query,
         CancellationToken cancellationToken = default)
@@ -66,7 +78,7 @@ public sealed class BookService(IBookRepository bookRepository)
         CreateBookRequest request,
         CancellationToken cancellationToken = default)
     {
-        Validate(request.ISBN, request.Title, request.Author, request.PublishedYear, request.Description);
+        await ValidateAsync(request.ISBN, request.Title, request.Author, request.PublishedYear, null, cancellationToken);
 
         var book = new Book(
             Guid.NewGuid(),
@@ -97,7 +109,7 @@ public sealed class BookService(IBookRepository bookRepository)
             return null;
         }
 
-        Validate(request.ISBN, request.Title, request.Author, request.PublishedYear, request.Description);
+        await ValidateAsync(request.ISBN, request.Title, request.Author, request.PublishedYear, id, cancellationToken);
 
         book.Update(
             request.ISBN,
@@ -133,9 +145,18 @@ public sealed class BookService(IBookRepository bookRepository)
         return true;
     }
 
-    private static void Validate(string? isbn, string? title, string? author, int publishedYear, string? description)
+    private async Task ValidateAsync(
+        string? isbn, string? title, string? author, int publishedYear, Guid? excludingId, CancellationToken cancellationToken)
     {
-        var errors = BookValidator.Validate(new BookCandidate(isbn, title, author, publishedYear, description));
+        var errors = new List<ApiError>(
+            BookValidator.Validate(new BookCandidate(isbn, title, author, publishedYear, null)));
+
+        if (!string.IsNullOrWhiteSpace(isbn)
+            && await bookRepository.ExistsByIsbnAsync(isbn.Trim(), excludingId, cancellationToken))
+        {
+            errors.Add(new ApiError(ErrorCodes.BookIsbnDuplicate, $"A book with ISBN '{isbn}' already exists.", "isbn"));
+        }
+
         if (errors.Count > 0)
         {
             throw new ValidationException(errors);

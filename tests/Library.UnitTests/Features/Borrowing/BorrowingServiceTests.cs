@@ -416,6 +416,21 @@ public sealed class BorrowingServiceTests
             IReadOnlyList<Member> members = member is null ? [] : [member];
             return Task.FromResult(members);
         }
+
+        public IQueryable<Member> Query() =>
+            (member is null ? Array.Empty<Member>() : [member]).AsQueryable();
+
+        public Task<bool> ExistsByMembershipNumberAsync(string membershipNumber, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task<bool> ExistsByEmailAsync(string email, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task AddRangeAsync(IEnumerable<Member> members, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task DeleteAsync(Member member, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeBookCopyRepository(BookCopy? copy = null)
@@ -456,6 +471,18 @@ public sealed class BorrowingServiceTests
         {
             return Task.CompletedTask;
         }
+
+        public IQueryable<BookCopy> Query() =>
+            (copy is null ? Array.Empty<BookCopy>() : [copy]).AsQueryable();
+
+        public Task<bool> ExistsByBarcodeAsync(string barcode, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task AddRangeAsync(IEnumerable<BookCopy> bookCopies, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task DeleteAsync(BookCopy bookCopy, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
     private sealed class FakeBorrowRecordRepository(
         BorrowRecord? initialRecord = null)
@@ -509,5 +536,22 @@ public sealed class BorrowingServiceTests
 
             return Task.FromResult(overdue);
         }
+
+        public IQueryable<BorrowRecord> Query() => Records.AsQueryable();
+
+        public Task<IReadOnlyList<BorrowRecord>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<BorrowRecord> records = [.. Records.Where(x => x.MemberId == memberId)];
+            return Task.FromResult(records);
+        }
+
+        public Task<IReadOnlyList<BorrowRecord>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<BorrowRecord> records = [.. Records];
+            return Task.FromResult(records);
+        }
+
+        public Task<bool> HasActiveBorrowForCopyAsync(Guid bookCopyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Records.Any(x => x.BookCopyId == bookCopyId && x.Status == BorrowStatus.Active));
     }
 }

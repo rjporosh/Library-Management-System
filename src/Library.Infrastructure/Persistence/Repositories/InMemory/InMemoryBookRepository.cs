@@ -50,6 +50,8 @@ public sealed class InMemoryBookRepository : IBookRepository
             ((IReadOnlyList<Book>)items, totalItems));
     }
 
+    public IQueryable<Book> Query() => _books.AsQueryable();
+
     public Task<Book?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
@@ -61,6 +63,32 @@ public sealed class InMemoryBookRepository : IBookRepository
         return Task.FromResult(book);
     }
 
+    public Task<Book?> GetByIsbnAsync(
+        string isbn,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var book = _books.FirstOrDefault(x =>
+            string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase));
+
+        return Task.FromResult(book);
+    }
+
+    public Task<bool> ExistsByIsbnAsync(
+        string isbn,
+        Guid? excludingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var exists = _books.Any(x =>
+            string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || x.Id != excludingId));
+
+        return Task.FromResult(exists);
+    }
+
     public Task AddAsync(
         Book book,
         CancellationToken cancellationToken = default)
@@ -68,6 +96,17 @@ public sealed class InMemoryBookRepository : IBookRepository
         cancellationToken.ThrowIfCancellationRequested();
 
         _books.Add(book);
+
+        return Task.CompletedTask;
+    }
+
+    public Task AddRangeAsync(
+        IEnumerable<Book> books,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        _books.AddRange(books);
 
         return Task.CompletedTask;
     }
