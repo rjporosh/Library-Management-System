@@ -14,6 +14,88 @@ and release verification.
 
 ------------------------------------------------------------------------
 
+# Release 0.3.0 --- Advanced Search, Bulk Import & MVP Frontend
+
+**Release date:** 2026-09-04\
+**Status:** Built, tested (60 tests), smoke-verified end to end\
+**Release type:** Feature (MVP completion)
+
+## Purpose
+
+Deliver the two headline outstanding features (GitLab-style advanced
+search, all-or-nothing Excel bulk import) and a production-grade
+frontend, so the system is fully demoable on the in-memory provider
+before the persistence layer is introduced.
+
+## New features
+
+- **Advanced search** on Books, Members, Book Copies and Borrow Records
+  via `POST /api/{resource}/search`: multiple `{field, operator, value}`
+  filters combined AND or OR, 13 operators (eq/neq/contains/notContains/
+  startsWith/endsWith/gt/gte/lt/lte/in/notIn/between), multi-field sort
+  (always applied after filtering), pagination. Enum/status fields are
+  matched by name ("Suspended"); an unknown field/operator/value returns
+  a precise error with the accepted values. Built on a safe hand-written
+  expression-tree builder (no dynamic-LINQ, EF-translatable).
+- **Bulk Excel import** for Books, Members and Book Copies. `POST
+  /api/{resource}/import` (multipart .xlsx); `GET /api/{resource}/import/
+  template` downloads a formatted template. All-or-nothing: file/header
+  validation, per-row field validation, formula-injection rejection,
+  in-file and database duplicate detection, then a preflight gate - if
+  any row fails, nothing is written and every error is returned together
+  with its exact Excel row, field, code, message and accepted values.
+- **Membership maintenance**: expired active members are now moved to
+  `Inactive` (new status) alongside overdue-borrower suspension.
+  `POST /api/jobs/member-maintenance/run` triggers the pass manually.
+- **Full CRUD + list/search parity** for Members and Book Copies,
+  member detail with borrowing summary/history, and book-copy condition
+  transitions (Lost/Damaged/Maintenance).
+- `GET /api/dashboard` - single-call aggregate snapshot (no N+1).
+- `GET /api/metadata/enums` / `/search-operators` for the UI.
+- **Result pattern**, stable `ErrorCodes` catalog, and shared field
+  validators used by both the CRUD endpoints and the import pipeline.
+  Validation failures return HTTP 422 with the full error list.
+- **New frontend** (React 19 + Tailwind v4): typed API client with
+  field- and row-level error mapping, SweetAlert2, a component kit
+  (status badges, sortable data table, GitLab-style advanced-search
+  builder, bulk-import modal with an error table), and rebuilt pages -
+  Dashboard (with the manual maintenance button), Books, Book Copies,
+  Members (with lifecycle actions), Member detail, Borrowing (librarian
+  search rather than UUIDs).
+
+## Changed behaviour
+
+- `BorrowingController` conflicts now return **HTTP 409** with the
+  standard `ApiErrorResponse` envelope (previously 400 + `{message}`).
+- `MemberResponse` gained `membershipExpiresAt`.
+- Enums `MemberStatus` (+`Inactive`) and `BookCopyStatus`
+  (+`Lost`/`Damaged`/`Maintenance`) - append-only.
+
+## Fixed
+
+- Four integration tests that failed after the 0.2.0 enum-as-string
+  change (the test client now deserializes enums by name).
+- The 0.2.0 backend is now actually built and tested (it never was).
+
+## Known limitations / not in 0.3.0
+
+- Persistence is still in-memory (EF Core + PostgreSQL + provider
+  abstraction + Dapper toggle is the next milestone).
+- No OpenTelemetry/Jaeger, Docker, CI/CD, or load tests yet.
+- `Book.Category`/`Publisher` and `Member.Phone`/`Address` deferred.
+- `GET /api/release-notes/current` not yet implemented.
+
+## QA checklist
+
+- [x] `dotnet build` 0 warnings / 0 errors
+- [x] `dotnet test` 60/60
+- [x] advanced search: operators, enum-by-name, unknown-field error
+- [x] bulk import: all 10 §21 acceptance scenarios
+- [x] manual maintenance job, member lifecycle transitions
+- [x] frontend build + lint clean; end-to-end browser check (0 console errors)
+
+------------------------------------------------------------------------
+
 # Release 0.2.0 --- Observability, Cron & Member Lifecycle
 
 **Release date:** 2026-09-03\

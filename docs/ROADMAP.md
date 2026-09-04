@@ -5,6 +5,29 @@ it into an enterprise-grade product.
 
 ------------------------------------------------------------------------
 
+## Progress snapshot (2026-09-04, branch `feat/enterprise-completion`)
+
+| Phase | Status |
+|---|---|
+| 1 MVP functional completion | **Done** (Books/Members/Copies/Borrowing full CRUD + search + dashboard) |
+| 2 GitLab-style multi-select search | **Done** - generic expression-tree builder, all four resources, enum-by-name |
+| 3 UX + validation + error contract | **Done** - Result pattern, ErrorCodes, 422 with full list, SweetAlert2 wired |
+| 4 Dashboard aggregates | **Done** - `GET /api/dashboard`, no N+1 |
+| 5 MVP test gate | **Passed** - 60 tests, 0 warnings, e2e browser check |
+| 9 Result pattern + central error handling | **Done** (new features); old controllers migrated opportunistically |
+| 10 Logging | file logging + correlation id done; **OpenTelemetry pending** |
+| 12 Excel bulk import | **Done** - all-or-nothing, all §21 scenarios |
+| 6 EF Core / DB foundation | **Not started** - next milestone |
+| 11 EF Core + Dapper split | Not started |
+| 13 Security & resilience | Not started (CORS only) |
+| 14 Docs (ADR/C4/SQL) | Partial (spec/roadmap/release-notes/handover) |
+| 15 Release Notes API | Not started |
+| 16 Release engineering / Docker / CI | Not started |
+
+See `docs/ai-handover.md` §3-4 for the exact next steps and commands.
+
+------------------------------------------------------------------------
+
 ## Phase 0 --- Baseline Audit
 
 ### Goals
