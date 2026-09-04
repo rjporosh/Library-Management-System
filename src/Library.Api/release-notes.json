@@ -1,0 +1,39 @@
+{
+  "version": "0.3.0",
+  "releaseDate": "2026-09-04",
+  "newFeatures": [
+    "GitLab-style advanced search on books, members, book copies and borrow records (13 operators, AND/OR, multi-field sort, enum matched by name)",
+    "All-or-nothing Excel bulk import for books, members and book copies with per-row/field errors and downloadable templates",
+    "Membership lifecycle: Inactive status, expiry, and a manual maintenance job trigger (POST /api/jobs/member-maintenance/run)",
+    "Full CRUD + list/search parity for members and book copies; member detail with borrowing summary",
+    "GET /api/dashboard aggregate snapshot (no N+1)",
+    "Result pattern + stable error-code catalog; validation failures return HTTP 422 with every error",
+    "New React + Tailwind frontend: status badges, advanced-search builder, bulk-import modal, member lifecycle controls, librarian-friendly borrowing",
+    "EF Core + PostgreSQL (primary) with configuration-only provider switching (SqlServer, Sqlite, InMemory)",
+    "OpenTelemetry traces + metrics to Jaeger; structured query logging; startup DB-down diagnostics",
+    "Dockerised stack (docker-compose: postgres + jaeger + api + web) and a GitHub Actions CI pipeline"
+  ],
+  "fixed": [
+    "Four integration tests broken by the 0.2.0 enum-as-string change",
+    "The 0.2.0 backend is now actually built and tested (it never had been)"
+  ],
+  "changedBehaviour": [
+    "BorrowingController conflicts now return HTTP 409 with the standard ApiErrorResponse envelope (was 400 + {message})",
+    "MemberResponse gained membershipExpiresAt"
+  ],
+  "qaChecklist": [
+    "dotnet build LibraryManagementSystem.slnx -> 0 warnings, 0 errors",
+    "dotnet test -> 60/60 pass",
+    "Advanced search: operators, enum-by-name matching, unknown-field error with supportedValues",
+    "Bulk import: all ten MASTER_SPECIFICATION.md section 21 acceptance scenarios",
+    "Member lifecycle transitions + manual maintenance job",
+    "docker compose up --build -> /health healthy, web proxies API, Jaeger receives traces",
+    "frontend npm run build + npm run lint clean; end-to-end browser check with 0 console errors"
+  ],
+  "knownIssues": [
+    "Database:Orm=Dapper falls back to EF Core (Dapper read stores pending)",
+    "No EF Core 10 driver for MySQL/Oracle yet (provider slots ready)",
+    "Book.Category/Publisher and Member.Phone/Address deferred",
+    "No frontend unit tests; rate limiting / RFC 7807 / localization not started"
+  ]
+}

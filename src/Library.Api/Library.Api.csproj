@@ -25,4 +25,8 @@
     <ProjectReference Include="..\Library.Infrastructure\Library.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="release-notes.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

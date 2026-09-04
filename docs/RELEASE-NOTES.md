@@ -99,13 +99,14 @@ before the persistence layer is introduced.
 - **Load tests** - `tests/Library.LoadTests` (NBomber, 3 scenarios).
 - **Docs** - `guide.md`, `docs/programmers-guide/` (12 guides), per-project
   `DEVELOPERS-GUIDE.md`, `docs/database/schema.sql`.
+- **`GET /api/release-notes/current`** - machine-readable current release
+  (served from `src/Library.Api/release-notes.json`) for SQA / release checks.
 
 ## Known limitations
 
 - `Database:Orm=Dapper` currently falls back to EF Core (Dapper read stores pending).
 - No EF Core 10 driver for MySQL/Oracle yet (provider slots + docs are ready).
 - `Book.Category`/`Publisher` and `Member.Phone`/`Address` deferred.
-- `GET /api/release-notes/current` not yet implemented.
 - No frontend unit tests; rate limiting / RFC 7807 / localization not started.
 
 ## QA checklist

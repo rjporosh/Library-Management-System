@@ -168,7 +168,7 @@ docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
 # frontend only
 cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
 
-# NEXT MILESTONE - GET /api/release-notes/current. Start here:
+# NEXT MILESTONE - (done). Next: Dapper read stores. Start here:
 #  1. add src/Library.Api/release-notes.json (version, releaseDate, features[],
 #     fixed[], qaChecklist[], knownIssues[]) as a content file (CopyToOutputDirectory).
 #  2. Features/ReleaseNotes/ReleaseNotesService.cs reads it; ReleaseNotesController
