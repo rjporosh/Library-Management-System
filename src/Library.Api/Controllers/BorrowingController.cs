@@ -1,3 +1,7 @@
+using Library.Api.Common;
+using Library.Api.Contracts;
+using Library.Application.Common.Pagination;
+using Library.Application.Common.Results;
 using Library.Application.Features.Borrowing;
 using Library.Application.Features.Borrowing.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +13,15 @@ namespace Library.Api.Controllers;
 [Route("api/borrowing")]
 public sealed class BorrowingController(BorrowingService borrowingService) : ControllerBase
 {
+    /// <summary>Advanced multi-field search for borrow records (status matched by name).</summary>
+    /// <response code="200">A page of matching borrow records.</response>
+    /// <response code="400">A filter references an unknown field/operator/value.</response>
+    [HttpPost("search")]
+    [ProducesResponseType(typeof(PagedResult<BorrowRecordResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public ActionResult Search([FromBody] SearchRequestDto request) =>
+        borrowingService.Search(request.ToDomain()).ToActionResult(this);
+
     /// <summary>
     /// Issues a book copy to a member. The member must be active (not
     /// suspended/inactive/expired) with no other active borrow, and the

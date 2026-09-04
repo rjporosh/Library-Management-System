@@ -1,4 +1,7 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Pagination;
+using Library.Application.Common.Results;
+using Library.Application.Common.Search;
 using Library.Application.Features.Borrowing.Models;
 using Library.Domain.Entities;
 
@@ -9,6 +12,16 @@ public sealed class BorrowingService(
     IBookCopyRepository bookCopyRepository,
     IBorrowRecordRepository borrowRecordRepository)
 {
+    public Result<PagedResult<BorrowRecordResponse>> Search(SearchRequest request)
+    {
+        var result = QueryableSearchBuilder.Apply(
+            borrowRecordRepository.Query(), request, BorrowSearchMap.Fields);
+
+        return result.IsSuccess
+            ? Result.Success(result.Value!.Map(Map))
+            : Result.Failure<PagedResult<BorrowRecordResponse>>(result.Errors);
+    }
+
     public async Task<BorrowRecordResponse> IssueAsync(
         IssueBookRequest request,
         CancellationToken cancellationToken = default)

@@ -1,193 +1,100 @@
 import {
-  BookOpen,
   BookMarked,
-  ChevronDown,
-  CircleUserRound,
+  BookOpen,
   LayoutDashboard,
   Library,
-  Menu,
+  Repeat,
   Users,
-  X,
-} from "lucide-react";
-import { useState } from "react";
-import "./App.css";
-import { NavLink, Route, Routes } from "react-router-dom";
-import DashboardPage from "./pages/dashboard/DashboardPage";
-import BooksPage from "./pages/books/BooksPage";
-import BookCopiesPage from "./pages/book-copies/BookCopiesPage";
-import MembersPage from "./pages/members/MembersPage";
-import BorrowingPage from "./pages/borrowing/BorrowingPage";
-import BookDetailsPage from "./pages/books/BookDetailsPage";
-import AddBookPage from "./pages/books/AddBookPage";
+} from 'lucide-react'
+import { NavLink, Route, Routes } from 'react-router-dom'
+import DashboardPage from '@/pages/DashboardPage'
+import BooksPage from '@/pages/BooksPage'
+import BookCopiesPage from '@/pages/BookCopiesPage'
+import MembersPage from '@/pages/MembersPage'
+import MemberDetailPage from '@/pages/MemberDetailPage'
+import BorrowingPage from '@/pages/BorrowingPage'
 
-const navigation = [
-  {
-    label: "Overview",
-    items: [
-      {
-        label: "Dashboard",
-        path: "/",
-        icon: LayoutDashboard,
-      },
-    ],
-  },
-  {
-    label: "Library",
-    items: [
-      {
-        label: "Books",
-        path: "/books",
-        icon: BookOpen,
-      },
-      {
-        label: "Book Copies",
-        path: "/book-copies",
-        icon: BookMarked,
-      },
-      {
-        label: "Members",
-        path: "/members",
-        icon: Users,
-      },
-      {
-        label: "Borrowing",
-        path: "/borrowing",
-        icon: Library,
-      },
-    ],
-  },
-];
+const NAV = [
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/books', label: 'Books', icon: BookOpen },
+  { to: '/book-copies', label: 'Book Copies', icon: BookMarked },
+  { to: '/members', label: 'Members', icon: Users },
+  { to: '/borrowing', label: 'Borrowing', icon: Repeat },
+]
 
-function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
+export default function App() {
   return (
-    <div className="app-shell">
-      {sidebarOpen && (
-        <button
-          className="sidebar-overlay"
-          type="button"
-          aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <aside className={`sidebar ${sidebarOpen ? "sidebar--open" : ""}`}>
-        <div className="sidebar__header">
-          <NavLink
-            to="/"
-            className="brand"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <span className="brand__icon">
-              <BookOpen size={21} strokeWidth={2.2} />
-            </span>
-
-            <span className="brand__text">
-              <strong>Libra</strong>
-              <span>Library System</span>
-            </span>
-          </NavLink>
-
-          <button
-            className="icon-button sidebar__close"
-            type="button"
-            aria-label="Close navigation"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X size={20} />
-          </button>
+    <div className="flex min-h-screen bg-slate-100">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+        <div className="flex items-center gap-2.5 px-5 py-5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white">
+            <Library size={20} />
+          </span>
+          <div className="leading-tight">
+            <p className="text-sm font-bold text-slate-900">Libra</p>
+            <p className="text-xs text-slate-400">Library System</p>
+          </div>
         </div>
-
-        <nav className="sidebar__nav">
-          {navigation.map((section) => (
-            <div className="nav-section" key={section.label}>
-              <span className="nav-section__label">{section.label}</span>
-
-              <div className="nav-section__items">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      end={item.path === "/"}
-                      className={({ isActive }) =>
-                        `nav-item ${isActive ? "nav-item--active" : ""}`
-                      }
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon size={19} strokeWidth={1.9} />
-                      <span>{item.label}</span>
-                    </NavLink>
-                  );
-                })}
-              </div>
-            </div>
+        <nav className="flex-1 space-y-1 px-3 py-2">
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  isActive
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`
+              }
+            >
+              <Icon size={18} />
+              {label}
+            </NavLink>
           ))}
         </nav>
-
-        <div className="sidebar__footer">
-          <div className="sidebar__status">
-            <span className="status-dot" />
-            <div>
-              <strong>System Online</strong>
-              <span>All services operational</span>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 px-5 py-4 text-xs text-slate-400">
+          <span className="h-2 w-2 rounded-full bg-emerald-500" />
+          System online
         </div>
       </aside>
 
-      <div className="main-shell">
-        <header className="topbar">
-          <div className="topbar__left">
-            <button
-              className="icon-button menu-button"
-              type="button"
-              aria-label="Open navigation"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={21} />
-            </button>
-
-            <div className="breadcrumb">
-              <span>Library</span>
-              <ChevronDown size={14} />
-              <strong>Management</strong>
-            </div>
-          </div>
-
-          <div className="topbar__right">
-            <div className="user-menu">
-              <div className="user-avatar">
-                <CircleUserRound size={19} />
-              </div>
-
-              <div className="user-info">
-                <strong>Library Admin</strong>
-                <span>Administrator</span>
-              </div>
-
-              <ChevronDown size={16} className="user-menu__chevron" />
-            </div>
-          </div>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-3 lg:hidden">
+          <Library size={20} className="text-brand-600" />
+          <span className="font-bold text-slate-900">Libra</span>
         </header>
 
-        <main className="page-content">
+        <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 lg:hidden">
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium ${
+                  isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-500'
+                }`
+              }
+            >
+              <Icon size={15} />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/books" element={<BooksPage />} />
-            <Route path="/books/add" element={<AddBookPage />} />
-            <Route path="/books/:id" element={<BookDetailsPage />} />
             <Route path="/book-copies" element={<BookCopiesPage />} />
             <Route path="/members" element={<MembersPage />} />
+            <Route path="/members/:id" element={<MemberDetailPage />} />
             <Route path="/borrowing" element={<BorrowingPage />} />
           </Routes>
         </main>
       </div>
     </div>
-  );
+  )
 }
-
-export default App;
