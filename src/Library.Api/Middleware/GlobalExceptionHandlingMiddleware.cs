@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 using Library.Application.Common.Errors;
+using Library.Application.Common.Exceptions;
 using Library.Application.Common.Logging;
 
 namespace Library.Api.Middleware;
@@ -58,6 +59,31 @@ public sealed class GlobalExceptionHandlingMiddleware(
             : null;
 
         var (statusCode, errorCode, isExpected) = Classify(ex);
+
+        // Validation failures carry a full list of field errors - surface
+        // every one of them together (spec §6.3), not just ex.Message.
+        if (ex is ValidationException validation)
+        {
+            await logWriter.WriteAsync(new AppLogEntry
+            {
+                Category = LogCategory.Exception,
+                CorrelationId = correlationId,
+                Message = ex.Message,
+                ExceptionType = ex.GetType().FullName,
+                RootCause = string.Join("; ", validation.Errors.Select(e => $"{e.Field}:{e.ErrorCode}")),
+                PossibleBestFix = "Correct the listed fields and resubmit; each error names the field, rule and accepted values."
+            });
+
+            if (!context.Response.HasStarted)
+            {
+                context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync(JsonSerializer.Serialize(
+                    new ApiErrorResponse(false, validation.Errors, correlationId)));
+            }
+
+            return;
+        }
 
         var stackTrace = new StackTrace(ex, fNeedFileInfo: true);
         var frame = stackTrace.GetFrame(0);
@@ -120,6 +146,7 @@ public sealed class GlobalExceptionHandlingMiddleware(
 
     private static (int StatusCode, string ErrorCode, bool IsExpected) Classify(Exception ex) => ex switch
     {
+        ValidationException => ((int)HttpStatusCode.UnprocessableEntity, "VALIDATION_ERROR", true),
         KeyNotFoundException => ((int)HttpStatusCode.NotFound, "NOT_FOUND", true),
         ArgumentException => ((int)HttpStatusCode.BadRequest, "VALIDATION_ERROR", true),
         InvalidOperationException => ((int)HttpStatusCode.Conflict, "CONFLICT", true),

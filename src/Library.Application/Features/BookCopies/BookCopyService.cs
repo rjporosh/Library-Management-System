@@ -1,4 +1,6 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Errors;
+using Library.Application.Common.Exceptions;
 using Library.Application.Features.BookCopies.Models;
 using Library.Domain.Entities;
 
@@ -34,6 +36,22 @@ public sealed class BookCopyService( IBookCopyRepository bookCopyRepository)
         CreateBookCopyRequest request,
         CancellationToken cancellationToken = default)
     {
+        var errors = new List<ApiError>();
+        if (request.BookId == Guid.Empty)
+        {
+            errors.Add(new ApiError(ErrorCodes.BookCopyBookRequired, "A book must be specified.", "bookId", Required: true));
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Barcode))
+        {
+            errors.Add(new ApiError(ErrorCodes.BookCopyBarcodeRequired, "Barcode is required.", "barcode", Required: true));
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new ValidationException(errors);
+        }
+
         var copy = new BookCopy(
             Guid.NewGuid(),
             request.BookId,

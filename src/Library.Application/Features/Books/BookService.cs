@@ -1,5 +1,7 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Exceptions;
 using Library.Application.Common.Pagination;
+using Library.Application.Common.Validation;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
 
@@ -64,6 +66,8 @@ public sealed class BookService(IBookRepository bookRepository)
         CreateBookRequest request,
         CancellationToken cancellationToken = default)
     {
+        Validate(request.ISBN, request.Title, request.Author, request.PublishedYear, request.Description);
+
         var book = new Book(
             Guid.NewGuid(),
             request.ISBN,
@@ -92,6 +96,8 @@ public sealed class BookService(IBookRepository bookRepository)
         {
             return null;
         }
+
+        Validate(request.ISBN, request.Title, request.Author, request.PublishedYear, request.Description);
 
         book.Update(
             request.ISBN,
@@ -125,6 +131,15 @@ public sealed class BookService(IBookRepository bookRepository)
             cancellationToken);
 
         return true;
+    }
+
+    private static void Validate(string? isbn, string? title, string? author, int publishedYear, string? description)
+    {
+        var errors = BookValidator.Validate(new BookCandidate(isbn, title, author, publishedYear, description));
+        if (errors.Count > 0)
+        {
+            throw new ValidationException(errors);
+        }
     }
 
     private static BookResponse Map(Book book)

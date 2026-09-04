@@ -1,4 +1,6 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Exceptions;
+using Library.Application.Common.Validation;
 using Library.Application.Features.Members.Models;
 using Library.Domain.Entities;
 
@@ -21,6 +23,13 @@ public sealed class MemberService(IMemberRepository memberRepository)
         CreateMemberRequest request,
         CancellationToken cancellationToken = default)
     {
+        var errors = MemberValidator.Validate(
+            new MemberCandidate(request.MembershipNumber, request.Name, request.Email));
+        if (errors.Count > 0)
+        {
+            throw new ValidationException(errors);
+        }
+
         var member = new Member(
             Guid.NewGuid(),
             request.MembershipNumber,
