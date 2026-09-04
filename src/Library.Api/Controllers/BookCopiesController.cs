@@ -4,6 +4,7 @@ using Library.Application.Common.Pagination;
 using Library.Application.Common.Results;
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.BookCopies.Models;
+using Library.Application.Features.BulkImport;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -11,8 +12,33 @@ namespace Library.Api.Controllers;
 /// <summary>Physical book-copy management: registration, condition changes, search.</summary>
 [ApiController]
 [Route("api/book-copies")]
-public sealed class BookCopiesController(BookCopyService bookCopyService) : ControllerBase
+public sealed class BookCopiesController(BookCopyService bookCopyService, BulkImportService bulkImport) : ControllerBase
 {
+    /// <summary>Downloads the Excel template for bulk copy import (by book ISBN + barcode).</summary>
+    /// <response code="200">The .xlsx template.</response>
+    [HttpGet("import/template")]
+    [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    public IActionResult DownloadImportTemplate()
+    {
+        var (content, fileName) = bulkImport.BookCopyTemplate();
+        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    /// <summary>Bulk-imports book copies from an .xlsx file (all-or-nothing; every referenced ISBN must exist).</summary>
+    /// <response code="200"><c>{ success, imported }</c>.</response>
+    /// <response code="422">Nothing imported - the body lists every error.</response>
+    [HttpPost("import")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkImportErrorResponse), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult> Import(IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        var outcome = await bulkImport.ImportBookCopiesAsync(stream, file.Length, cancellationToken);
+        return outcome.ToActionResult(this);
+    }
+
     /// <summary>Advanced multi-field search for book copies (status matched by name).</summary>
     /// <response code="200">A page of matching copies.</response>
     /// <response code="400">A filter references an unknown field/operator/value.</response>

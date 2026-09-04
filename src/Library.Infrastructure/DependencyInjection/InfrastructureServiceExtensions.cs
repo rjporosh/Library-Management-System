@@ -1,6 +1,8 @@
 using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Logging;
 using Library.Application.Common.Options;
+using Library.Application.Features.BulkImport;
+using Library.Infrastructure.BulkImport;
 using Library.Infrastructure.Logging;
 using Library.Infrastructure.Persistence.Repositories.InMemory;
 using Library.Infrastructure.Persistence.Repositories.InMemory.Seed;
@@ -28,6 +30,12 @@ public static class InfrastructureServiceExtensions
 
         services.AddSingleton<IAppLogWriter>(
             new FileAppLogWriter(settings, contentRootPath));
+
+        // Bulk import (Excel). Options can be overridden from configuration
+        // in the composition root; a safe default is registered here.
+        services.AddSingleton(new BulkImportOptions());
+        services.AddSingleton<IWorkbookReader, ClosedXmlWorkbookReader>();
+        services.AddSingleton<IImportTemplateWriter, ClosedXmlTemplateWriter>();
 
         // Register concrete repositories.
         // Seeder needs concrete types because Seed() is

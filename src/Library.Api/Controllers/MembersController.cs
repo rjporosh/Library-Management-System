@@ -2,6 +2,7 @@ using Library.Api.Common;
 using Library.Api.Contracts;
 using Library.Application.Common.Pagination;
 using Library.Application.Common.Results;
+using Library.Application.Features.BulkImport;
 using Library.Application.Features.Members;
 using Library.Application.Features.Members.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -11,8 +12,33 @@ namespace Library.Api.Controllers;
 /// <summary>Library member management: enrolment, profile edits, search and lifecycle.</summary>
 [ApiController]
 [Route("api/members")]
-public sealed class MembersController(MemberService memberService) : ControllerBase
+public sealed class MembersController(MemberService memberService, BulkImportService bulkImport) : ControllerBase
 {
+    /// <summary>Downloads the Excel template for bulk member import.</summary>
+    /// <response code="200">The .xlsx template.</response>
+    [HttpGet("import/template")]
+    [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
+    public IActionResult DownloadImportTemplate()
+    {
+        var (content, fileName) = bulkImport.MemberTemplate();
+        return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+
+    /// <summary>Bulk-imports members from an .xlsx file (all-or-nothing; every error returned with its row).</summary>
+    /// <response code="200"><c>{ success, imported }</c>.</response>
+    /// <response code="422">Nothing imported - the body lists every error.</response>
+    [HttpPost("import")]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(BulkImportErrorResponse), StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult> Import(IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        var outcome = await bulkImport.ImportMembersAsync(stream, file.Length, cancellationToken);
+        return outcome.ToActionResult(this);
+    }
+
     /// <summary>Advanced multi-field search for members.</summary>
     /// <remarks>
     /// POST a filter set (field / operator / value), an AND/OR match mode, multi-field sort and paging.

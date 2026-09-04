@@ -1,6 +1,8 @@
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.Books;
 using Library.Application.Features.Borrowing;
+using Library.Application.Features.BulkImport;
+using Library.Application.Features.BulkImport.Definitions;
 using Library.Application.Features.Dashboard;
 using Library.Application.Features.Members;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +19,13 @@ public static class ApplicationServiceExtensions
         services.AddScoped<MemberService>();
         services.AddScoped<BorrowingService>();
         services.AddScoped<DashboardService>();
+
+        // Bulk import
+        services.AddScoped<BookImportDefinition>();
+        services.AddScoped<MemberImportDefinition>();
+        services.AddScoped<BookCopyImportDefinition>();
+        services.AddScoped<BulkImportPipeline>();
+        services.AddScoped<BulkImportService>();
 
         return services;
     }
