@@ -1,6 +1,6 @@
-using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Logging;
 using Library.Application.Common.Options;
+using Library.Application.Features.Members;
 
 namespace Library.Api.BackgroundJobs;
 
@@ -74,48 +74,25 @@ public sealed class MemberSuspensionCronJob(
         try
         {
             using var scope = scopeFactory.CreateScope();
-            var borrowRepository = scope.ServiceProvider
-                .GetRequiredService<IBorrowRecordRepository>();
-            var memberRepository = scope.ServiceProvider
-                .GetRequiredService<IMemberRepository>();
-
-            var now = DateTime.UtcNow;
+            var maintenance = scope.ServiceProvider
+                .GetRequiredService<MemberMaintenanceService>();
 
             await using var queryScope = QueryLogScope.Begin(
                 logWriter,
                 methodName: nameof(RunOnceAsync),
                 generatedQuery:
-                    "SCAN borrow_records WHERE status = Active AND due_at < @now",
+                    "SCAN borrow_records WHERE status = Active AND due_at < @now; " +
+                    "SCAN members WHERE status = Active AND membership_expires_at < @now",
                 cronJobName: JobName,
                 enabled: settings.EnableQueryLogging);
 
-            var overdueBorrows = await borrowRepository.GetOverdueActiveAsync(
-                now,
-                cancellationToken);
-
-            var suspendedCount = 0;
-
-            foreach (var borrowMemberId in overdueBorrows
-                         .Select(b => b.MemberId)
-                         .Distinct())
-            {
-                var member = await memberRepository.GetByIdAsync(
-                    borrowMemberId,
-                    cancellationToken);
-
-                if (member is null || !member.CanBorrow())
-                    continue; // already suspended or not found
-
-                member.Suspend();
-                await memberRepository.UpdateAsync(member, cancellationToken);
-                suspendedCount++;
-            }
+            var result = await maintenance.RunAsync(cancellationToken);
 
             logger.LogInformation(
-                "{JobName} completed: {OverdueCount} overdue borrow(s) found, {SuspendedCount} member(s) suspended.",
+                "{JobName} completed: {Suspended} member(s) suspended (overdue), {Deactivated} member(s) marked Inactive (expired).",
                 JobName,
-                overdueBorrows.Count,
-                suspendedCount);
+                result.OverdueSuspended,
+                result.ExpiredDeactivated);
         }
         catch (Exception ex)
         {

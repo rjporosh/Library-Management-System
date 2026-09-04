@@ -4,137 +4,43 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
 
+/// <summary>Issue and return workflows.</summary>
 [ApiController]
 [Route("api/borrowing")]
-public sealed class BorrowingController(
-    BorrowingService borrowingService) : ControllerBase
+public sealed class BorrowingController(BorrowingService borrowingService) : ControllerBase
 {
     /// <summary>
-    /// Issues a book copy to a library member.
+    /// Issues a book copy to a member. The member must be active (not
+    /// suspended/inactive/expired) with no other active borrow, and the
+    /// copy must be available.
     /// </summary>
-    /// <remarks>
-    /// The member must be active and the selected book copy must be available.
-    /// A new borrow record is created and the book copy is marked as borrowed.
-    /// </remarks>
-    /// <param name="request">
-    /// The member, book copy and due date information required to issue the book.
-    /// </param>
-    /// <response code="201">
-    /// The book was successfully issued and a borrow record was created.
-    /// </response>
-    /// <response code="400">
-    /// The request is invalid, the member cannot borrow, or the due date is invalid.
-    /// </response>
-    /// <response code="404">
-    /// The specified member or book copy was not found.
-    /// </response>
+    /// <response code="201">The book was issued and a borrow record created.</response>
+    /// <response code="404">The member or copy was not found.</response>
+    /// <response code="409">The member cannot borrow, already has an active borrow, or the copy is unavailable.</response>
+    /// <response code="422">The request payload is invalid (e.g. a past due date).</response>
     [HttpPost("issue")]
-    [ProducesResponseType(
-        StatusCodes.Status201Created,
-        Type = typeof(BorrowRecordResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<BorrowRecordResponse>> Issue(
-        IssueBookRequest request,
-        CancellationToken cancellationToken)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<BorrowRecordResponse>> Issue(IssueBookRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var record = await borrowingService.IssueAsync(
-                request,
-                cancellationToken);
-
-            return StatusCode(
-                StatusCodes.Status201Created,
-                record);
-        }
-        catch (KeyNotFoundException exception)
-        {
-            return NotFound(new
-            {
-                message = exception.Message
-            });
-        }
-        catch (ArgumentException exception)
-        {
-            return BadRequest(new
-            {
-                message = exception.Message
-            });
-        }
-        catch (InvalidOperationException exception)
-        {
-            return BadRequest(new
-            {
-                message = exception.Message
-            });
-        }
+        var record = await borrowingService.IssueAsync(request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, record);
     }
 
-    /// <summary>
-    /// Returns a borrowed book copy to the library.
-    /// </summary>
-    /// <remarks>
-    /// Marks the borrow record as returned and makes the associated
-    /// book copy available again.
-    /// </remarks>
-    /// <param name="borrowRecordId">
-    /// The unique identifier of the borrow record.
-    /// </param>
-    /// <param name="request">
-    /// Optional return information. If no return time is supplied,
-    /// the current UTC time is used.
-    /// </param>
-    /// <response code="200">
-    /// The book was successfully returned.
-    /// </response>
-    /// <response code="400">
-    /// The book cannot be returned because the borrow record or book copy
-    /// is not in a valid state.
-    /// </response>
-    /// <response code="404">
-    /// The specified borrow record or book copy was not found.
-    /// </response>
+    /// <summary>Returns a borrowed copy and closes its borrow record.</summary>
+    /// <response code="200">The book was returned.</response>
+    /// <response code="404">The borrow record or copy was not found.</response>
+    /// <response code="409">The borrow record or copy is not in a returnable state.</response>
     [HttpPost("{borrowRecordId:guid}/return")]
-    [ProducesResponseType(
-        StatusCodes.Status200OK,
-        Type = typeof(BorrowRecordResponse))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<BorrowRecordResponse>> Return(
-        Guid borrowRecordId,
-        ReturnBookRequest request,
-        CancellationToken cancellationToken)
+        Guid borrowRecordId, ReturnBookRequest request, CancellationToken cancellationToken)
     {
-        try
-        {
-            var record = await borrowingService.ReturnAsync(
-                borrowRecordId,
-                request,
-                cancellationToken);
-
-            return Ok(record);
-        }
-        catch (KeyNotFoundException exception)
-        {
-            return NotFound(new
-            {
-                message = exception.Message
-            });
-        }
-        catch (ArgumentException exception)
-        {
-            return BadRequest(new
-            {
-                message = exception.Message
-            });
-        }
-        catch (InvalidOperationException exception)
-        {
-            return BadRequest(new
-            {
-                message = exception.Message
-            });
-        }
+        var record = await borrowingService.ReturnAsync(borrowRecordId, request, cancellationToken);
+        return Ok(record);
     }
 }

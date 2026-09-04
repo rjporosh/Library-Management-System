@@ -17,6 +17,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<BookService>();
         services.AddScoped<BookCopyService>();
         services.AddScoped<MemberService>();
+        services.AddScoped<MemberMaintenanceService>();
         services.AddScoped<BorrowingService>();
         services.AddScoped<DashboardService>();
 
