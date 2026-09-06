@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+              <xsd:attribute name="xml:space" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Error.Unexpected" xml:space="preserve"><value>Something went wrong. Please contact service provider MD. IKRAMUL ISLAM SIDDIQUE POROSH, phone: +8801672896992 for details.</value></data>
+  <data name="Error.NotFound" xml:space="preserve"><value>The requested item was not found.</value></data>
+  <data name="Error.Validation" xml:space="preserve"><value>One or more fields are invalid. See the errors list.</value></data>
+  <data name="Error.Conflict" xml:space="preserve"><value>The action conflicts with the current state of the data.</value></data>
+  <data name="Error.RateLimited" xml:space="preserve"><value>Too many requests. Please slow down and try again shortly.</value></data>
+  <data name="Error.FeatureDisabled" xml:space="preserve"><value>This feature is currently disabled.</value></data>
+  <data name="Error.DatabaseUnavailable" xml:space="preserve"><value>The service is temporarily unavailable. Please try again later.</value></data>
+
+  <data name="BOOK_ISBN_REQUIRED" xml:space="preserve"><value>ISBN is required.</value></data>
+  <data name="BOOK_ISBN_INVALID" xml:space="preserve"><value>ISBN must be a valid 10- or 13-digit number.</value></data>
+  <data name="BOOK_TITLE_REQUIRED" xml:space="preserve"><value>Title is required.</value></data>
+  <data name="BOOK_AUTHOR_REQUIRED" xml:space="preserve"><value>Author is required.</value></data>
+  <data name="BOOK_CATEGORY_REQUIRED" xml:space="preserve"><value>Category is required.</value></data>
+  <data name="BOOK_PUBLISHER_REQUIRED" xml:space="preserve"><value>Publisher is required.</value></data>
+  <data name="BOOK_YEAR_INVALID" xml:space="preserve"><value>Published year is not valid.</value></data>
+  <data name="BOOK_ISBN_DUPLICATE" xml:space="preserve"><value>A book with this ISBN already exists.</value></data>
+  <data name="BOOK_HAS_BORROWED_COPIES" xml:space="preserve"><value>This book has copies that are currently borrowed and cannot be deleted.</value></data>
+  <data name="BOOK_HAS_DEPENDENT_COPIES" xml:space="preserve"><value>This book has copies attached. Confirm to delete the book and all its copies.</value></data>
+  <data name="MEMBER_NUMBER_REQUIRED" xml:space="preserve"><value>Membership number is required.</value></data>
+  <data name="MEMBER_NAME_REQUIRED" xml:space="preserve"><value>Name is required.</value></data>
+  <data name="MEMBER_EMAIL_REQUIRED" xml:space="preserve"><value>Email is required.</value></data>
+  <data name="MEMBER_EMAIL_INVALID" xml:space="preserve"><value>Email address is not valid.</value></data>
+  <data name="MEMBER_PHONE_REQUIRED" xml:space="preserve"><value>Phone is required.</value></data>
+  <data name="MEMBER_ADDRESS_REQUIRED" xml:space="preserve"><value>Address is required.</value></data>
+  <data name="MEMBER_NUMBER_DUPLICATE" xml:space="preserve"><value>This membership number is already in use.</value></data>
+  <data name="MEMBER_EMAIL_DUPLICATE" xml:space="preserve"><value>This email address is already in use.</value></data>
+  <data name="MEMBER_HAS_ACTIVE_BORROW" xml:space="preserve"><value>This member has an active borrowed book.</value></data>
+  <data name="MEMBER_HAS_BORROW_HISTORY" xml:space="preserve"><value>This member has borrow history. Confirm to delete the member and that history.</value></data>
+  <data name="BOOKCOPY_BARCODE_REQUIRED" xml:space="preserve"><value>Barcode is required.</value></data>
+  <data name="BOOKCOPY_BARCODE_DUPLICATE" xml:space="preserve"><value>This barcode is already in use.</value></data>
+  <data name="BOOKCOPY_BORROWED" xml:space="preserve"><value>This copy is currently borrowed.</value></data>
+</root>

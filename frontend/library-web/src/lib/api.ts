@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import Swal from 'sweetalert2'
+import { localizeError } from './i18n'
 import type { ApiErrorResponse, NormalisedError } from './types'
 
 const SUPPORT_MESSAGE =
@@ -14,6 +15,20 @@ export const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Send the chosen UI language on every request (query param + header) so the
+// API returns localized messages.
+http.interceptors.request.use((config) => {
+  let lang = 'en'
+  try {
+    lang = localStorage.getItem('lms.lang') === 'bn' ? 'bn' : 'en'
+  } catch {
+    /* ignore */
+  }
+  config.params = { ...(config.params as object), culture: lang }
+  config.headers.set('Accept-Language', lang)
+  return config
+})
+
 /** Turns any axios failure into a predictable, field-aware shape. */
 export function normaliseError(error: unknown): NormalisedError {
   if (axios.isAxiosError(error)) {
@@ -23,15 +38,19 @@ export function normaliseError(error: unknown): NormalisedError {
 
     if (data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
       const body = data as ApiErrorResponse
+      const errors = body.errors.map((e) => ({
+        ...e,
+        errorMessage: localizeError(e.errorCode, e.errorMessage),
+      }))
       const fieldErrors: Record<string, string> = {}
-      for (const e of body.errors) {
+      for (const e of errors) {
         if (e.field && e.line == null) fieldErrors[e.field] = e.errorMessage
       }
       return {
-        message: body.errors[0]?.errorMessage ?? 'Request failed.',
-        errors: body.errors,
+        message: errors[0]?.errorMessage ?? 'Request failed.',
+        errors,
         fieldErrors,
-        rowErrors: body.errors.filter((e) => e.line != null),
+        rowErrors: errors.filter((e) => e.line != null),
         traceId: body.correlationId,
         status,
       }

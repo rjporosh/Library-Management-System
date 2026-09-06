@@ -1,8 +1,11 @@
 using System.Text.Json.Serialization;
 using Library.Api.BackgroundJobs;
 using Library.Api.HealthChecks;
+using Library.Api.Infrastructure;
 using Library.Api.Middleware;
 using Library.Api.Observability;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Library.Application.Common.Options;
 using Library.Application.DependencyInjection;
 using Library.Infrastructure.DependencyInjection;
@@ -44,6 +47,23 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.Converters.Add(
             new JsonStringEnumConverter()));
 
+// RFC 7807 problem details for framework-generated errors (bare NotFound(),
+// model-binding 400s). Our middleware emits the same shape for thrown/Result
+// errors; this keeps the two consistent (adds success/correlationId).
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        ctx.ProblemDetails.Extensions["success"] = false;
+        if (ctx.HttpContext.Items.TryGetValue(CorrelationIdMiddleware.ItemKey, out var id))
+        {
+            ctx.ProblemDetails.Extensions["correlationId"] = id?.ToString();
+        }
+
+        ctx.ProblemDetails.Extensions.TryAdd("errors", Array.Empty<object>());
+    };
+});
+
 // OpenAPI
 builder.Services.AddOpenApi();
 
@@ -55,6 +75,37 @@ builder.Services.AddHealthChecks()
 
 // Midnight member-suspension job (toggle: FeatureFlags.EnableMemberSuspensionCronJob).
 builder.Services.AddHostedService<MemberSuspensionCronJob>();
+
+// Localization: English (default) + Bangla, extensible by dropping in a new
+// Resources/SharedResources.<culture>.resx (no code change). Culture comes from
+// the Accept-Language header, a ?culture= / ?lang= query parameter, or falls
+// back to English.
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supported = new[] { new System.Globalization.CultureInfo("en"), new System.Globalization.CultureInfo("bn") };
+    options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en");
+    options.SupportedCultures = supported;
+    options.SupportedUICultures = supported;
+    options.ApplyCurrentCultureToResponseHeaders = true;
+    options.RequestCultureProviders.Insert(0, new Microsoft.AspNetCore.Localization.QueryStringRequestCultureProvider
+    {
+        QueryStringKey = "culture",
+        UIQueryStringKey = "lang",
+    });
+});
+
+// Trust forwarded headers from the reverse proxy / load balancer so
+// rate limiting and logging see the real client IP.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
+// Per-client rate limiting (toggle: FeatureFlags.EnableRateLimiting).
+builder.Services.AddLibraryRateLimiting(observabilitySettings);
 
 // Add CORS policy for frontend
 builder.Services.AddCors(options =>
@@ -87,8 +138,16 @@ catch (Exception ex)
 
 // Correlation id must run before exception handling so every log entry
 // (and every error response) can be tagged with it.
+app.UseForwardedHeaders();
+app.UseRequestLocalization();
+
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
+if (observabilitySettings.EnableRateLimiting)
+{
+    app.UseRateLimiter();
+}
 
 // Use the CORS policy
 app.UseCors("Frontend");
@@ -109,7 +168,11 @@ if (app.Environment.IsDevelopment())
 }
 
 // Controllers
-app.MapControllers();
+var controllers = app.MapControllers();
+if (observabilitySettings.EnableRateLimiting)
+{
+    controllers.RequireRateLimiting(RateLimitingExtensions.PolicyName);
+}
 
 // Health check endpoint (toggle: FeatureFlags.EnableHealthCheckEndpoint).
 // Returns a simple, structured JSON body so it can be consumed by

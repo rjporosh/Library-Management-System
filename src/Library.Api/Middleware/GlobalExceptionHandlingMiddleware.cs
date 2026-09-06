@@ -32,11 +32,9 @@ public sealed class GlobalExceptionHandlingMiddleware(
     RequestDelegate next,
     IAppLogWriter logWriter,
     Microsoft.Extensions.Hosting.IHostEnvironment environment,
+    Microsoft.Extensions.Localization.IStringLocalizer<Library.Api.SharedResources> messages,
     ILogger<GlobalExceptionHandlingMiddleware> logger)
 {
-    private const string SupportMessage =
-        "Something went wrong. Please contact service provider " +
-        "MD. IKRAMUL ISLAM SIDDIQUE POROSH, phone: +8801672896992 for details.";
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -76,10 +74,8 @@ public sealed class GlobalExceptionHandlingMiddleware(
 
             if (!context.Response.HasStarted)
             {
-                context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
-                context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync(JsonSerializer.Serialize(
-                    new ApiErrorResponse(false, validation.Errors, correlationId)));
+                await WriteProblemAsync(context, StatusCodes.Status422UnprocessableEntity,
+                    "Unprocessable Entity", messages["Error.Validation"], validation.Errors, correlationId, ex);
             }
 
             return;
@@ -114,35 +110,68 @@ public sealed class GlobalExceptionHandlingMiddleware(
         if (context.Response.HasStarted)
             return;
 
-        context.Response.StatusCode = statusCode;
-        context.Response.ContentType = "application/json";
+        var localizedGeneric = statusCode switch
+        {
+            (int)HttpStatusCode.NotFound => messages["Error.NotFound"],
+            (int)HttpStatusCode.Conflict => messages["Error.Conflict"],
+            (int)HttpStatusCode.BadRequest => messages["Error.Validation"],
+            _ => messages["Error.Unexpected"],
+        };
 
-        var responseMessage = isExpected
-            ? ex.Message
-            : SupportMessage;
+        var clientMessage = isExpected ? ex.Message : localizedGeneric.Value;
+        var title = statusCode switch
+        {
+            (int)HttpStatusCode.NotFound => "Not Found",
+            (int)HttpStatusCode.Conflict => "Conflict",
+            (int)HttpStatusCode.BadRequest => "Bad Request",
+            (int)HttpStatusCode.UnprocessableEntity => "Unprocessable Entity",
+            _ => "Internal Server Error",
+        };
 
-        var payload = ApiErrorResponse.Single(
-            new ApiError(errorCode, responseMessage),
-            correlationId);
-
-        // In Development, include diagnostic detail to speed up
-        // debugging without ever exposing it outside Development.
-        var json = environment.IsDevelopment()
-            ? JsonSerializer.Serialize(new
-            {
-                payload.Success,
-                payload.Errors,
-                payload.CorrelationId,
-                debug = new
-                {
-                    exceptionType = ex.GetType().FullName,
-                    ex.StackTrace
-                }
-            })
-            : JsonSerializer.Serialize(payload);
-
-        await context.Response.WriteAsync(json);
+        await WriteProblemAsync(context, statusCode, title, clientMessage,
+            [new ApiError(errorCode, clientMessage)], correlationId, ex);
     }
+
+    /// <summary>Writes an RFC 7807 problem+json body with our envelope fields as extension members.</summary>
+    private async Task WriteProblemAsync(
+        HttpContext context, int status, string title, string detail,
+        IReadOnlyList<ApiError> errors, string? correlationId, Exception ex)
+    {
+        context.Response.StatusCode = status;
+        context.Response.ContentType = "application/problem+json";
+
+        object body = new
+        {
+            type = $"https://httpstatuses.com/{status}",
+            title,
+            status,
+            detail,
+            instance = context.Request.Path.Value,
+            success = false,
+            errors,
+            correlationId,
+        };
+
+        if (environment.IsDevelopment())
+        {
+            body = new
+            {
+                type = $"https://httpstatuses.com/{status}",
+                title,
+                status,
+                detail,
+                instance = context.Request.Path.Value,
+                success = false,
+                errors,
+                correlationId,
+                debug = new { exceptionType = ex.GetType().FullName, ex.StackTrace },
+            };
+        }
+
+        await context.Response.WriteAsync(JsonSerializer.Serialize(body, WebJson));
+    }
+
+    private static readonly JsonSerializerOptions WebJson = new(JsonSerializerDefaults.Web);
 
     private static (int StatusCode, string ErrorCode, bool IsExpected) Classify(Exception ex) => ex switch
     {

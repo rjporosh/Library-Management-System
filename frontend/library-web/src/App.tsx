@@ -7,6 +7,7 @@ import {
   Users,
 } from 'lucide-react'
 import { NavLink, Route, Routes } from 'react-router-dom'
+import { getLang, setLang } from '@/lib/i18n'
 import DashboardPage from '@/pages/DashboardPage'
 import BooksPage from '@/pages/BooksPage'
 import BookCopiesPage from '@/pages/BookCopiesPage'
@@ -54,9 +55,25 @@ export default function App() {
             </NavLink>
           ))}
         </nav>
-        <div className="flex items-center gap-2 px-5 py-4 text-xs text-slate-400">
-          <span className="h-2 w-2 rounded-full bg-emerald-500" />
-          System online
+        <div className="space-y-2 px-5 py-4">
+          <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs font-medium">
+            {(['en', 'bn'] as const).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => l !== getLang() && setLang(l)}
+                className={`flex-1 rounded-md px-2 py-1 ${
+                  getLang() === l ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                {l === 'en' ? 'English' : 'বাংলা'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            System online
+          </div>
         </div>
       </aside>
 

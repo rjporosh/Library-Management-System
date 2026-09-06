@@ -34,4 +34,12 @@ public sealed class ObservabilitySettings
 
     /// <summary>Reported as the OpenTelemetry <c>service.name</c> resource attribute.</summary>
     public string ServiceName { get; set; } = "Library.Api";
+
+    /// <summary>Per-client fixed-window rate limiting (keyed by forwarded/remote IP).</summary>
+    public bool EnableRateLimiting { get; set; } = true;
+
+    /// <summary>Requests allowed per <see cref="RateLimitWindowSeconds"/> per client.</summary>
+    public int RateLimitPermitPerWindow { get; set; } = 120;
+
+    public int RateLimitWindowSeconds { get; set; } = 60;
 }

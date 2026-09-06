@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="Error.Unexpected" xml:space="preserve"><value>কিছু একটা সমস্যা হয়েছে। বিস্তারিত জানতে সেবা প্রদানকারী MD. IKRAMUL ISLAM SIDDIQUE POROSH, ফোন: +8801672896992 এ যোগাযোগ করুন।</value></data>
+  <data name="Error.NotFound" xml:space="preserve"><value>অনুরোধ করা তথ্যটি পাওয়া যায়নি।</value></data>
+  <data name="Error.Validation" xml:space="preserve"><value>এক বা একাধিক ঘর সঠিক নয়। ত্রুটির তালিকা দেখুন।</value></data>
+  <data name="Error.Conflict" xml:space="preserve"><value>বর্তমান অবস্থার সাথে কাজটি সাংঘর্ষিক।</value></data>
+  <data name="Error.RateLimited" xml:space="preserve"><value>অনেক বেশি অনুরোধ। কিছুক্ষণ পরে আবার চেষ্টা করুন।</value></data>
+  <data name="Error.FeatureDisabled" xml:space="preserve"><value>এই সুবিধাটি এখন বন্ধ আছে।</value></data>
+  <data name="Error.DatabaseUnavailable" xml:space="preserve"><value>সেবাটি সাময়িকভাবে বন্ধ আছে। পরে আবার চেষ্টা করুন।</value></data>
+
+  <data name="BOOK_ISBN_REQUIRED" xml:space="preserve"><value>ISBN আবশ্যক।</value></data>
+  <data name="BOOK_ISBN_INVALID" xml:space="preserve"><value>ISBN অবশ্যই ১০ বা ১৩ সংখ্যার সঠিক নম্বর হতে হবে।</value></data>
+  <data name="BOOK_TITLE_REQUIRED" xml:space="preserve"><value>শিরোনাম আবশ্যক।</value></data>
+  <data name="BOOK_AUTHOR_REQUIRED" xml:space="preserve"><value>লেখকের নাম আবশ্যক।</value></data>
+  <data name="BOOK_CATEGORY_REQUIRED" xml:space="preserve"><value>বিভাগ আবশ্যক।</value></data>
+  <data name="BOOK_PUBLISHER_REQUIRED" xml:space="preserve"><value>প্রকাশক আবশ্যক।</value></data>
+  <data name="BOOK_YEAR_INVALID" xml:space="preserve"><value>প্রকাশের সাল সঠিক নয়।</value></data>
+  <data name="BOOK_ISBN_DUPLICATE" xml:space="preserve"><value>এই ISBN সহ একটি বই ইতিমধ্যে আছে।</value></data>
+  <data name="BOOK_HAS_BORROWED_COPIES" xml:space="preserve"><value>এই বইয়ের কিছু কপি ধার দেওয়া আছে, তাই মোছা যাবে না।</value></data>
+  <data name="BOOK_HAS_DEPENDENT_COPIES" xml:space="preserve"><value>এই বইয়ের সাথে কপি যুক্ত আছে। বই ও সব কপি মুছতে নিশ্চিত করুন।</value></data>
+  <data name="MEMBER_NUMBER_REQUIRED" xml:space="preserve"><value>সদস্য নম্বর আবশ্যক।</value></data>
+  <data name="MEMBER_NAME_REQUIRED" xml:space="preserve"><value>নাম আবশ্যক।</value></data>
+  <data name="MEMBER_EMAIL_REQUIRED" xml:space="preserve"><value>ইমেইল আবশ্যক।</value></data>
+  <data name="MEMBER_EMAIL_INVALID" xml:space="preserve"><value>ইমেইল ঠিকানাটি সঠিক নয়।</value></data>
+  <data name="MEMBER_PHONE_REQUIRED" xml:space="preserve"><value>ফোন নম্বর আবশ্যক।</value></data>
+  <data name="MEMBER_ADDRESS_REQUIRED" xml:space="preserve"><value>ঠিকানা আবশ্যক।</value></data>
+  <data name="MEMBER_NUMBER_DUPLICATE" xml:space="preserve"><value>এই সদস্য নম্বরটি ইতিমধ্যে ব্যবহৃত হচ্ছে।</value></data>
+  <data name="MEMBER_EMAIL_DUPLICATE" xml:space="preserve"><value>এই ইমেইল ঠিকানাটি ইতিমধ্যে ব্যবহৃত হচ্ছে।</value></data>
+  <data name="MEMBER_HAS_ACTIVE_BORROW" xml:space="preserve"><value>এই সদস্যের কাছে একটি ধার নেওয়া বই আছে।</value></data>
+  <data name="MEMBER_HAS_BORROW_HISTORY" xml:space="preserve"><value>এই সদস্যের ধারের ইতিহাস আছে। সদস্য ও ইতিহাস মুছতে নিশ্চিত করুন।</value></data>
+  <data name="BOOKCOPY_BARCODE_REQUIRED" xml:space="preserve"><value>বারকোড আবশ্যক।</value></data>
+  <data name="BOOKCOPY_BARCODE_DUPLICATE" xml:space="preserve"><value>এই বারকোডটি ইতিমধ্যে ব্যবহৃত হচ্ছে।</value></data>
+  <data name="BOOKCOPY_BORROWED" xml:space="preserve"><value>এই কপিটি এখন ধার দেওয়া আছে।</value></data>
+</root>
