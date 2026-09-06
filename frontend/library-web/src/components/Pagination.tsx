@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Paged } from '@/lib/types'
+import { t } from '@/lib/i18n'
 import { Button } from './ui'
 
 export function Pagination<T>({
@@ -16,8 +17,11 @@ export function Pagination<T>({
   return (
     <div className="mt-3 flex items-center justify-between text-sm text-slate-500">
       <span>
-        {data.totalItems} result{data.totalItems === 1 ? '' : 's'} · page {page} of{' '}
-        {Math.max(data.totalPages, 1)}
+        {t('common.results', {
+          count: data.totalItems,
+          page,
+          pages: Math.max(data.totalPages, 1),
+        })}
       </span>
       <div className="flex gap-2">
         <Button
@@ -26,7 +30,7 @@ export function Pagination<T>({
           disabled={!data.hasPreviousPage}
           onClick={() => onPageChange(page - 1)}
         >
-          <ChevronLeft size={14} /> Prev
+          <ChevronLeft size={14} /> {t('common.prev')}
         </Button>
         <Button
           variant="secondary"
@@ -34,7 +38,7 @@ export function Pagination<T>({
           disabled={!data.hasNextPage}
           onClick={() => onPageChange(page + 1)}
         >
-          Next <ChevronRight size={14} />
+          {t('common.next')} <ChevronRight size={14} />
         </Button>
       </div>
     </div>

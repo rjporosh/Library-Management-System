@@ -14,16 +14,17 @@ import {
   TextInput,
 } from '@/components/ui'
 import { cascadeDelete, normaliseError, toastSuccess } from '@/lib/api'
+import { t } from '@/lib/i18n'
 import type { Book } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
 const FIELDS: FieldDef[] = [
-  { name: 'title', label: 'Title', type: 'text' },
-  { name: 'author', label: 'Author', type: 'text' },
-  { name: 'isbn', label: 'ISBN', type: 'text' },
-  { name: 'category', label: 'Category', type: 'text' },
-  { name: 'publisher', label: 'Publisher', type: 'text' },
-  { name: 'publishedYear', label: 'Published year', type: 'number' },
+  { name: 'title', label: t('books.col.title'), type: 'text' },
+  { name: 'author', label: t('books.col.author'), type: 'text' },
+  { name: 'isbn', label: t('books.col.isbn'), type: 'text' },
+  { name: 'category', label: t('books.col.category'), type: 'text' },
+  { name: 'publisher', label: t('books.col.publisher'), type: 'text' },
+  { name: 'publishedYear', label: t('books.field.publishedYear'), type: 'number' },
 ]
 
 interface FormValues {
@@ -97,7 +98,7 @@ export default function BooksPage() {
         : booksApi.create(body)
     },
     onSuccess: () => {
-      toastSuccess(editing ? 'Book updated' : 'Book added')
+      toastSuccess(editing ? t('books.updated') : t('books.added'))
       setEditing(undefined)
       void qc.invalidateQueries({ queryKey: ['books'] })
     },
@@ -111,7 +112,7 @@ export default function BooksPage() {
   const askDelete = async (book: Book) => {
     const deleted = await cascadeDelete(
       (force) => booksApi.remove(book.id, force),
-      { title: `Delete “${book.title}”?`, entity: 'book' },
+      { title: t('books.deleteTitle', { title: book.title }), entity: t('common.entity.book') },
     )
     if (deleted) {
       void qc.invalidateQueries({ queryKey: ['books'] })
@@ -123,7 +124,7 @@ export default function BooksPage() {
   const columns: Column<Book>[] = [
     {
       key: 'title',
-      header: 'Title',
+      header: t('books.col.title'),
       sortable: true,
       render: (b) => (
         <div>
@@ -132,10 +133,10 @@ export default function BooksPage() {
         </div>
       ),
     },
-    { key: 'isbn', header: 'ISBN', sortable: true, render: (b) => <span className="font-mono text-xs">{b.isbn}</span> },
+    { key: 'isbn', header: t('books.col.isbn'), sortable: true, render: (b) => <span className="font-mono text-xs">{b.isbn}</span> },
     {
       key: 'category',
-      header: 'Category',
+      header: t('books.col.category'),
       sortable: true,
       render: (b) => (
         <div className="text-sm">
@@ -144,7 +145,7 @@ export default function BooksPage() {
         </div>
       ),
     },
-    { key: 'publishedYear', header: 'Year', sortable: true, render: (b) => b.publishedYear },
+    { key: 'publishedYear', header: t('books.col.year'), sortable: true, render: (b) => b.publishedYear },
     {
       key: 'actions',
       header: '',
@@ -165,15 +166,15 @@ export default function BooksPage() {
   return (
     <>
       <PageHeader
-        title="Books"
-        subtitle="Catalogue titles"
+        title={t('books.title')}
+        subtitle={t('books.subtitle')}
         actions={
           <>
             <Button variant="secondary" onClick={() => setImportOpen(true)}>
-              <Upload size={16} /> Bulk import
+              <Upload size={16} /> {t('common.bulkImport')}
             </Button>
             <Button onClick={openCreate}>
-              <Plus size={16} /> Add book
+              <Plus size={16} /> {t('books.add')}
             </Button>
           </>
         }
@@ -189,8 +190,8 @@ export default function BooksPage() {
           loading={query.isLoading}
           error={errorMessage}
           onRetry={() => void query.refetch()}
-          emptyTitle="No books found"
-          emptyHint="Adjust your filters or add a new book."
+          emptyTitle={t('books.emptyTitle')}
+          emptyHint={t('books.emptyHint')}
           sort={state.sort}
           onSortChange={toggleSort}
         />
@@ -200,7 +201,7 @@ export default function BooksPage() {
       <BulkImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        title="Bulk import books"
+        title={t('books.importTitle')}
         templateUrl={booksApi.importTemplateUrl}
         onImport={booksApi.import}
         onDone={() => void qc.invalidateQueries({ queryKey: ['books'] })}
@@ -209,7 +210,7 @@ export default function BooksPage() {
       <Modal
         open={editing !== undefined}
         onClose={() => setEditing(undefined)}
-        title={editing ? 'Edit book' : 'Add book'}
+        title={editing ? t('books.edit') : t('books.add')}
       >
         <form
           className="space-y-3"
@@ -223,21 +224,21 @@ export default function BooksPage() {
               {formError}
             </div>
           )}
-          <FormField label="ISBN" error={fieldErrors.isbn}>
+          <FormField label={t('books.col.isbn')} error={fieldErrors.isbn}>
             <TextInput
               value={form.isbn}
               invalid={!!fieldErrors.isbn}
               onChange={(e) => setForm({ ...form, isbn: e.target.value })}
             />
           </FormField>
-          <FormField label="Title" error={fieldErrors.title}>
+          <FormField label={t('books.col.title')} error={fieldErrors.title}>
             <TextInput
               value={form.title}
               invalid={!!fieldErrors.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
           </FormField>
-          <FormField label="Author" error={fieldErrors.author}>
+          <FormField label={t('books.col.author')} error={fieldErrors.author}>
             <TextInput
               value={form.author}
               invalid={!!fieldErrors.author}
@@ -245,14 +246,14 @@ export default function BooksPage() {
             />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Category" error={fieldErrors.category}>
+            <FormField label={t('books.col.category')} error={fieldErrors.category}>
               <TextInput
                 value={form.category}
                 invalid={!!fieldErrors.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
               />
             </FormField>
-            <FormField label="Publisher" error={fieldErrors.publisher}>
+            <FormField label={t('books.col.publisher')} error={fieldErrors.publisher}>
               <TextInput
                 value={form.publisher}
                 invalid={!!fieldErrors.publisher}
@@ -260,7 +261,7 @@ export default function BooksPage() {
               />
             </FormField>
           </div>
-          <FormField label="Published year" error={fieldErrors.publishedYear}>
+          <FormField label={t('books.field.publishedYear')} error={fieldErrors.publishedYear}>
             <TextInput
               type="number"
               value={form.publishedYear}
@@ -268,7 +269,7 @@ export default function BooksPage() {
               onChange={(e) => setForm({ ...form, publishedYear: e.target.value })}
             />
           </FormField>
-          <FormField label="Description" hint="Optional">
+          <FormField label={t('books.field.description')} hint={t('common.optional')}>
             <TextInput
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -276,10 +277,10 @@ export default function BooksPage() {
           </FormField>
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={() => setEditing(undefined)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : editing ? 'Save changes' : 'Add book'}
+              {save.isPending ? t('common.saving') : editing ? t('common.saveChanges') : t('books.add')}
             </Button>
           </div>
         </form>

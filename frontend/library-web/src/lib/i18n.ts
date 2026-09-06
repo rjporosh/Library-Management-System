@@ -1,4 +1,5 @@
 import { http } from './api'
+import { dictionaries, type MessageKey } from './locales'
 
 export type Lang = 'en' | 'bn'
 
@@ -19,11 +20,33 @@ export function setLang(lang: Lang) {
   } catch {
     /* ignore */
   }
-  // full reload so every query refetches with the new culture
+  // full reload so every query refetches with the new culture and every
+  // component re-renders with the new dictionary
   window.location.reload()
 }
 
-/** errorCode -> localized message, for the current language. Loaded once. */
+/**
+ * Translate a UI string key for the active language. Falls back to English,
+ * then to the key itself. `vars` fills `{name}` placeholders.
+ */
+export function t(key: MessageKey, vars?: Record<string, string | number>): string {
+  const lang = getLang()
+  const template = dictionaries[lang][key] ?? dictionaries.en[key] ?? key
+  if (!vars) return template
+  return template.replace(/\{(\w+)\}/g, (_, name: string) =>
+    name in vars ? String(vars[name]) : `{${name}}`,
+  )
+}
+
+/** Localized label for a status enum value coming from the API (Active, Lost, …). */
+export function tStatus(status: string): string {
+  const key = `status.${status}` as MessageKey
+  const lang = getLang()
+  return dictionaries[lang][key] ?? dictionaries.en[key] ?? status
+}
+
+// --- API error-code catalogue (server-provided, per culture) ------------
+
 let messageCache: Record<string, string> = {}
 
 export async function loadMessages(): Promise<void> {

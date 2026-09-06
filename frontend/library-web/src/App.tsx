@@ -7,7 +7,8 @@ import {
   Users,
 } from 'lucide-react'
 import { NavLink, Route, Routes } from 'react-router-dom'
-import { getLang, setLang } from '@/lib/i18n'
+import { getLang, setLang, t } from '@/lib/i18n'
+import type { MessageKey } from '@/lib/locales'
 import DashboardPage from '@/pages/DashboardPage'
 import BooksPage from '@/pages/BooksPage'
 import BookCopiesPage from '@/pages/BookCopiesPage'
@@ -15,12 +16,12 @@ import MembersPage from '@/pages/MembersPage'
 import MemberDetailPage from '@/pages/MemberDetailPage'
 import BorrowingPage from '@/pages/BorrowingPage'
 
-const NAV = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/books', label: 'Books', icon: BookOpen },
-  { to: '/book-copies', label: 'Book Copies', icon: BookMarked },
-  { to: '/members', label: 'Members', icon: Users },
-  { to: '/borrowing', label: 'Borrowing', icon: Repeat },
+const NAV: { to: string; labelKey: MessageKey; icon: typeof BookOpen; end?: boolean }[] = [
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  { to: '/books', labelKey: 'nav.books', icon: BookOpen },
+  { to: '/book-copies', labelKey: 'nav.copies', icon: BookMarked },
+  { to: '/members', labelKey: 'nav.members', icon: Users },
+  { to: '/borrowing', labelKey: 'nav.borrowing', icon: Repeat },
 ]
 
 export default function App() {
@@ -32,12 +33,12 @@ export default function App() {
             <Library size={20} />
           </span>
           <div className="leading-tight">
-            <p className="text-sm font-bold text-slate-900">Libra</p>
-            <p className="text-xs text-slate-400">Library System</p>
+            <p className="text-sm font-bold text-slate-900">{t('app.name')}</p>
+            <p className="text-xs text-slate-400">{t('app.tagline')}</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-2">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {NAV.map(({ to, labelKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -51,7 +52,7 @@ export default function App() {
               }
             >
               <Icon size={18} />
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>
@@ -72,7 +73,7 @@ export default function App() {
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            System online
+            {t('app.online')}
           </div>
         </div>
       </aside>
@@ -80,11 +81,11 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-3 lg:hidden">
           <Library size={20} className="text-brand-600" />
-          <span className="font-bold text-slate-900">Libra</span>
+          <span className="font-bold text-slate-900">{t('app.name')}</span>
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 lg:hidden">
-          {NAV.map(({ to, label, icon: Icon, end }) => (
+          {NAV.map(({ to, labelKey, icon: Icon, end }) => (
             <NavLink
               key={to}
               to={to}
@@ -96,7 +97,7 @@ export default function App() {
               }
             >
               <Icon size={15} />
-              {label}
+              {t(labelKey)}
             </NavLink>
           ))}
         </nav>

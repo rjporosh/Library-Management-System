@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import type { FilterOperator, SearchRequest, SortSpec } from './types'
 
 export type FieldType = 'text' | 'enum' | 'number' | 'date'
@@ -27,16 +28,16 @@ export interface SearchState {
 
 export const OPERATORS: Record<FieldType, { value: FilterOperator; label: string }[]> = {
   text: [
-    { value: 'contains', label: 'contains' },
-    { value: 'notContains', label: 'does not contain' },
-    { value: 'eq', label: 'is' },
-    { value: 'neq', label: 'is not' },
-    { value: 'startsWith', label: 'starts with' },
-    { value: 'endsWith', label: 'ends with' },
+    { value: 'contains', label: t('op.contains') },
+    { value: 'notContains', label: t('op.notContains') },
+    { value: 'eq', label: t('op.is') },
+    { value: 'neq', label: t('op.isNot') },
+    { value: 'startsWith', label: t('op.startsWith') },
+    { value: 'endsWith', label: t('op.endsWith') },
   ],
   enum: [
-    { value: 'eq', label: 'is' },
-    { value: 'neq', label: 'is not' },
+    { value: 'eq', label: t('op.is') },
+    { value: 'neq', label: t('op.isNot') },
   ],
   number: [
     { value: 'eq', label: '=' },
@@ -47,9 +48,9 @@ export const OPERATORS: Record<FieldType, { value: FilterOperator; label: string
     { value: 'lte', label: '≤' },
   ],
   date: [
-    { value: 'eq', label: 'on' },
-    { value: 'gt', label: 'after' },
-    { value: 'lt', label: 'before' },
+    { value: 'eq', label: t('op.on') },
+    { value: 'gt', label: t('op.after') },
+    { value: 'lt', label: t('op.before') },
   ],
 }
 

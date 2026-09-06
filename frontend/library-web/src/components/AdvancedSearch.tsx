@@ -7,6 +7,7 @@ import {
   type SearchState,
 } from '@/lib/search'
 import type { FilterOperator, SortSpec } from '@/lib/types'
+import { t } from '@/lib/i18n'
 import { Button, Select, TextInput } from './ui'
 
 export type { FieldDef, SearchState } from '@/lib/search'
@@ -75,7 +76,7 @@ export function AdvancedSearch({
           />
           <TextInput
             className="pl-9"
-            placeholder="Quick search…"
+            placeholder={t('search.quick')}
             value={state.quick}
             onChange={(e) => patch({ quick: e.target.value })}
           />
@@ -86,21 +87,21 @@ export function AdvancedSearch({
           onClick={() => setOpen((o) => !o)}
         >
           <SlidersHorizontal size={14} />
-          Filters{state.filters.length ? ` (${state.filters.length})` : ''}
+          {t('search.filters')}{state.filters.length ? ` (${state.filters.length})` : ''}
         </Button>
       </div>
 
       {open && (
         <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
           <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span>Match</span>
+            <span>{t('search.match')}</span>
             <Select
               className="w-auto py-1 text-xs"
               value={state.match}
               onChange={(e) => patch({ match: e.target.value as 'all' | 'any' })}
             >
-              <option value="all">ALL filters (AND)</option>
-              <option value="any">ANY filter (OR)</option>
+              <option value="all">{t('search.matchAll')}</option>
+              <option value="any">{t('search.matchAny')}</option>
             </Select>
           </div>
 
@@ -146,7 +147,7 @@ export function AdvancedSearch({
                     value={row.value}
                     onChange={(e) => updateFilter(row.id, { value: e.target.value })}
                   >
-                    <option value="">— pick —</option>
+                    <option value="">{t('search.pick')}</option>
                     {def.options?.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -180,17 +181,17 @@ export function AdvancedSearch({
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <Button variant="ghost" size="sm" onClick={addFilter}>
-              <Plus size={14} /> Add filter
+              <Plus size={14} /> {t('search.addFilter')}
             </Button>
             {state.filters.length > 0 && (
               <Button variant="ghost" size="sm" onClick={() => patch({ filters: [] })}>
-                Clear all
+                {t('search.clearAll')}
               </Button>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2 text-xs text-slate-500">
-            <span>Sort by</span>
+            <span>{t('search.sortBy')}</span>
             {fields.map((f) => {
               const s = state.sort.find((x) => x.field === f.name)
               return (

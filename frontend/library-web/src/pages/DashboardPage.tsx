@@ -11,6 +11,7 @@ import type { ReactNode } from 'react'
 import { dashboardApi, jobsApi } from '@/api'
 import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
+import { t, tStatus } from '@/lib/i18n'
 import { Badge, Button, Card, PageHeader, Spinner, ErrorState } from '@/components/ui'
 
 export default function DashboardPage() {
@@ -24,7 +25,10 @@ export default function DashboardPage() {
     mutationFn: jobsApi.runMemberMaintenance,
     onSuccess: (r) => {
       toastSuccess(
-        `Maintenance done · ${r.overdueSuspended} suspended, ${r.expiredDeactivated} set inactive`,
+        t('dash.jobDone', {
+          suspended: r.overdueSuspended,
+          inactive: r.expiredDeactivated,
+        }),
       )
       void qc.invalidateQueries({ queryKey: ['dashboard'] })
       void qc.invalidateQueries({ queryKey: ['members'] })
@@ -34,9 +38,9 @@ export default function DashboardPage() {
 
   const triggerJob = async () => {
     const ok = await confirmAction({
-      title: 'Run membership maintenance now?',
-      text: 'Suspends members with an overdue book and marks expired memberships inactive.',
-      confirmText: 'Run now',
+      title: t('dash.confirmTitle'),
+      text: t('dash.confirmText'),
+      confirmText: t('dash.confirmRun'),
     })
     if (ok) runJob.mutate()
   }
@@ -44,12 +48,12 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        subtitle="Live library figures"
+        title={t('dash.title')}
+        subtitle={t('dash.subtitle')}
         actions={
           <Button onClick={triggerJob} disabled={runJob.isPending}>
             <PlayCircle size={16} />
-            {runJob.isPending ? 'Running…' : 'Run membership maintenance'}
+            {runJob.isPending ? t('dash.runningJob') : t('dash.runJob')}
           </Button>
         }
       />
@@ -57,28 +61,35 @@ export default function DashboardPage() {
       {isLoading ? (
         <Spinner />
       ) : isError || !data ? (
-        <ErrorState message="Could not load the dashboard." onRetry={() => void refetch()} />
+        <ErrorState message={t('dash.loadError')} onRetry={() => void refetch()} />
       ) : (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat icon={<BookOpen size={18} />} label="Books" value={data.totalBooks} />
+            <Stat icon={<BookOpen size={18} />} label={t('dash.books')} value={data.totalBooks} />
             <Stat
               icon={<Layers size={18} />}
-              label="Copies available"
+              label={t('dash.copiesAvailable')}
               value={`${data.availableCopies} / ${data.totalCopies}`}
-              hint={`${data.borrowedCopies} borrowed · ${data.outOfServiceCopies} out of service`}
+              hint={t('dash.copiesHint', {
+                borrowed: data.borrowedCopies,
+                outOfService: data.outOfServiceCopies,
+              })}
             />
             <Stat
               icon={<Users size={18} />}
-              label="Members"
+              label={t('dash.members')}
               value={data.totalMembers}
-              hint={`${data.activeMembers} active · ${data.suspendedMembers} suspended · ${data.inactiveMembers} inactive`}
+              hint={t('dash.membersHint', {
+                active: data.activeMembers,
+                suspended: data.suspendedMembers,
+                inactive: data.inactiveMembers,
+              })}
             />
             <Stat
               icon={<AlertTriangle size={18} />}
-              label="Overdue borrows"
+              label={t('dash.overdue')}
               value={data.overdueBorrows}
-              hint={`${data.activeBorrows} active borrows`}
+              hint={t('dash.overdueHint', { active: data.activeBorrows })}
               tone={data.overdueBorrows > 0 ? 'red' : undefined}
             />
           </div>
@@ -86,11 +97,11 @@ export default function DashboardPage() {
           <div className="grid gap-4 lg:grid-cols-3">
             <Card className="lg:col-span-2">
               <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
-                Recent borrowing activity
+                {t('dash.recentActivity')}
               </div>
               <div className="divide-y divide-slate-100">
                 {data.recentActivity.length === 0 ? (
-                  <p className="px-5 py-6 text-sm text-slate-400">No borrowing activity yet.</p>
+                  <p className="px-5 py-6 text-sm text-slate-400">{t('dash.noActivity')}</p>
                 ) : (
                   data.recentActivity.map((a) => (
                     <div
@@ -101,9 +112,11 @@ export default function DashboardPage() {
                         {a.bookCopyId.slice(0, 8)}
                       </span>
                       <span className="text-slate-600">
-                        borrowed {formatDateTime(a.borrowedAt)}
+                        {t('dash.borrowedOn', { date: formatDateTime(a.borrowedAt) })}
                       </span>
-                      <Badge tone={a.status === 'Active' ? 'blue' : 'slate'}>{a.status}</Badge>
+                      <Badge tone={a.status === 'Active' ? 'blue' : 'slate'}>
+                        {tStatus(a.status)}
+                      </Badge>
                     </div>
                   ))
                 )}
@@ -112,15 +125,15 @@ export default function DashboardPage() {
 
             <Card>
               <div className="border-b border-slate-100 px-5 py-3 text-sm font-semibold text-slate-700">
-                Membership health
+                {t('dash.membershipHealth')}
               </div>
               <div className="space-y-3 px-5 py-4 text-sm">
-                <Row label="Expiring within 30 days" value={data.membersExpiringSoon} warn />
-                <Row label="Suspended" value={data.suspendedMembers} />
-                <Row label="Inactive" value={data.inactiveMembers} />
+                <Row label={t('dash.expiring30')} value={data.membersExpiringSoon} warn />
+                <Row label={t('dash.suspended')} value={data.suspendedMembers} />
+                <Row label={t('dash.inactive')} value={data.inactiveMembers} />
                 <p className="flex items-center gap-1.5 pt-1 text-xs text-slate-400">
                   <CalendarClock size={13} />
-                  The nightly job runs at 00:00; use the button above to run it now.
+                  {t('dash.nightlyNote')}
                 </p>
               </div>
             </Card>

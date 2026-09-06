@@ -16,16 +16,17 @@ import {
   TextInput,
 } from '@/components/ui'
 import { cascadeDelete, normaliseError, toastError, toastSuccess } from '@/lib/api'
+import { t, tStatus } from '@/lib/i18n'
 import type { BookCopy } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
 const STATUSES = ['Available', 'Lost', 'Damaged', 'Maintenance']
 
 const FIELDS: FieldDef[] = [
-  { name: 'barcode', label: 'Barcode', type: 'text' },
+  { name: 'barcode', label: t('copies.col.barcode'), type: 'text' },
   {
     name: 'status',
-    label: 'Status',
+    label: t('copies.col.status'),
     type: 'enum',
     options: ['Available', 'Borrowed', 'Lost', 'Damaged', 'Maintenance'],
   },
@@ -55,7 +56,7 @@ export default function BookCopiesPage() {
   const create = useMutation({
     mutationFn: () => copiesApi.create({ bookId, barcode: barcode.trim() }),
     onSuccess: () => {
-      toastSuccess('Copy registered')
+      toastSuccess(t('copies.registered'))
       setAddOpen(false)
       setBookId('')
       setBarcode('')
@@ -72,7 +73,7 @@ export default function BookCopiesPage() {
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       copiesApi.changeStatus(id, status),
     onSuccess: () => {
-      toastSuccess('Status updated')
+      toastSuccess(t('copies.statusUpdated'))
       void qc.invalidateQueries({ queryKey: ['copies'] })
     },
     onError: (e) => toastError(normaliseError(e).message),
@@ -81,7 +82,7 @@ export default function BookCopiesPage() {
   const askDelete = async (c: BookCopy) => {
     const deleted = await cascadeDelete(
       (force) => copiesApi.remove(c.id, force),
-      { title: `Delete copy ${c.barcode}?`, entity: 'book copy' },
+      { title: t('copies.deleteTitle', { barcode: c.barcode }), entity: t('common.entity.copy') },
     )
     if (deleted) {
       void qc.invalidateQueries({ queryKey: ['copies'] })
@@ -92,12 +93,12 @@ export default function BookCopiesPage() {
   const columns: Column<BookCopy>[] = [
     {
       key: 'barcode',
-      header: 'Barcode',
+      header: t('copies.col.barcode'),
       sortable: true,
       render: (c) => <span className="font-mono text-sm font-medium text-slate-800">{c.barcode}</span>,
     },
-    { key: 'status', header: 'Status', sortable: true, render: (c) => <StatusPill status={c.status} /> },
-    { key: 'bookId', header: 'Book', render: (c) => <span className="font-mono text-xs text-slate-400">{c.bookId.slice(0, 8)}</span> },
+    { key: 'status', header: t('copies.col.status'), sortable: true, render: (c) => <StatusPill status={c.status} /> },
+    { key: 'bookId', header: t('copies.col.book'), render: (c) => <span className="font-mono text-xs text-slate-400">{c.bookId.slice(0, 8)}</span> },
     {
       key: 'actions',
       header: '',
@@ -113,7 +114,7 @@ export default function BookCopiesPage() {
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {tStatus(s)}
                 </option>
               ))}
             </Select>
@@ -129,15 +130,15 @@ export default function BookCopiesPage() {
   return (
     <>
       <PageHeader
-        title="Book Copies"
-        subtitle="Physical inventory"
+        title={t('copies.title')}
+        subtitle={t('copies.subtitle')}
         actions={
           <>
             <Button variant="secondary" onClick={() => setImportOpen(true)}>
-              <Upload size={16} /> Bulk import
+              <Upload size={16} /> {t('common.bulkImport')}
             </Button>
             <Button onClick={() => { setAddOpen(true); setFieldErrors({}); setFormError(null) }}>
-              <Plus size={16} /> Register copy
+              <Plus size={16} /> {t('copies.register')}
             </Button>
           </>
         }
@@ -152,7 +153,7 @@ export default function BookCopiesPage() {
           loading={query.isLoading}
           error={errorMessage}
           onRetry={() => void query.refetch()}
-          emptyTitle="No copies found"
+          emptyTitle={t('copies.emptyTitle')}
           sort={state.sort}
           onSortChange={toggleSort}
         />
@@ -162,13 +163,13 @@ export default function BookCopiesPage() {
       <BulkImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        title="Bulk import book copies"
+        title={t('copies.importTitle')}
         templateUrl={copiesApi.importTemplateUrl}
         onImport={copiesApi.import}
         onDone={() => void qc.invalidateQueries({ queryKey: ['copies'] })}
       />
 
-      <Modal open={addOpen} onClose={() => setAddOpen(false)} title="Register book copy">
+      <Modal open={addOpen} onClose={() => setAddOpen(false)} title={t('copies.registerTitle')}>
         <form
           className="space-y-3"
           onSubmit={(e) => {
@@ -181,9 +182,9 @@ export default function BookCopiesPage() {
               {formError}
             </div>
           )}
-          <FormField label="Book" error={fieldErrors.bookId}>
+          <FormField label={t('copies.field.book')} error={fieldErrors.bookId}>
             <Select value={bookId} onChange={(e) => setBookId(e.target.value)}>
-              <option value="">— select a book —</option>
+              <option value="">{t('copies.selectBook')}</option>
               {books.data?.items.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.title} — {b.author}
@@ -191,7 +192,7 @@ export default function BookCopiesPage() {
               ))}
             </Select>
           </FormField>
-          <FormField label="Barcode" error={fieldErrors.barcode}>
+          <FormField label={t('copies.field.barcode')} error={fieldErrors.barcode}>
             <TextInput
               value={barcode}
               invalid={!!fieldErrors.barcode}
@@ -200,10 +201,10 @@ export default function BookCopiesPage() {
           </FormField>
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={() => setAddOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={create.isPending || !bookId}>
-              {create.isPending ? 'Saving…' : 'Register'}
+              {create.isPending ? t('common.saving') : t('copies.doRegister')}
             </Button>
           </div>
         </form>

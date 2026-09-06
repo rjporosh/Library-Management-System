@@ -8,6 +8,7 @@ import type {
 } from 'react'
 import { useEffect } from 'react'
 import { statusTone, type BadgeTone } from '@/lib/format'
+import { t, tStatus } from '@/lib/i18n'
 
 // --- Badge --------------------------------------------------------------
 
@@ -51,7 +52,7 @@ export function Badge({
 
 /** A status value rendered as a coloured pill using the shared tone map. */
 export function StatusPill({ status }: { status: string }) {
-  return <Badge tone={statusTone(status)}>{status}</Badge>
+  return <Badge tone={statusTone(status)}>{tStatus(status)}</Badge>
 }
 
 // --- Button -----------------------------------------------------------
@@ -135,7 +136,7 @@ export function Spinner({ label }: { label?: string }) {
   return (
     <div className="flex items-center justify-center gap-3 py-12 text-sm text-slate-500">
       <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand-600" />
-      {label ?? 'Loading…'}
+      {label ?? t('common.loading')}
     </div>
   )
 }
@@ -164,7 +165,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <p className="max-w-md text-sm font-medium text-rose-700">{message}</p>
       {onRetry && (
         <Button variant="secondary" size="sm" onClick={onRetry}>
-          Try again
+          {t('common.tryAgain')}
         </Button>
       )}
     </div>

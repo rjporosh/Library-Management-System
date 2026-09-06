@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import Swal from 'sweetalert2'
-import { localizeError } from './i18n'
+import { localizeError, t } from './i18n'
 import type { ApiErrorResponse, NormalisedError } from './types'
 
 const SUPPORT_MESSAGE =
@@ -47,7 +47,7 @@ export function normaliseError(error: unknown): NormalisedError {
         if (e.field && e.line == null) fieldErrors[e.field] = e.errorMessage
       }
       return {
-        message: errors[0]?.errorMessage ?? 'Request failed.',
+        message: errors[0]?.errorMessage ?? t('common.requestFailed'),
         errors,
         fieldErrors,
         rowErrors: errors.filter((e) => e.line != null),
@@ -74,7 +74,7 @@ http.interceptors.response.use(
   (error: unknown) => {
     const n = normaliseError(error)
     if (n.status && n.status >= 500) {
-      void Swal.fire({ icon: 'error', title: 'Unexpected error', text: n.message })
+      void Swal.fire({ icon: 'error', title: t('common.unexpectedError'), text: n.message })
     }
     return Promise.reject(error)
   },
@@ -109,7 +109,7 @@ export async function confirmAction(options: {
     title: options.title,
     text: options.text,
     showCancelButton: true,
-    confirmButtonText: options.confirmText ?? 'Confirm',
+    confirmButtonText: options.confirmText ?? t('common.confirm'),
     confirmButtonColor: options.danger ? '#dc2626' : '#4f46e5',
     reverseButtons: true,
   })
@@ -131,39 +131,39 @@ export async function cascadeDelete(
 ): Promise<boolean> {
   const confirmed = await confirmAction({
     title: opts.title,
-    text: `The ${opts.entity} will be soft-deleted (recoverable). Continue?`,
+    text: t('delete.confirmText', { entity: opts.entity }),
     danger: true,
-    confirmText: 'Delete',
+    confirmText: t('delete.confirmButton'),
   })
   if (!confirmed) return false
 
   try {
     await run(false)
-    toastSuccess(`${opts.entity[0].toUpperCase() + opts.entity.slice(1)} deleted`)
+    toastSuccess(t('delete.done', { entity: opts.entity }))
     return true
   } catch (err) {
     const n = normaliseError(err)
     const code = n.errors[0]?.errorCode ?? ''
 
     if (/_HAS_BORROWED_COPIES$|_HAS_ACTIVE_BORROW$/.test(code)) {
-      await Swal.fire({ icon: 'error', title: 'Cannot delete', text: n.message })
+      await Swal.fire({ icon: 'error', title: t('delete.blockedTitle'), text: n.message })
       return false
     }
 
     if (/_HAS_DEPENDENT_COPIES$|_HAS_BORROW_HISTORY$/.test(code)) {
       const go = await Swal.fire({
         icon: 'warning',
-        title: 'Dependent data exists',
+        title: t('delete.dependentTitle'),
         text: n.message,
         showCancelButton: true,
-        confirmButtonText: 'Delete everything',
+        confirmButtonText: t('delete.dependentConfirm'),
         confirmButtonColor: '#dc2626',
         reverseButtons: true,
       })
       if (!go.isConfirmed) return false
       try {
         await run(true)
-        toastSuccess(`${opts.entity[0].toUpperCase() + opts.entity.slice(1)} and related data deleted`)
+        toastSuccess(t('delete.doneCascade', { entity: opts.entity }))
         return true
       } catch (err2) {
         toastError(normaliseError(err2).message)

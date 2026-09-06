@@ -14,6 +14,7 @@ import {
 } from '@/components/ui'
 import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDate, formatDateTime, relativeExpiry } from '@/lib/format'
+import { t, tStatus } from '@/lib/i18n'
 import type { MemberBorrowSummary } from '@/lib/types'
 
 type Action = 'suspend' | 'reactivate' | 'renew' | 'deactivate'
@@ -30,7 +31,7 @@ export default function MemberDetailPage() {
   const lifecycle = useMutation({
     mutationFn: (action: Action) => membersApi.lifecycle(id, action),
     onSuccess: (m) => {
-      toastSuccess(`${m.name} is now ${m.status}`)
+      toastSuccess(t('members.nowStatus', { name: m.name, status: tStatus(m.status) }))
       void qc.invalidateQueries({ queryKey: ['members'] })
       void qc.invalidateQueries({ queryKey: ['dashboard'] })
     },
@@ -39,36 +40,40 @@ export default function MemberDetailPage() {
 
   const run = async (action: Action) => {
     const ok = await confirmAction({
-      title: `${action[0].toUpperCase() + action.slice(1)} this member?`,
+      title: t('memberDetail.confirmAction', {
+        action: t(
+          action === 'deactivate' ? 'members.action.markInactive' : `members.action.${action}`,
+        ),
+      }),
       danger: action === 'suspend' || action === 'deactivate',
-      confirmText: 'Confirm',
+      confirmText: t('common.confirm'),
     })
     if (ok) lifecycle.mutate(action)
   }
 
   const columns: Column<MemberBorrowSummary>[] = [
-    { key: 'copy', header: 'Copy', render: (h) => <span className="font-mono text-xs">{h.bookCopyId.slice(0, 8)}</span> },
-    { key: 'borrowedAt', header: 'Borrowed', render: (h) => formatDate(h.borrowedAt) },
-    { key: 'dueAt', header: 'Due', render: (h) => formatDate(h.dueAt) },
-    { key: 'returnedAt', header: 'Returned', render: (h) => formatDate(h.returnedAt) },
+    { key: 'copy', header: t('borrow.col.copy'), render: (h) => <span className="font-mono text-xs">{h.bookCopyId.slice(0, 8)}</span> },
+    { key: 'borrowedAt', header: t('borrow.col.borrowed'), render: (h) => formatDate(h.borrowedAt) },
+    { key: 'dueAt', header: t('borrow.col.due'), render: (h) => formatDate(h.dueAt) },
+    { key: 'returnedAt', header: t('borrow.col.returned'), render: (h) => formatDate(h.returnedAt) },
     {
       key: 'status',
-      header: 'Status',
+      header: t('borrow.col.status'),
       render: (h) =>
-        h.isOverdue ? <Badge tone="red">Overdue</Badge> : <StatusPill status={h.status} />,
+        h.isOverdue ? <Badge tone="red">{t('status.Overdue')}</Badge> : <StatusPill status={h.status} />,
     },
   ]
 
   if (isLoading) return <Spinner />
   if (isError || !data)
-    return <ErrorState message="Could not load this member." onRetry={() => void refetch()} />
+    return <ErrorState message={t('memberDetail.loadError')} onRetry={() => void refetch()} />
 
   const m = data.member
 
   return (
     <>
       <Link to="/members" className="mb-3 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
-        <ArrowLeft size={14} /> Back to members
+        <ArrowLeft size={14} /> {t('memberDetail.back')}
       </Link>
 
       <PageHeader
@@ -78,20 +83,20 @@ export default function MemberDetailPage() {
           <>
             {m.status !== 'Suspended' && (
               <Button variant="secondary" size="sm" onClick={() => run('suspend')}>
-                Suspend
+                {t('members.action.suspend')}
               </Button>
             )}
             {m.status !== 'Active' && (
               <Button variant="secondary" size="sm" onClick={() => run('reactivate')}>
-                Reactivate
+                {t('members.action.reactivate')}
               </Button>
             )}
             <Button variant="secondary" size="sm" onClick={() => run('renew')}>
-              Renew
+              {t('members.action.renew')}
             </Button>
             {m.status === 'Active' && (
               <Button variant="secondary" size="sm" onClick={() => run('deactivate')}>
-                Mark inactive
+                {t('members.action.markInactive')}
               </Button>
             )}
           </>
@@ -99,7 +104,7 @@ export default function MemberDetailPage() {
       />
 
       <Card className="mb-4 p-5">
-        <p className="text-xs font-semibold uppercase text-slate-400">Contact</p>
+        <p className="text-xs font-semibold uppercase text-slate-400">{t('memberDetail.contact')}</p>
         <div className="mt-1 flex flex-wrap gap-x-8 gap-y-1 text-sm text-slate-700">
           <span>{m.phone || '—'}</span>
           <span>{m.address || '—'}</span>
@@ -108,37 +113,37 @@ export default function MemberDetailPage() {
 
       <div className="grid gap-4 lg:grid-cols-4">
         <Card className="p-5">
-          <p className="text-xs font-semibold uppercase text-slate-400">Status</p>
+          <p className="text-xs font-semibold uppercase text-slate-400">{t('memberDetail.status')}</p>
           <div className="mt-2">
             <StatusPill status={m.status} />
           </div>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-semibold uppercase text-slate-400">Membership expires</p>
+          <p className="text-xs font-semibold uppercase text-slate-400">{t('memberDetail.expires')}</p>
           <p className="mt-2 text-sm font-semibold text-slate-800">
             {formatDate(m.membershipExpiresAt)}
           </p>
           <p className="text-xs text-slate-400">{relativeExpiry(m.membershipExpiresAt)}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-semibold uppercase text-slate-400">Currently borrowed</p>
+          <p className="text-xs font-semibold uppercase text-slate-400">{t('memberDetail.currentlyBorrowed')}</p>
           <p className="mt-2 text-2xl font-bold text-slate-900">{data.currentlyBorrowed}</p>
-          <p className="text-xs text-slate-400">{data.overdue} overdue</p>
+          <p className="text-xs text-slate-400">{t('memberDetail.overdueCount', { count: data.overdue })}</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-semibold uppercase text-slate-400">Total borrows</p>
+          <p className="text-xs font-semibold uppercase text-slate-400">{t('memberDetail.totalBorrows')}</p>
           <p className="mt-2 text-2xl font-bold text-slate-900">{data.totalBorrowed}</p>
-          <p className="text-xs text-slate-400">last {formatDateTime(data.lastBorrowedAt)}</p>
+          <p className="text-xs text-slate-400">{t('memberDetail.lastBorrowed', { date: formatDateTime(data.lastBorrowedAt) })}</p>
         </Card>
       </div>
 
       <div className="mt-4">
-        <h2 className="mb-2 text-sm font-semibold text-slate-700">Borrowing history</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-700">{t('memberDetail.history')}</h2>
         <DataTable
           columns={columns}
           rows={data.history}
           rowKey={(h) => h.borrowRecordId}
-          emptyTitle="No borrowing history"
+          emptyTitle={t('memberDetail.noHistory')}
         />
       </div>
     </>

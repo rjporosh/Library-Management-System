@@ -13,6 +13,7 @@ import {
 } from '@/components/ui'
 import { normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDate } from '@/lib/format'
+import { t } from '@/lib/i18n'
 import type { BorrowRecord } from '@/lib/types'
 
 export default function BorrowingPage() {
@@ -75,7 +76,7 @@ export default function BorrowingPage() {
         dueAt: new Date(dueAt).toISOString(),
       }),
     onSuccess: () => {
-      toastSuccess('Book issued')
+      toastSuccess(t('borrow.issued'))
       setMemberId('')
       setCopyId('')
       setMemberQ('')
@@ -88,30 +89,30 @@ export default function BorrowingPage() {
   const returnBook = useMutation({
     mutationFn: (id: string) => borrowingApi.returnBook(id),
     onSuccess: () => {
-      toastSuccess('Book returned')
+      toastSuccess(t('borrow.returned'))
       void qc.invalidateQueries()
     },
     onError: (e) => toastError(normaliseError(e).message),
   })
 
   const columns: Column<BorrowRecord>[] = [
-    { key: 'copy', header: 'Copy', render: (r) => <span className="font-mono text-xs">{r.bookCopyId.slice(0, 8)}</span> },
-    { key: 'member', header: 'Member', render: (r) => <span className="font-mono text-xs">{r.memberId.slice(0, 8)}</span> },
-    { key: 'borrowedAt', header: 'Borrowed', render: (r) => formatDate(r.borrowedAt) },
+    { key: 'copy', header: t('borrow.col.copy'), render: (r) => <span className="font-mono text-xs">{r.bookCopyId.slice(0, 8)}</span> },
+    { key: 'member', header: t('borrow.col.member'), render: (r) => <span className="font-mono text-xs">{r.memberId.slice(0, 8)}</span> },
+    { key: 'borrowedAt', header: t('borrow.col.borrowed'), render: (r) => formatDate(r.borrowedAt) },
     {
       key: 'dueAt',
-      header: 'Due',
+      header: t('borrow.col.due'),
       render: (r) => {
         const overdue = new Date(r.dueAt) < new Date()
         return (
           <span className={overdue ? 'font-semibold text-rose-600' : ''}>
             {formatDate(r.dueAt)}
-            {overdue && ' · overdue'}
+            {overdue && t('common.overdueSuffix')}
           </span>
         )
       },
     },
-    { key: 'status', header: 'Status', render: (r) => <StatusPill status={r.status} /> },
+    { key: 'status', header: t('borrow.col.status'), render: (r) => <StatusPill status={r.status} /> },
     {
       key: 'actions',
       header: '',
@@ -123,7 +124,7 @@ export default function BorrowingPage() {
           disabled={returnBook.isPending}
           onClick={() => returnBook.mutate(r.id)}
         >
-          <Undo2 size={14} /> Return
+          <Undo2 size={14} /> {t('borrow.return')}
         </Button>
       ),
     },
@@ -131,17 +132,17 @@ export default function BorrowingPage() {
 
   return (
     <>
-      <PageHeader title="Borrowing" subtitle="Issue and return books" />
+      <PageHeader title={t('borrow.title')} subtitle={t('borrow.subtitle')} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
           <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
-            <BookUp size={16} /> Issue a book
+            <BookUp size={16} /> {t('borrow.issueHeading')}
           </h2>
           <div className="space-y-3">
-            <FormField label="Find member" hint="Search by name, membership number or email">
+            <FormField label={t('borrow.findMember')} hint={t('borrow.findMemberHint')}>
               <TextInput
-                placeholder="Start typing…"
+                placeholder={t('borrow.startTyping')}
                 value={memberQ}
                 onChange={(e) => {
                   setMemberQ(e.target.value)
@@ -152,7 +153,7 @@ export default function BorrowingPage() {
             {members.data && memberQ.length >= 2 && !memberId && (
               <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 text-sm">
                 {members.data.items.length === 0 ? (
-                  <p className="px-3 py-2 text-slate-400">No active member matches.</p>
+                  <p className="px-3 py-2 text-slate-400">{t('borrow.noMemberMatch')}</p>
                 ) : (
                   members.data.items.map((m) => (
                     <button
@@ -172,9 +173,9 @@ export default function BorrowingPage() {
               </div>
             )}
 
-            <FormField label="Find available copy" hint="Search by barcode">
+            <FormField label={t('borrow.findCopy')} hint={t('borrow.findCopyHint')}>
               <TextInput
-                placeholder="Barcode…"
+                placeholder={t('borrow.barcodePlaceholder')}
                 value={copyQ}
                 onChange={(e) => {
                   setCopyQ(e.target.value)
@@ -185,7 +186,7 @@ export default function BorrowingPage() {
             {copies.data && copyQ.length >= 1 && !copyId && (
               <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 text-sm">
                 {copies.data.items.length === 0 ? (
-                  <p className="px-3 py-2 text-slate-400">No available copy matches.</p>
+                  <p className="px-3 py-2 text-slate-400">{t('borrow.noCopyMatch')}</p>
                 ) : (
                   copies.data.items.map((c) => (
                     <button
@@ -205,7 +206,7 @@ export default function BorrowingPage() {
               </div>
             )}
 
-            <FormField label="Due date">
+            <FormField label={t('borrow.dueDate')}>
               <TextInput
                 type="date"
                 value={dueAt}
@@ -219,14 +220,14 @@ export default function BorrowingPage() {
               onClick={() => issue.mutate()}
             >
               <ArrowLeftRight size={16} />
-              {issue.isPending ? 'Issuing…' : 'Confirm issue'}
+              {issue.isPending ? t('borrow.issuing') : t('borrow.confirmIssue')}
             </Button>
           </div>
         </Card>
 
         <Card className="p-0">
           <h2 className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-700">
-            <Undo2 size={16} /> Active borrows
+            <Undo2 size={16} /> {t('borrow.activeHeading')}
           </h2>
           <div className="p-2">
             <DataTable
@@ -239,7 +240,7 @@ export default function BorrowingPage() {
                   ? normaliseError(activeBorrows.error).message
                   : undefined
               }
-              emptyTitle="No active borrows"
+              emptyTitle={t('borrow.emptyTitle')}
             />
           </div>
         </Card>

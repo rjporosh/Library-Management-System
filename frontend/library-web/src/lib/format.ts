@@ -1,4 +1,11 @@
+import { getLang, t } from './i18n'
+
 export type BadgeTone = 'green' | 'amber' | 'red' | 'slate' | 'blue' | 'violet'
+
+/** Intl locale for the active UI language. */
+function locale(): string | undefined {
+  return getLang() === 'bn' ? 'bn-BD' : undefined
+}
 
 const STATUS_TONE: Record<string, BadgeTone> = {
   // member
@@ -22,7 +29,7 @@ export function statusTone(status: string): BadgeTone {
 export function formatDate(value?: string | null): string {
   if (!value) return '—'
   const d = new Date(value)
-  return d.toLocaleDateString(undefined, {
+  return d.toLocaleDateString(locale(), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -32,7 +39,7 @@ export function formatDate(value?: string | null): string {
 export function formatDateTime(value?: string | null): string {
   if (!value) return '—'
   const d = new Date(value)
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString(locale(), {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
@@ -47,7 +54,7 @@ export function daysUntil(value?: string | null): number | null {
 export function relativeExpiry(value?: string | null): string {
   const days = daysUntil(value)
   if (days == null) return '—'
-  if (days < 0) return `expired ${Math.abs(days)}d ago`
-  if (days === 0) return 'expires today'
-  return `in ${days}d`
+  if (days < 0) return t('expiry.expiredAgo', { days: Math.abs(days) })
+  if (days === 0) return t('expiry.today')
+  return t('expiry.inDays', { days })
 }

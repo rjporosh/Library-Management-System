@@ -27,16 +27,22 @@ import {
 } from '@/components/ui'
 import { cascadeDelete, confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDate, relativeExpiry } from '@/lib/format'
+import { t, tStatus } from '@/lib/i18n'
 import type { Member } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
 const FIELDS: FieldDef[] = [
-  { name: 'name', label: 'Name', type: 'text' },
-  { name: 'membershipNumber', label: 'Membership #', type: 'text' },
-  { name: 'email', label: 'Email', type: 'text' },
-  { name: 'phone', label: 'Phone', type: 'text' },
-  { name: 'status', label: 'Status', type: 'enum', options: ['Active', 'Suspended', 'Inactive'] },
-  { name: 'membershipExpiresAt', label: 'Expires', type: 'date' },
+  { name: 'name', label: t('members.field.name'), type: 'text' },
+  { name: 'membershipNumber', label: t('members.field.number'), type: 'text' },
+  { name: 'email', label: t('members.field.email'), type: 'text' },
+  { name: 'phone', label: t('members.field.phone'), type: 'text' },
+  {
+    name: 'status',
+    label: t('members.col.status'),
+    type: 'enum',
+    options: ['Active', 'Suspended', 'Inactive'],
+  },
+  { name: 'membershipExpiresAt', label: t('members.col.expires'), type: 'date' },
 ]
 
 type Action = 'suspend' | 'reactivate' | 'renew' | 'deactivate'
@@ -83,7 +89,7 @@ export default function MembersPage() {
         ? membersApi.update(editing.id, form)
         : membersApi.create(form),
     onSuccess: () => {
-      toastSuccess(editing ? 'Member updated' : 'Member added')
+      toastSuccess(editing ? t('members.updated') : t('members.added'))
       setEditing(undefined)
       void qc.invalidateQueries({ queryKey: ['members'] })
     },
@@ -98,7 +104,7 @@ export default function MembersPage() {
     mutationFn: ({ id, action }: { id: string; action: Action }) =>
       membersApi.lifecycle(id, action),
     onSuccess: (m) => {
-      toastSuccess(`${m.name} is now ${m.status}`)
+      toastSuccess(t('members.nowStatus', { name: m.name, status: tStatus(m.status) }))
       void qc.invalidateQueries({ queryKey: ['members'] })
       void qc.invalidateQueries({ queryKey: ['dashboard'] })
     },
@@ -108,16 +114,18 @@ export default function MembersPage() {
   const runAction = async (m: Member, action: Action) => {
     setMenuFor(null)
     const labels: Record<Action, string> = {
-      suspend: 'Suspend this member?',
-      reactivate: 'Reactivate this member?',
-      renew: 'Renew this membership for another year?',
-      deactivate: 'Mark this member inactive?',
+      suspend: t('members.confirm.suspend'),
+      reactivate: t('members.confirm.reactivate'),
+      renew: t('members.confirm.renew'),
+      deactivate: t('members.confirm.deactivate'),
     }
     const ok = await confirmAction({
       title: labels[action],
       text: `${m.name} · ${m.membershipNumber}`,
       danger: action === 'suspend' || action === 'deactivate',
-      confirmText: action[0].toUpperCase() + action.slice(1),
+      confirmText: t(
+        action === 'deactivate' ? 'members.action.markInactive' : `members.action.${action}`,
+      ),
     })
     if (ok) lifecycle.mutate({ id: m.id, action })
   }
@@ -126,7 +134,7 @@ export default function MembersPage() {
     setMenuFor(null)
     const deleted = await cascadeDelete(
       (force) => membersApi.remove(m.id, force),
-      { title: `Delete ${m.name}?`, entity: 'member' },
+      { title: t('members.deleteTitle', { name: m.name }), entity: t('common.entity.member') },
     )
     if (deleted) {
       void qc.invalidateQueries({ queryKey: ['members'] })
@@ -137,7 +145,7 @@ export default function MembersPage() {
   const columns: Column<Member>[] = [
     {
       key: 'name',
-      header: 'Member',
+      header: t('members.col.member'),
       sortable: true,
       render: (m) => (
         <button
@@ -154,10 +162,10 @@ export default function MembersPage() {
         </button>
       ),
     },
-    { key: 'status', header: 'Status', sortable: true, render: (m) => <StatusPill status={m.status} /> },
+    { key: 'status', header: t('members.col.status'), sortable: true, render: (m) => <StatusPill status={m.status} /> },
     {
       key: 'membershipExpiresAt',
-      header: 'Expires',
+      header: t('members.col.expires'),
       sortable: true,
       render: (m) => (
         <div className="text-sm">
@@ -187,18 +195,18 @@ export default function MembersPage() {
               className="absolute right-0 top-9 z-10 w-44 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg"
               onClick={(e) => e.stopPropagation()}
             >
-              <MenuItem icon={<Pencil />} label="Edit" onClick={() => { setMenuFor(null); openEdit(m) }} />
+              <MenuItem icon={<Pencil />} label={t('members.action.edit')} onClick={() => { setMenuFor(null); openEdit(m) }} />
               {m.status !== 'Suspended' && (
-                <MenuItem icon={<Ban />} label="Suspend" onClick={() => runAction(m, 'suspend')} />
+                <MenuItem icon={<Ban />} label={t('members.action.suspend')} onClick={() => runAction(m, 'suspend')} />
               )}
               {m.status !== 'Active' && (
-                <MenuItem icon={<BadgeCheck />} label="Reactivate" onClick={() => runAction(m, 'reactivate')} />
+                <MenuItem icon={<BadgeCheck />} label={t('members.action.reactivate')} onClick={() => runAction(m, 'reactivate')} />
               )}
-              <MenuItem icon={<RefreshCw />} label="Renew" onClick={() => runAction(m, 'renew')} />
+              <MenuItem icon={<RefreshCw />} label={t('members.action.renew')} onClick={() => runAction(m, 'renew')} />
               {m.status === 'Active' && (
-                <MenuItem icon={<UserX />} label="Mark inactive" onClick={() => runAction(m, 'deactivate')} />
+                <MenuItem icon={<UserX />} label={t('members.action.markInactive')} onClick={() => runAction(m, 'deactivate')} />
               )}
-              <MenuItem icon={<Trash2 />} label="Delete" danger onClick={() => askDelete(m)} />
+              <MenuItem icon={<Trash2 />} label={t('members.action.delete')} danger onClick={() => askDelete(m)} />
             </div>
           )}
         </div>
@@ -209,15 +217,15 @@ export default function MembersPage() {
   return (
     <>
       <PageHeader
-        title="Members"
-        subtitle="Membership records and lifecycle"
+        title={t('members.title')}
+        subtitle={t('members.subtitle')}
         actions={
           <>
             <Button variant="secondary" onClick={() => setImportOpen(true)}>
-              <Upload size={16} /> Bulk import
+              <Upload size={16} /> {t('common.bulkImport')}
             </Button>
             <Button onClick={openCreate}>
-              <Plus size={16} /> Add member
+              <Plus size={16} /> {t('members.add')}
             </Button>
           </>
         }
@@ -232,7 +240,7 @@ export default function MembersPage() {
           loading={query.isLoading}
           error={errorMessage}
           onRetry={() => void query.refetch()}
-          emptyTitle="No members found"
+          emptyTitle={t('members.emptyTitle')}
           sort={state.sort}
           onSortChange={toggleSort}
         />
@@ -242,7 +250,7 @@ export default function MembersPage() {
       <BulkImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        title="Bulk import members"
+        title={t('members.importTitle')}
         templateUrl={membersApi.importTemplateUrl}
         onImport={membersApi.import}
         onDone={() => void qc.invalidateQueries({ queryKey: ['members'] })}
@@ -251,7 +259,7 @@ export default function MembersPage() {
       <Modal
         open={editing !== undefined}
         onClose={() => setEditing(undefined)}
-        title={editing ? 'Edit member' : 'Add member'}
+        title={editing ? t('members.edit') : t('members.add')}
       >
         <form
           className="space-y-3"
@@ -265,21 +273,21 @@ export default function MembersPage() {
               {formError}
             </div>
           )}
-          <FormField label="Membership number" error={fieldErrors.membershipNumber}>
+          <FormField label={t('members.field.number')} error={fieldErrors.membershipNumber}>
             <TextInput
               value={form.membershipNumber}
               invalid={!!fieldErrors.membershipNumber}
               onChange={(e) => setForm({ ...form, membershipNumber: e.target.value })}
             />
           </FormField>
-          <FormField label="Name" error={fieldErrors.name}>
+          <FormField label={t('members.field.name')} error={fieldErrors.name}>
             <TextInput
               value={form.name}
               invalid={!!fieldErrors.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </FormField>
-          <FormField label="Email" error={fieldErrors.email}>
+          <FormField label={t('members.field.email')} error={fieldErrors.email}>
             <TextInput
               value={form.email}
               invalid={!!fieldErrors.email}
@@ -287,14 +295,14 @@ export default function MembersPage() {
             />
           </FormField>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Phone" error={fieldErrors.phone}>
+            <FormField label={t('members.field.phone')} error={fieldErrors.phone}>
               <TextInput
                 value={form.phone}
                 invalid={!!fieldErrors.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
               />
             </FormField>
-            <FormField label="Address" error={fieldErrors.address}>
+            <FormField label={t('members.field.address')} error={fieldErrors.address}>
               <TextInput
                 value={form.address}
                 invalid={!!fieldErrors.address}
@@ -304,10 +312,10 @@ export default function MembersPage() {
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={() => setEditing(undefined)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : editing ? 'Save changes' : 'Add member'}
+              {save.isPending ? t('common.saving') : editing ? t('common.saveChanges') : t('members.add')}
             </Button>
           </div>
         </form>

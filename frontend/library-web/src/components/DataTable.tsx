@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { SortSpec } from '@/lib/types'
+import { t } from '@/lib/i18n'
 import { EmptyState, ErrorState, Spinner } from './ui'
 
 export interface Column<T> {
@@ -33,7 +34,7 @@ export function DataTable<T>({
   loading,
   error,
   onRetry,
-  emptyTitle = 'Nothing to show',
+  emptyTitle,
   emptyHint,
   sort = [],
   onSortChange,
@@ -95,7 +96,7 @@ export function DataTable<T>({
           ) : rows.length === 0 ? (
             <tr>
               <td colSpan={columns.length}>
-                <EmptyState title={emptyTitle} hint={emptyHint} />
+                <EmptyState title={emptyTitle ?? t('common.nothingToShow')} hint={emptyHint} />
               </td>
             </tr>
           ) : (

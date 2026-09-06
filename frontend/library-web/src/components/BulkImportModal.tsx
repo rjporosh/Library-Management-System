@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import { Download, FileSpreadsheet, UploadCloud } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { normaliseError, toastSuccess } from '@/lib/api'
+import { t } from '@/lib/i18n'
 import type { ApiError } from '@/lib/types'
 import { Button, Modal } from './ui'
 
@@ -48,7 +49,7 @@ export function BulkImportModal({
     setMessage(null)
     try {
       const result = await onImport(file)
-      toastSuccess(`Imported ${result.imported} row${result.imported === 1 ? '' : 's'}`)
+      toastSuccess(t('import.imported', { count: result.imported }))
       onDone()
       close()
     } catch (err) {
@@ -65,13 +66,13 @@ export function BulkImportModal({
       <div className="space-y-4">
         <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
           <span className="text-slate-600">
-            Not sure about the format? Start from the template.
+            {t('import.templatePrompt')}
           </span>
           <a
             href={templateUrl}
             className="inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-700"
           >
-            <Download size={15} /> Download template
+            <Download size={15} /> {t('import.downloadTemplate')}
           </a>
         </div>
 
@@ -101,16 +102,16 @@ export function BulkImportModal({
               <FileSpreadsheet size={28} className="text-emerald-600" />
               <span className="font-semibold text-slate-700">{file.name}</span>
               <span className="text-xs text-slate-400">
-                {(file.size / 1024).toFixed(1)} KB · click to choose another
+                {t('import.kb', { size: (file.size / 1024).toFixed(1), hint: t('import.chooseAnother') })}
               </span>
             </>
           ) : (
             <>
               <UploadCloud size={28} className="text-slate-400" />
               <span className="font-semibold text-slate-600">
-                Drop an .xlsx file here, or click to browse
+                {t('import.dropPrompt')}
               </span>
-              <span className="text-xs text-slate-400">All-or-nothing: one bad row rolls back the whole file</span>
+              <span className="text-xs text-slate-400">{t('import.dropHint')}</span>
             </>
           )}
           <input
@@ -133,10 +134,10 @@ export function BulkImportModal({
             <table className="min-w-full divide-y divide-slate-200 text-xs">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
-                  <th className="px-3 py-2 text-left font-semibold">Row</th>
-                  <th className="px-3 py-2 text-left font-semibold">Field</th>
-                  <th className="px-3 py-2 text-left font-semibold">Problem</th>
-                  <th className="px-3 py-2 text-left font-semibold">Accepted</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t('import.col.row')}</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t('import.col.field')}</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t('import.col.problem')}</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t('import.col.accepted')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -155,10 +156,10 @@ export function BulkImportModal({
 
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={close} disabled={busy}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={submit} disabled={!file || busy}>
-            {busy ? 'Importing…' : 'Import'}
+            {busy ? t('import.importing') : t('import.doImport')}
           </Button>
         </div>
       </div>
