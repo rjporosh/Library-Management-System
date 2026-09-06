@@ -5,7 +5,7 @@ it into an enterprise-grade product.
 
 ------------------------------------------------------------------------
 
-## Progress snapshot (2026-09-04, branch `feat/enterprise-completion`)
+## Progress snapshot (2026-09-06, branch `feat/enterprise-completion`)
 
 | Phase | Status |
 |---|---|
@@ -19,11 +19,12 @@ it into an enterprise-grade product.
 | 12 Excel bulk import | **Done** - all-or-nothing, all §21 scenarios |
 | 6 EF Core / DB foundation | **Done** - EF Core, PostgreSQL primary, provider factory, unit of work, migration, DB-down diagnostics, real health check, EF seeder |
 | 10 Observability (OpenTelemetry) | **Done** - OTLP traces + metrics to Jaeger, appsettings-toggled |
-| 11 EF Core + Dapper split | Partial - EF Core done; Dapper read stores pending (`Orm=Dapper` falls back to EF) |
-| 13 Security & resilience | Not started (CORS only; rate limiting / ProblemDetails / localization pending) |
-| 14 Docs (ADR/C4/SQL) | Partial - guide.md, MIGRATIONS.md, programmer's guide (12 files), schema.sql; ADR/C4/ER pending |
-| 15 Release Notes API | Not started - next milestone |
-| 16 Release engineering / Docker / CI | **Done** - multi-stage Dockerfiles, docker-compose (db+jaeger+api+web), GitHub Actions CI, NBomber load tests |
+| 11 EF Core + Dapper split | **Done** - EF for writes/search; Dapper for the dashboard aggregate (`Orm=Dapper`, Postgres/SQLite), parity-tested |
+| 13 Security & resilience | **Done** - per-client rate limiting, forwarded headers, RFC 7807 problem+json, localization (en/bn) |
+| 14 Docs (ADR/C4/SQL) | **Done** - guide.md, MIGRATIONS.md, programmer's guide (13 files), 7 ADRs, C4 + ER (Mermaid), schema.sql + seed-data.sql |
+| 15 Release Notes API | **Done** - `GET /api/release-notes/current` |
+| 16 Release engineering / Docker / CI | **Done** - multi-stage Dockerfiles, docker-compose (db+jaeger+api+web), GitHub Actions CI (+ frontend Vitest), NBomber load tests |
+| 8 Domain integrity / soft delete | **Done** - Entity base, soft delete everywhere, smart cascade-delete, Book category/publisher + Member phone/address |
 
 See `docs/ai-handover.md` §3-4 for the exact next steps and commands.
 

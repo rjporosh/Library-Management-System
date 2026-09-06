@@ -1,39 +1,44 @@
 {
-  "version": "0.3.0",
-  "releaseDate": "2026-09-04",
+  "version": "0.4.0",
+  "releaseDate": "2026-09-06",
   "newFeatures": [
-    "GitLab-style advanced search on books, members, book copies and borrow records (13 operators, AND/OR, multi-field sort, enum matched by name)",
-    "All-or-nothing Excel bulk import for books, members and book copies with per-row/field errors and downloadable templates",
-    "Membership lifecycle: Inactive status, expiry, and a manual maintenance job trigger (POST /api/jobs/member-maintenance/run)",
-    "Full CRUD + list/search parity for members and book copies; member detail with borrowing summary",
-    "GET /api/dashboard aggregate snapshot (no N+1)",
-    "Result pattern + stable error-code catalog; validation failures return HTTP 422 with every error",
-    "New React + Tailwind frontend: status badges, advanced-search builder, bulk-import modal, member lifecycle controls, librarian-friendly borrowing",
-    "EF Core + PostgreSQL (primary) with configuration-only provider switching (SqlServer, Sqlite, InMemory)",
-    "OpenTelemetry traces + metrics to Jaeger; structured query logging; startup DB-down diagnostics",
-    "Dockerised stack (docker-compose: postgres + jaeger + api + web) and a GitHub Actions CI pipeline"
+    "Soft delete on every entity (Domain.Common.Entity base) - nothing is physically removed; deleted rows are hidden from reads, search, duplicate checks and aggregates",
+    "Smart cascade delete: DELETE /api/{books|members|book-copies}/{id}?force= - borrowed dependents block, other dependents ask to confirm, force cascades in one transaction",
+    "Book.Category / Book.Publisher and Member.Phone / Member.Address across domain, DTOs, validators, Excel templates, seed and frontend",
+    "Dapper read-path for the dashboard aggregate (Database:Orm=Dapper, Postgres/SQLite)",
+    "Per-client rate limiting (forwarded-header aware) returning 429 problem+json with Retry-After",
+    "RFC 7807 application/problem+json failure responses with success/errors/correlationId extension members",
+    "Resource-based localization: English (default) + Bangla, fallback English; GET /api/metadata/messages returns the localized error-code map; frontend EN/বাংলা switch",
+    "Frontend Vitest test suite wired into CI",
+    "GitLab-style advanced search, all-or-nothing Excel bulk import, member lifecycle + manual maintenance job (from 0.3.0)",
+    "EF Core + PostgreSQL with configuration-only provider switching, OpenTelemetry/Jaeger, dockerised stack, GitHub Actions CI (from 0.3.0)"
   ],
   "fixed": [
-    "Four integration tests broken by the 0.2.0 enum-as-string change",
-    "The 0.2.0 backend is now actually built and tested (it never had been)"
+    "The 0.2.0 backend is now built, tested and verified (78 backend + 7 frontend tests)"
   ],
   "changedBehaviour": [
-    "BorrowingController conflicts now return HTTP 409 with the standard ApiErrorResponse envelope (was 400 + {message})",
-    "MemberResponse gained membershipExpiresAt"
+    "Create/Update Book requests require Category and Publisher; Create/Update Member requests require Phone and Address",
+    "Failure responses use Content-Type application/problem+json",
+    "DELETE endpoints accept an optional ?force= query parameter",
+    "BorrowingController conflicts return HTTP 409 with the standard envelope (was 400)"
   ],
   "qaChecklist": [
     "dotnet build LibraryManagementSystem.slnx -> 0 warnings, 0 errors",
-    "dotnet test -> 60/60 pass",
-    "Advanced search: operators, enum-by-name matching, unknown-field error with supportedValues",
-    "Bulk import: all ten MASTER_SPECIFICATION.md section 21 acceptance scenarios",
-    "Member lifecycle transitions + manual maintenance job",
+    "dotnet test -> 78/78 (57 unit + 21 integration)",
+    "frontend npm test -> 7/7; npm run lint + npm run build clean",
+    "cascade delete: blocked / confirm / force paths",
+    "soft-deleted rows excluded from search, duplicate checks and dashboard",
+    "rate limiting returns 429 after the window; RFC 7807 problem+json shape",
+    "localization: en/bn message catalogue via ?culture= and Accept-Language",
+    "Dapper vs EF dashboard aggregate parity",
+    "advanced search operators + enum-by-name; all ten bulk-import acceptance scenarios",
     "docker compose up --build -> /health healthy, web proxies API, Jaeger receives traces",
-    "frontend npm run build + npm run lint clean; end-to-end browser check with 0 console errors"
+    "end-to-end browser check with 0 console errors"
   ],
   "knownIssues": [
-    "Database:Orm=Dapper falls back to EF Core (Dapper read stores pending)",
-    "No EF Core 10 driver for MySQL/Oracle yet (provider slots ready)",
-    "Book.Category/Publisher and Member.Phone/Address deferred",
-    "No frontend unit tests; rate limiting / RFC 7807 / localization not started"
+    "Database:Orm=Dapper covers the dashboard aggregate; other read paths use EF Core",
+    "No EF Core 10 driver for MySQL/Oracle yet (provider slots + ADR-0001 ready)",
+    "Success response envelope deferred (ADR-0005)",
+    "Bangla resx covers the error catalogue + system messages; SPA chrome strings are still English"
   ]
 }

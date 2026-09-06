@@ -1,6 +1,7 @@
 # AI Handover --- Library Management System
 
-**Last updated:** 2026-09-04 (second checkpoint - EF Core + ops + docs added)
+**Last updated:** 2026-09-06 (third checkpoint - soft delete/cascade, Dapper,
+security & localization, ADRs)
 **Written by:** Claude (principal-engineer role), in a sandbox **with a
 working .NET 10 SDK, NuGet, Node 26 and Docker** - so unlike the 0.2.0
 session, everything below is **built, tested and smoke-verified**.
@@ -15,7 +16,8 @@ describe the long-term plan; this file is exactly where execution stands.
 | Check | Result |
 |---|---|
 | `dotnet build LibraryManagementSystem.slnx` | **0 warnings, 0 errors** (TreatWarningsAsErrors on) |
-| `dotnet test` | **61 pass** (50 unit + 11 integration), 0 fail |
+| `dotnet test` | **78 pass** (57 unit + 21 integration), 0 fail |
+| `npm test` (frontend, Vitest) | **7 pass** |
 | `npm run build` / `npm run lint` (frontend) | clean |
 | End-to-end (headless browser, API + web) | 0 console errors, 0 failed requests, every page renders and flows work |
 | `docker compose up --build` | all 4 services up; `/health` "Postgres database is reachable"; web proxies API; Jaeger receives `Library.Api` traces |
@@ -125,19 +127,37 @@ CSS and the stale numeric-enum handling are gone.
 - **Docs** - `guide.md`, `MIGRATIONS.md`, `docs/programmers-guide/` (12 files),
   per-project `DEVELOPERS-GUIDE.md`, `docs/database/schema.sql`.
 
-## 3b. What is NOT done yet (in priority order)
+## 3c. Completed in the third pass
 
-1. **Dapper read-path** - `Database:Orm=Dapper` currently just falls back to
-   EF Core. Add `Dapper*ReadStore` for the simple list + dashboard queries.
-2. **MySql / Oracle** EF drivers when EF Core 10-compatible packages ship
-   (Pomelo 9 requires EF Core 9). The provider slots + docs are ready.
-3. Domain fields deferred to keep churn down: `Book.Category`/`Publisher`,
-   `Member.Phone`/`Address` (migration + DTO + template update + frontend forms).
-4. Frontend tests (Vitest + Testing Library); more backend integration tests
-   (members lifecycle endpoints, jobs, middleware, `/health`, `/api/logs/*`).
-5. ADRs, C4 diagrams, `docs/database/seed-data.sql`, ER diagram.
-6. Rate limiting, RFC 7807 ProblemDetails, localization (English/Bangla) -
-   MASTER_SPECIFICATION additional requirements, not started.
+- **Soft delete + smart cascade delete** - `Domain.Common.Entity` base;
+  `IsDeleted` filter everywhere; `DELETE ...?force=` blocked/confirm/force flow
+  for books, members, copies; frontend `cascadeDelete()` two-step helper.
+- **`Book.Category`/`Publisher`, `Member.Phone`/`Address`** - full stack
+  (domain, DTOs, validators, Excel templates, seed, frontend forms + search).
+- **Dapper read-path** - `IDashboardReadStore` (EF / Dapper / in-memory),
+  `IDbConnectionFactory`, parity integration test.
+- **Rate limiting** (per-client fixed-window, forwarded-header aware, 429
+  problem+json), **RFC 7807** problem+json envelope, **AddProblemDetails**.
+- **Localization** - `Resources/SharedResources[.bn].resx`, RequestLocalization,
+  `GET /api/metadata/messages`, frontend message map + EN/বাংলা switch.
+- **Frontend Vitest** suite (wired into CI); +5 backend integration tests.
+- **Docs** - 7 ADRs, C4 (Mermaid), ER diagram, `seed-data.sql`,
+  localization guide, updated config reference.
+- InitialCreate migration regenerated; `SeedData` extracted (one dataset for
+  both seeders).
+
+## 3d. What is NOT done yet (all optional / follow-ups)
+
+1. **MySql / Oracle** EF drivers when EF Core 10-compatible packages ship
+   (Pomelo 9 needs EF Core 9; no EF10 Oracle provider). Provider slots + ADR-0001
+   are ready - one `case` in `DatabaseProviderConfigurator` + a package.
+2. Dapper coverage beyond the dashboard (a `Dapper*ReadStore` per additional
+   reporting query, same pattern).
+3. Success response envelope (`{success,message,data,traceId}`) - deferred by
+   ADR-0005; opt-in filter or major version.
+4. More Bangla coverage in the resx (only the error catalogue + system messages
+   are translated; UI chrome strings are still English in the SPA).
+5. Broader frontend component tests (only lib + one component covered).
 
 ## 4. Exact commands to pick up
 
@@ -147,7 +167,8 @@ git checkout feat/enterprise-completion
 
 # backend - confirm green
 dotnet build LibraryManagementSystem.slnx      # expect 0/0
-dotnet test  LibraryManagementSystem.slnx      # expect 61 pass
+dotnet test  LibraryManagementSystem.slnx      # expect 78 pass
+( cd frontend/library-web && npm ci && npm test && npm run build )   # 7 tests, clean
 
 # run the API - Development uses Postgres (docker compose up -d db first);
 # for a no-database demo:  Database__Provider=InMemory dotnet run --project src/Library.Api
@@ -166,14 +187,10 @@ docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
 # frontend only
 cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
 
-# NEXT MILESTONE - Dapper read stores. Start here:
-#  1. add src/Library.Api/release-notes.json (version, releaseDate, features[],
-#     fixed[], qaChecklist[], knownIssues[]) as a content file (CopyToOutputDirectory).
-#  2. Features/ReleaseNotes/ReleaseNotesService.cs reads it; ReleaseNotesController
-#     exposes GET /api/release-notes/current.
-#  3. integration test asserts 200 + non-empty version/date.
-# Then: Dapper read stores (Database:Orm=Dapper), then Book.Category/Publisher +
-# Member.Phone/Address (one migration + DTO + template + frontend form update).
+# The enterprise scope is complete. Remaining items (§3d) are optional
+# follow-ups - MySQL/Oracle drivers when packages ship, more Dapper read
+# stores, the deferred success envelope, wider Bangla / frontend-test coverage.
+# Suggested next: merge feat/enterprise-completion to main after review.
 ```
 
 ## 5. Landmines

@@ -14,6 +14,70 @@ and release verification.
 
 ------------------------------------------------------------------------
 
+# Release 0.4.0 --- Soft Delete, Cascade, Multi-Provider Polish & Localization
+
+**Release date:** 2026-09-06\
+**Status:** Built, tested (85 tests), smoke-verified end to end\
+**Release type:** Feature + hardening
+
+## New features
+
+- **Soft delete everywhere.** New `Domain.Common.Entity` base (GUID identity +
+  `IsDeleted`/`DeletedAtUtc`, `MarkDeleted()`/`Restore()`). Nothing is
+  physically removed - an EF global query filter and explicit predicates hide
+  deleted rows from every read, search, duplicate check and aggregate; freed
+  ISBNs / barcodes / membership numbers can be reused.
+- **Smart cascade delete.** `DELETE /api/{books|members|book-copies}/{id}?force=`:
+  a currently-borrowed dependent always blocks the delete; otherwise dependent
+  data (copies, borrow history) returns HTTP 409 with the exact message and the
+  dependent identifiers asking the caller to confirm; `force=true` soft-deletes
+  the aggregate and its dependents in one transaction. The frontend
+  `cascadeDelete()` helper does the two-step confirmation automatically.
+- **`Book.Category` / `Book.Publisher`, `Member.Phone` / `Member.Address`** -
+  required, validated, in the DTOs, Excel templates, seed data, frontend forms
+  and advanced-search fields.
+- **Dapper read-path** for the dashboard aggregate (`Database:Orm=Dapper`,
+  Postgres/SQLite) - one round-trip of SQL COUNT aggregates. Writes and search
+  stay on EF Core. Parity integration test.
+- **Rate limiting** (`FeatureFlags:EnableRateLimiting`) - per-client
+  fixed-window, keyed by the forwarded/remote IP, 429 problem+json + Retry-After.
+- **RFC 7807** - failure responses are `application/problem+json`
+  (type/title/status/detail/instance) with our `success`/`errors[]`/`correlationId`
+  as extension members; framework errors get the same extension members.
+- **Localization** - resource-based, English (default) + Bangla, fallback
+  English. Culture from `?culture=`/`?lang=` or `Accept-Language`.
+  `GET /api/metadata/messages` returns the localized error-code -> message map;
+  the SPA maps codes to localized text and has an EN / বাংলা switch.
+- Frontend Vitest test suite (`npm test`, wired into CI).
+
+## Changed behaviour
+
+- `Create/Update BookRequest` + `Category`/`Publisher`; `Create/UpdateMemberRequest`
+  + `Phone`/`Address`; `BookResponse`/`MemberResponse` gained the fields. Excel
+  book/member templates gained columns.
+- Failure `Content-Type` is now `application/problem+json`.
+- `DELETE` endpoints take an optional `?force=` query parameter.
+
+## Known limitations
+
+- `Database:Orm=Dapper` covers the dashboard aggregate; other read paths still
+  use EF Core (extensible per reporting query).
+- No EF Core 10 driver for MySQL/Oracle yet (provider slots + ADR ready).
+- Success envelope still deferred (ADR-0005).
+
+## QA checklist
+
+- [x] `dotnet build` 0 warnings / 0 errors; `dotnet test` 78/78 backend
+- [x] `npm test` 7/7, `npm run lint` + `npm run build` clean
+- [x] cascade delete: blocked / confirm / force paths (unit + integration)
+- [x] soft-deleted rows excluded from search, duplicates, dashboard
+- [x] rate limiting returns 429 after the window; RFC 7807 problem+json shape
+- [x] localization: en/bn message catalogue via query + Accept-Language
+- [x] Dapper vs EF dashboard parity
+- [x] end-to-end browser check, 0 console errors
+
+------------------------------------------------------------------------
+
 # Release 0.3.0 --- Advanced Search, Bulk Import & MVP Frontend
 
 **Release date:** 2026-09-04\
