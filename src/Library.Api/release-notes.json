@@ -2,6 +2,7 @@
   "version": "0.4.0",
   "releaseDate": "2026-09-06",
   "newFeatures": [
+    "OpenAPI/Scalar now renders a title and description for every endpoint (XML doc file enabled); Postman collection (postman/) with runnable example requests for all 43 endpoints plus a verified end-to-end Smoke Flow folder",
     "Soft delete on every entity (Domain.Common.Entity base) - nothing is physically removed; deleted rows are hidden from reads, search, duplicate checks and aggregates",
     "Smart cascade delete: DELETE /api/{books|members|book-copies}/{id}?force= - borrowed dependents block, other dependents ask to confirm, force cascades in one transaction",
     "Book.Category / Book.Publisher and Member.Phone / Member.Address across domain, DTOs, validators, Excel templates, seed and frontend",

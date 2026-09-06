@@ -1,7 +1,7 @@
 # AI Handover --- Library Management System
 
-**Last updated:** 2026-09-06 (third checkpoint - soft delete/cascade, Dapper,
-security & localization, ADRs)
+**Last updated:** 2026-09-06 (fourth checkpoint - OpenAPI titles/descriptions
+now rendered, Postman collection with runnable examples)
 **Written by:** Claude (principal-engineer role), in a sandbox **with a
 working .NET 10 SDK, NuGet, Node 26 and Docker** - so unlike the 0.2.0
 session, everything below is **built, tested and smoke-verified**.
@@ -192,6 +192,25 @@ cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
 # stores, the deferred success envelope, wider Bangla / frontend-test coverage.
 # Suggested next: merge feat/enterprise-completion to main after review.
 ```
+
+## 4b. Fourth checkpoint (this session)
+
+- **OpenAPI/Scalar now shows every endpoint's title + description.** Root cause:
+  `Directory.Build.props` left `GenerateDocumentationFile` off, so the .NET 10
+  OpenAPI XML-comment source generator had no doc file to read - all 43
+  summaries were blank despite the `///` comments existing. Fix: enabled
+  `<GenerateDocumentationFile>` + `<NoWarn>CS1591;CS1573;CS1572;CS1570;CS1734</NoWarn>`
+  in `src/Library.Api/Library.Api.csproj` (0-warning gate intact). Also fixed a
+  duplicated stale doc block on `BooksController.Delete` (repeated
+  `<response code>` made the generator's `SingleOrDefault` throw and 500 the
+  whole `/openapi/v1.json`) and a malformed `</   param>` on `GetAll`.
+  Verify: `curl -s localhost:5254/openapi/v1.json | jq '[.paths[][] .summary] | map(select(.==null))'` -> `[]`.
+- **`postman/`** - v2.1 collection, all 43 endpoints in 11 folders with example
+  bodies + a runnable "Smoke Flow" folder (verified `newman run` 10/10
+  assertions). Regenerate with `python3 postman/build_collection.py`.
+- `BooksController` route normalised `api/[controller]` -> `api/books`
+  (case-insensitive routing, no consumer impact).
+- Verified: build 0/0, unit 57/57, integration 21/21, newman smoke 9/9.
 
 ## 5. Landmines
 
