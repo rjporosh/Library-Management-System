@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Library.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/books")]
 public sealed class BooksController(BookService bookService, BulkImportService bulkImport) : ControllerBase
 {
     /// <summary>Downloads the Excel template for bulk book import (headers, examples, instructions sheet).</summary>

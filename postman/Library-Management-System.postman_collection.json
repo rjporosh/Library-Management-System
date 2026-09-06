@@ -1,0 +1,1986 @@
+{
+  "info": {
+    "name": "Library Management System API",
+    "_postman_id": "6f3b1c2a-0d4e-4a7b-9c11-libmgmt000001",
+    "description": "Enterprise Library Management System (.NET 10). Import this file, select the \"Library MS - Local\" environment (or keep the baseUrl collection variable = http://localhost:5254), start the API with `dotnet run --project src/Library.Api`, and every request runs as-is. The **Smoke Flow** folder is a runnable end-to-end happy path for the Collection Runner. Failure responses follow RFC 7807 (application/problem+json) with `success`, `errors[]` and `correlationId`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Books",
+      "description": "Catalog CRUD, advanced search and Excel bulk import.",
+      "item": [
+        {
+          "name": "List books",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books?pageNumber=1&pageSize=20&search=clean&searchBy=title,author&sortBy=publishedYear&sortDirection=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "1",
+                  "description": "1-based page (books)",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "clean",
+                  "description": "quick partial match",
+                  "disabled": true
+                },
+                {
+                  "key": "searchBy",
+                  "value": "title,author",
+                  "description": "comma list: title,author,isbn",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "publishedYear",
+                  "disabled": true
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "desc",
+                  "description": "asc|desc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Quick text search + paging. All query params optional. Use **Search books** for advanced filters."
+          }
+        },
+        {
+          "name": "Get book by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            },
+            "description": "Fetch a single book. 404 if it does not exist."
+          }
+        },
+        {
+          "name": "Search books (advanced)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "search"
+              ]
+            },
+            "description": "GitLab-style search: multiple filters (operators eq, neq, contains, notContains, startsWith, endsWith, gt, gte, lt, lte, in, notIn, between), `match` all|any, multi-sort. Enum fields match by name.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": [\n    {\n      \"field\": \"title\",\n      \"operator\": \"contains\",\n      \"values\": [\n        \"clean\"\n      ]\n    },\n    {\n      \"field\": \"publishedYear\",\n      \"operator\": \"gte\",\n      \"value\": \"2000\"\n    }\n  ],\n  \"match\": \"all\",\n  \"sort\": [\n    {\n      \"field\": \"publishedYear\",\n      \"direction\": \"desc\"\n    }\n  ],\n  \"page\": 1,\n  \"pageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "description": "Adds a book. `category` and `publisher` are required. Duplicate ISBN -> 409 BOOK_ISBN_DUPLICATE. Validation returns every error at once.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0000000001\",\n  \"title\": \"The Pragmatic Sequel\",\n  \"author\": \"A. Hunt\",\n  \"publishedYear\": 2020,\n  \"category\": \"Software Engineering\",\n  \"publisher\": \"Addison-Wesley\",\n  \"description\": \"Example book created from Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const b = pm.response.json();",
+                  "if (pm.response.code === 201 && b.id) { pm.collectionVariables.set('bookId', b.id); }",
+                  "pm.test('created', () => pm.expect(pm.response.code).to.be.oneOf([201,409,400]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update book",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            },
+            "description": "Replaces all editable fields.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0000000001\",\n  \"title\": \"The Pragmatic Sequel (2nd ed.)\",\n  \"author\": \"A. Hunt\",\n  \"publishedYear\": 2020,\n  \"category\": \"Software Engineering\",\n  \"publisher\": \"Addison-Wesley\",\n  \"description\": \"Example book created from Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}?force=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "false",
+                  "description": "set true to cascade-delete copies"
+                }
+              ]
+            },
+            "description": "Soft delete. If copies exist -> 409 BOOK_HAS_DEPENDENT_COPIES unless `force=true` (cascades). If any copy is borrowed -> always 409 BOOK_HAS_BORROWED_COPIES."
+          }
+        },
+        {
+          "name": "Download import template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/import/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "import",
+                "template"
+              ]
+            },
+            "description": "Streams the .xlsx template (headers + example rows + instructions sheet)."
+          }
+        },
+        {
+          "name": "Bulk import books",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "import"
+              ]
+            },
+            "description": "multipart/form-data, field `file`. All-or-nothing: any invalid/duplicate row rolls back the whole file and every error is returned with row + column + code.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "the filled-in .xlsx template"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Book Copies",
+      "description": "Physical copies of a book: CRUD, status changes, search, bulk import.",
+      "item": [
+        {
+          "name": "List copies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies?search=&bookId={{bookId}}&status=Available&page=1&pageSize=20&sortBy=barcode&sortDirection=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "bookId",
+                  "value": "{{bookId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "Available",
+                  "description": "enum name",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "barcode",
+                  "disabled": true
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "asc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Quick search + optional bookId/status filter + paging."
+          }
+        },
+        {
+          "name": "Search copies (advanced)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "search"
+              ]
+            },
+            "description": "Advanced search; `status` matched by name (Available, Borrowed, Lost, Damaged, Maintenance).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": [\n    {\n      \"field\": \"status\",\n      \"operator\": \"eq\",\n      \"value\": \"Available\"\n    }\n  ],\n  \"match\": \"all\",\n  \"sort\": [\n    {\n      \"field\": \"barcode\",\n      \"direction\": \"asc\"\n    }\n  ],\n  \"page\": 1,\n  \"pageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get copies of a book",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/book/{{bookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "book",
+                "{{bookId}}"
+              ]
+            },
+            "description": "All copies for one book id."
+          }
+        },
+        {
+          "name": "Get copy by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/{{copyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "{{copyId}}"
+              ]
+            },
+            "description": "Single copy by id."
+          }
+        },
+        {
+          "name": "Create copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies"
+              ]
+            },
+            "description": "Registers a new copy. Duplicate barcode -> 409 BOOK_COPY_BARCODE_DUPLICATE.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": \"{{bookId}}\",\n  \"barcode\": \"BC-90001\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const c = pm.response.json();",
+                  "if (pm.response.code === 201 && c.id) { pm.collectionVariables.set('copyId', c.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update copy barcode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/{{copyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "{{copyId}}"
+              ]
+            },
+            "description": "Corrects the barcode.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"BC-90002\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Change copy status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/{{copyId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "{{copyId}}",
+                "status"
+              ]
+            },
+            "description": "Condition change. Cannot set Borrowed directly; cannot change a borrowed copy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Maintenance\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete copy",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/{{copyId}}?force=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "{{copyId}}"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Soft delete. Blocked while borrowed. With borrow history -> 409 unless `force=true`."
+          }
+        },
+        {
+          "name": "Download import template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/import/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "import",
+                "template"
+              ]
+            },
+            "description": "Streams the .xlsx template."
+          }
+        },
+        {
+          "name": "Bulk import copies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies",
+                "import"
+              ]
+            },
+            "description": "multipart field `file`. All-or-nothing; references books by ISBN.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Members",
+      "description": "Membership CRUD, lifecycle (suspend/reactivate/renew/deactivate), search, bulk import.",
+      "item": [
+        {
+          "name": "List members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members?search=&status=Active&page=1&pageSize=20&sortBy=name&sortDirection=asc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "Active",
+                  "description": "enum name",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "name",
+                  "disabled": true
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "asc",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Quick search + status filter + paging."
+          }
+        },
+        {
+          "name": "Search members (advanced)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "search"
+              ]
+            },
+            "description": "Advanced search; `status` matched by name (Active, Inactive, Suspended).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": [\n    {\n      \"field\": \"status\",\n      \"operator\": \"in\",\n      \"values\": [\n        \"Active\",\n        \"Suspended\"\n      ]\n    }\n  ],\n  \"match\": \"all\",\n  \"sort\": [\n    {\n      \"field\": \"name\",\n      \"direction\": \"asc\"\n    }\n  ],\n  \"page\": 1,\n  \"pageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get member by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}"
+              ]
+            },
+            "description": "Single member."
+          }
+        },
+        {
+          "name": "Get member detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}/detail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}",
+                "detail"
+              ]
+            },
+            "description": "Member + borrowing summary (total/active/overdue/last) + history."
+          }
+        },
+        {
+          "name": "Create member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ]
+            },
+            "description": "Enrols a member (starts Active, one-year term). `phone` and `address` required. Duplicate number or email -> 409 (both errors returned together).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"membershipNumber\": \"MEM-900001\",\n  \"name\": \"Jordan Rivera\",\n  \"email\": \"jordan.rivera@example.com\",\n  \"phone\": \"555-0101\",\n  \"address\": \"12 Library Lane\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const m = pm.response.json();",
+                  "if (pm.response.code === 201 && m.id) { pm.collectionVariables.set('memberId', m.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update member",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}"
+              ]
+            },
+            "description": "Updates profile fields.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"membershipNumber\": \"MEM-900001\",\n  \"name\": \"Jordan Rivera\",\n  \"email\": \"jordan.rivera@example.com\",\n  \"phone\": \"555-0101\",\n  \"address\": \"34 Reading Road\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Delete member",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}?force=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Soft delete. Blocked with an active borrow (409 MEMBER_HAS_ACTIVE_BORROW). With borrow history -> 409 unless `force=true`."
+          }
+        },
+        {
+          "name": "Suspend member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}",
+                "suspend"
+              ]
+            },
+            "description": "Same action the nightly job performs for overdue borrowers."
+          }
+        },
+        {
+          "name": "Reactivate member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}/reactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}",
+                "reactivate"
+              ]
+            },
+            "description": "Back to Active without recording a renewal."
+          }
+        },
+        {
+          "name": "Renew membership",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}/renew",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}",
+                "renew"
+              ]
+            },
+            "description": "Clears suspension and extends the term by one year."
+          }
+        },
+        {
+          "name": "Deactivate member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{memberId}}/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "{{memberId}}",
+                "deactivate"
+              ]
+            },
+            "description": "Active -> Inactive (manual equivalent of the expiry job)."
+          }
+        },
+        {
+          "name": "Download import template",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/import/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "import",
+                "template"
+              ]
+            },
+            "description": "Streams the .xlsx template."
+          }
+        },
+        {
+          "name": "Bulk import members",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/import",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                "import"
+              ]
+            },
+            "description": "multipart field `file`. All-or-nothing.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Borrowing",
+      "description": "Issue and return copies; search borrow records.",
+      "item": [
+        {
+          "name": "Search borrow records",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowing/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrowing",
+                "search"
+              ]
+            },
+            "description": "Advanced search; `status` matched by name (Active, Returned, Overdue).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": [\n    {\n      \"field\": \"status\",\n      \"operator\": \"eq\",\n      \"value\": \"Active\"\n    }\n  ],\n  \"match\": \"all\",\n  \"sort\": [\n    {\n      \"field\": \"dueAt\",\n      \"direction\": \"asc\"\n    }\n  ],\n  \"page\": 1,\n  \"pageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Issue copy to member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowing/issue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrowing",
+                "issue"
+              ]
+            },
+            "description": "Member must be Active and not expired; copy must be Available. Conflicts return 409.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberId\": \"{{memberId}}\",\n  \"bookCopyId\": \"{{copyId}}\",\n  \"dueAt\": \"2026-12-31T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 201 && r.id) { pm.collectionVariables.set('borrowRecordId', r.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Return copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowing/{{borrowRecordId}}/return",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrowing",
+                "{{borrowRecordId}}",
+                "return"
+              ]
+            },
+            "description": "Closes the borrow record. `returnedAt` optional (defaults to now).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnedAt\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Aggregated totals for the librarian home screen.",
+      "item": [
+        {
+          "name": "Get dashboard summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ]
+            },
+            "description": "Catalogue/copy/member/borrowing totals + recent borrows. Served via EF Core or Dapper per `Database:Orm`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "description": "Manual triggers for scheduled maintenance work.",
+      "item": [
+        {
+          "name": "Run membership maintenance now",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs/member-maintenance/run",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "jobs",
+                "member-maintenance",
+                "run"
+              ]
+            },
+            "description": "Runs the same pass as the midnight job: suspend overdue borrowers + mark expired memberships Inactive. Returns a summary. Gated by the EnableMemberSuspensionCronJob feature flag."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Metadata",
+      "description": "Reference data for building the UI (enums, operators, languages, messages).",
+      "item": [
+        {
+          "name": "Enums",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/metadata/enums",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "metadata",
+                "enums"
+              ]
+            },
+            "description": "Every status enum and its allowed values, by name."
+          }
+        },
+        {
+          "name": "Search operators",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/metadata/search-operators",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "metadata",
+                "search-operators"
+              ]
+            },
+            "description": "Operators the advanced-search endpoints accept."
+          }
+        },
+        {
+          "name": "Languages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/metadata/languages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "metadata",
+                "languages"
+              ]
+            },
+            "description": "Supported UI languages (default first)."
+          }
+        },
+        {
+          "name": "Localized messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/metadata/messages?culture=en",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "metadata",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "culture",
+                  "value": "en",
+                  "description": "en | bn",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Localized text for every error code / system message in the requested culture."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Release Notes",
+      "description": "Machine-readable release information.",
+      "item": [
+        {
+          "name": "Current release",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/release-notes/current",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "release-notes",
+                "current"
+              ]
+            },
+            "description": "Version, date, features, fixes, QA checklist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "description": "Structured runtime / build-error / query log files.",
+      "item": [
+        {
+          "name": "List available logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/available?category=runtime-errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "available"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "runtime-errors",
+                  "description": "runtime-errors|build-errors|query-logs|exceptions",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Log categories and, optionally, the files for one category."
+          }
+        },
+        {
+          "name": "Download a log file",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/logs/download?category=runtime-errors&date=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "download"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "runtime-errors"
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "description": "yyyy-MM-dd; omit for today",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Downloads the exact file for a category/date."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "description": "Liveness / readiness.",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "200 Healthy when the app and its dependencies are reachable."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Smoke Flow (run in order)",
+      "description": "Runnable end-to-end happy path. Use the Collection Runner on this folder: it creates a book, a copy, a member, issues and returns the copy, then cascade-deletes the book. IDs are chained via collection variables.",
+      "item": [
+        {
+          "name": "1. Create book",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books"
+              ]
+            },
+            "description": "Creates a uniquely-named book so the flow is re-runnable.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isbn\": \"978-0000000001\",\n  \"title\": \"The Pragmatic Sequel\",\n  \"author\": \"A. Hunt\",\n  \"publishedYear\": 2020,\n  \"category\": \"Software Engineering\",\n  \"publisher\": \"Addison-Wesley\",\n  \"description\": \"Example book created from Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const n = Date.now().toString().slice(-9);",
+                  "pm.collectionVariables.set('smokeIsbn', '978' + n);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const b = pm.response.json();",
+                  "pm.collectionVariables.set('bookId', b.id);",
+                  "pm.expect(b.category).to.eql('Software Engineering');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Get the book",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            },
+            "description": "Confirms it is retrievable."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3. Create a copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/book-copies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "book-copies"
+              ]
+            },
+            "description": "Adds one physical copy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookId\": \"{{bookId}}\",\n  \"barcode\": \"BC-SMOKE-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('smokeBarcode', 'BC-' + Date.now().toString().slice(-8));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('copyId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4. Create a member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ]
+            },
+            "description": "Enrols a member.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"membershipNumber\": \"MEM-900001\",\n  \"name\": \"Jordan Rivera\",\n  \"email\": \"jordan.rivera@example.com\",\n  \"phone\": \"555-0101\",\n  \"address\": \"12 Library Lane\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const n = Date.now().toString().slice(-6);",
+                  "pm.collectionVariables.set('smokeMem', 'MEM-' + n);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('memberId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5. Issue the copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowing/issue",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrowing",
+                "issue"
+              ]
+            },
+            "description": "Lends the copy to the member.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memberId\": \"{{memberId}}\",\n  \"bookCopyId\": \"{{copyId}}\",\n  \"dueAt\": \"2026-12-31T00:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('borrowRecordId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6. Delete book while borrowed (expect 409)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}?force=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Demonstrates the borrowed-dependent guard."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409 Conflict', () => pm.response.to.have.status(409));",
+                  "pm.test('reports borrowed copies', () => pm.expect(pm.response.text()).to.include('BOOK_HAS_BORROWED_COPIES'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7. Return the copy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrowing/{{borrowRecordId}}/return",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrowing",
+                "{{borrowRecordId}}",
+                "return"
+              ]
+            },
+            "description": "Closes the borrow.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"returnedAt\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8. Cascade-delete the book",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}?force=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ],
+              "query": [
+                {
+                  "key": "force",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Now succeeds with force=true, removing the book and its copy."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9. Confirm book is gone",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/books/{{bookId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "books",
+                "{{bookId}}"
+              ]
+            },
+            "description": "Soft-deleted -> hidden from reads."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5254"
+    },
+    {
+      "key": "bookId",
+      "value": ""
+    },
+    {
+      "key": "copyId",
+      "value": ""
+    },
+    {
+      "key": "memberId",
+      "value": ""
+    },
+    {
+      "key": "borrowRecordId",
+      "value": ""
+    }
+  ]
+}
