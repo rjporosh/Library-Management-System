@@ -44,6 +44,38 @@ dotnet ef migrations has-pending-model-changes \
   --project src/Library.Infrastructure --startup-project src/Library.Api
 ```
 
+## Schema & seed SQL (checked in)
+
+`docs/database/schema.sql` — idempotent full schema, generated from the
+migrations. `docs/database/seed-data.sql` — runnable demo/QA rows (books,
+copies, members, one active + one overdue borrow), safe to re-run.
+
+```bash
+# Regenerate the schema script after adding a migration
+dotnet ef migrations script --idempotent --output docs/database/schema.sql \
+  --project src/Library.Infrastructure --startup-project src/Library.Api
+
+# Apply schema + seed to a fresh database (no .NET needed)
+psql "$LMS_DESIGN_CONNECTION" -f docs/database/schema.sql
+psql "$LMS_DESIGN_CONNECTION" -f docs/database/seed-data.sql
+
+# ...or via the docker-compose Postgres
+docker compose exec -T db psql -U library -d library < docs/database/schema.sql
+docker compose exec -T db psql -U library -d library < docs/database/seed-data.sql
+```
+
+## TL;DR for AI agents
+
+```
+# add migration + refresh schema.sql + verify, from repo root:
+dotnet ef migrations add <Name> --project src/Library.Infrastructure --startup-project src/Library.Api --output-dir Persistence/Migrations
+dotnet ef migrations script --idempotent --output docs/database/schema.sql --project src/Library.Infrastructure --startup-project src/Library.Api
+dotnet ef database update --project src/Library.Infrastructure --startup-project src/Library.Api
+dotnet build LibraryManagementSystem.slnx    # expect 0/0
+# no DB handy? demo without migrations:
+Database__Provider=InMemory dotnet run --project src/Library.Api
+```
+
 ## Running the API against a database
 
 - **Development** (`appsettings.Development.json`) uses Postgres with

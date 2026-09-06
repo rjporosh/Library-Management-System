@@ -1,4 +1,26 @@
-﻿CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
+﻿-- ===========================================================================
+-- PostgreSQL schema for the Library Management System.
+--
+-- Generated from the EF Core migrations - DO NOT hand-edit. Regenerate after
+-- adding a migration (run from the repository root):
+--
+--   dotnet ef migrations script --idempotent \
+--     --project src/Library.Infrastructure --startup-project src/Library.Api \
+--     --output docs/database/schema.sql
+--
+-- Apply it to a database directly (idempotent):
+--
+--   psql "$LMS_DESIGN_CONNECTION" -f docs/database/schema.sql
+--
+-- Or let EF apply the migrations instead:
+--
+--   dotnet ef database update \
+--     --project src/Library.Infrastructure --startup-project src/Library.Api
+--
+-- Demo/QA rows: docs/database/seed-data.sql. Full command reference: /MIGRATIONS.md
+-- ===========================================================================
+
+CREATE TABLE IF NOT EXISTS "__EFMigrationsHistory" (
     "MigrationId" character varying(150) NOT NULL,
     "ProductVersion" character varying(32) NOT NULL,
     CONSTRAINT "PK___EFMigrationsHistory" PRIMARY KEY ("MigrationId")
