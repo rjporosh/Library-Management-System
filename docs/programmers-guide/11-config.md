@@ -39,6 +39,15 @@ All keys live in `src/Library.Api/appsettings*.json`. Environment overrides use
 | `EnableOpenTelemetry` | `false` | OTLP traces + metrics |
 | `OtlpEndpoint` | `http://localhost:4317` | OTLP gRPC collector |
 | `ServiceName` | `Library.Api` | OpenTelemetry `service.name` |
+| `EnableRateLimiting` | `true` | per-client fixed-window rate limiting |
+| `RateLimitPermitPerWindow` | `120` | requests allowed per window per client |
+| `RateLimitWindowSeconds` | `60` | window length |
+
+## Localization
+
+Culture: `?culture=` / `?lang=` query, then `Accept-Language`, then English.
+Resources: `src/Library.Api/Resources/SharedResources[.<culture>].resx`.
+See guide [13 — Localization](13-localization.md).
 
 ## Frontend (`frontend/library-web/.env`)
 

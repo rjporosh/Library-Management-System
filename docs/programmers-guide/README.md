@@ -16,3 +16,6 @@ Short, task-focused guides for working on the Library Management System.
 | [10 — Testing](../../tests/DEVELOPERS-GUIDE.md) | running and writing tests |
 | [11 — Configuration reference](11-config.md) | every `appsettings` key |
 | [12 — Troubleshooting](12-troubleshooting.md) | common failures and fixes |
+| [13 — Localization](13-localization.md) | English/Bangla, adding a language |
+| [ADRs](../ADR/README.md) | the decisions behind the design |
+| [C4 diagrams](../architecture/c4.md) · [ER diagram](../database/er-diagram.md) | architecture & schema |
