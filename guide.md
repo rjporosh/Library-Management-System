@@ -21,6 +21,10 @@ A step-by-step walkthrough of running, using, testing and observing the system.
 docker compose up --build
 ```
 
+One command, four containers — PostgreSQL, Jaeger, the API and the web UI
+(`docker-compose.yml`). It is a multi-container app, not one image: the SPA is
+built and served by nginx, which proxies `/api` to the API container.
+
 | Service | URL |
 |---|---|
 | Web UI | http://localhost:8080 |
@@ -29,7 +33,8 @@ docker compose up --build
 | PostgreSQL | localhost:5432 (`library` / `library`) |
 
 The API migrates and seeds the database on first start. Stop with
-`docker compose down` (add `-v` to wipe the database volume).
+`docker compose down`; add `-v` to also wipe the database volume (do this if a
+volume left over from an older schema stops the API booting).
 
 ---
 

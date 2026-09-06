@@ -236,6 +236,26 @@ old `EnsureCreated()`, or a restored dump.
 - `MIGRATIONS.md` + `guide.md` §7 now carry the add-migration / update-db /
   regenerate-schema / drop commands, all runnable from the repo root.
 
+## 4d. Docker stack verified end-to-end (this session)
+
+`docker compose up --build` was actually run: db (Postgres 17, healthy) +
+jaeger + api + web all come up, `curl localhost:8080/api/books` through the
+nginx proxy returns seeded data, `localhost:5254/health` is Healthy.
+
+Fixed along the way:
+- **`DatabaseBootstrapper` was wrong for a fresh DB** - it created the history
+  table, then `HasTablesAsync()` saw *that* table and wrongly took the
+  "adopt existing schema" branch, so `books` was never created and the seeder
+  died with `42P01 relation "books" does not exist`. Rewritten to
+  **try `MigrateAsync()` first and only baseline in the catch** when the error
+  is "object already exists" (SqlState 42P07/42710). Correct for fresh,
+  empty-history and stale-history databases.
+- **`libgssapi_krb5.so.2` warning** on API startup (Npgsql Kerberos probe) -
+  `src/Library.Api/Dockerfile` now installs `libgssapi-krb5-2`.
+- Added `frontend/library-web/.dockerignore` (root `.dockerignore` doesn't
+  apply to that build context) and a root **`README.md`** (quick start +
+  doc index).
+
 ## 5. Landmines
 
 - **Positional-record DTOs** are consumed positionally in tests - any field

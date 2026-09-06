@@ -19,6 +19,12 @@ RUN dotnet publish src/Library.Api/Library.Api.csproj -c Release -o /app --no-re
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
+# Npgsql probes for Kerberos/GSSAPI at startup; without this it logs
+# "Cannot load library libgssapi_krb5.so.2" before falling back to password auth.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
 # The aspnet image ships a non-root 'app' user (UID 1654); run as it.
 COPY --from=build --chown=app:app /app ./
 USER app
