@@ -256,6 +256,29 @@ Fixed along the way:
   apply to that build context) and a root **`README.md`** (quick start +
   doc index).
 
+## 4e. Full Bengali UI + Scalar-in-Docker (this session)
+
+- **Frontend i18n was shallow** - only API error messages were localised;
+  all UI chrome stayed English. Now `src/lib/locales/{en,bn}.ts` +
+  `t()` / `tStatus()` translate the entire interface (nav, page headers,
+  dashboard tiles/cards, table headers, buttons, states, forms, advanced
+  search, bulk-import dialog, toasts/confirms) and dates use `bn-BD`.
+  `en.ts` is the source of truth; `bn.ts` is `Record<MessageKey,string>`
+  so a missing key breaks the build; `i18n.test.ts` enforces parity.
+  Verified in a browser against both the dev server and the docker web UI -
+  EN and বাংলা render end to end, 0 console errors.
+- **Scalar / OpenAPI were Development-only** so the dockerised (Production)
+  API served neither. New `FeatureFlags:EnableApiReference` (default true);
+  nginx also proxies `/scalar/` and `/openapi/`. Verified: `/scalar/v1`
+  and `/openapi/v1.json` 200 through `http://localhost:8080` in compose.
+- **Docker stack fully re-verified**: `docker compose up --build` ->
+  db+jaeger+api+web healthy, `/api/books` POST persists to Postgres,
+  Jaeger receives `Library.Api` traces, EN/BN UI both render.
+  (A long red herring during debugging turned out to be a stray local
+  `dotnet run` on port 5254 from the earlier browser QA - not a stack bug.)
+
+Tests: 57 unit + 23 integration + 11 Vitest, all green; build 0/0.
+
 ## 5. Landmines
 
 - **Positional-record DTOs** are consumed positionally in tests - any field
