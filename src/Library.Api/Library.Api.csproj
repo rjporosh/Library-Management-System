@@ -4,6 +4,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Emit the XML doc file so OpenAPI/Scalar show endpoint titles + descriptions.
+         Suppress "missing / mismatched XML comment" noise - not every DTO member
+         needs prose. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591;CS1573;CS1572;CS1570;CS1734</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

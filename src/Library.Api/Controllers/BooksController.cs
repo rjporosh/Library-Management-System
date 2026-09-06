@@ -57,37 +57,20 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     public ActionResult Search([FromBody] SearchRequestDto request) =>
         bookService.Search(request.ToDomain()).ToActionResult(this);
 
-      /// <summary>
-    /// Retrieves a paginated and optionally    filtered collection of books.
+    /// <summary>
+    /// Lists books (quick text search + paging). Use <c>POST /api/books/search</c> for advanced multi-field search.
     /// </summary>
     /// <remarks>
-    /// Searches the book catalog using a   case-insensitive partial match.
-    ///
-    /// When no search fields are specified,    the search is performed against
-    /// the book title only.
-    ///
-    /// Multiple search fields can be   supplied as a comma-separated list.
-    /// Matching across multiple fields uses    OR semantics.
-    ///
-    /// Examples:
-    /// - /api/books
-    /// - /api/books?search=clean
-    /// - /api/books?search=martin&amp; searchBy=title,author
-    /// - /api/books?pageNumber=2&amp;  pageSize=20
+    /// Case-insensitive partial match. When no fields are given, matches the title only;
+    /// multiple <c>searchBy</c> fields are combined with OR.
+    /// Examples: <c>/api/books</c>, <c>/api/books?search=clean</c>,
+    /// <c>/api/books?search=martin&amp;searchBy=title,author</c>, <c>/api/books?pageNumber=2&amp;pageSize=20</c>.
     /// </remarks>
-    /// <param name="pageNumber">
-    /// The page number. Defaults to the configured     default page number.
-    /// </param>
-    /// <param name="pageSize">
-    /// The number of books per page. Defaults to the   configured default page size.
-    /// The maximum page size is controlled by the  pagination configuration.
-    /// </param>
-    /// <param name="search">Optional   case-insensitive partial search text.</   param>
-    /// <param name="searchBy">
-    /// Optional comma-separated search     fields: title, author, isbn.
-    /// Defaults to title when omitted.
-    /// </param>
-    /// <response code="200">The paginated  book collection was retrieved    successfully.</response>
+    /// <param name="pageNumber">Page number. Defaults to the configured default.</param>
+    /// <param name="pageSize">Books per page. Defaults to the configured default; capped by the pagination configuration.</param>
+    /// <param name="search">Optional case-insensitive partial search text.</param>
+    /// <param name="searchBy">Optional comma-separated fields: title, author, isbn. Defaults to title.</param>
+    /// <response code="200">The paginated book collection was retrieved successfully.</response>
     [HttpGet]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -200,12 +183,6 @@ public sealed class BooksController(BookService bookService, BulkImportService b
             : Ok(book);
     }
 
-    /// <summary>
-    /// Deletes an existing book from the library catalog.
-    /// </summary>
-    /// <param name="id">The unique identifier of the book.</param>
-    /// <response code="204">The book was successfully deleted.</response>
-    /// <response code="404">No book exists with the specified identifier.</response>
     /// <summary>
     /// Deletes a book (soft delete). If the book has copies, the call is
     /// rejected with <c>BOOK_HAS_DEPENDENT_COPIES</c> unless <c>force=true</c>,
