@@ -2,9 +2,11 @@ using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Logging;
 using Library.Application.Common.Options;
 using Library.Application.Features.BulkImport;
+using Library.Application.Features.Dashboard;
 using Library.Infrastructure.BulkImport;
 using Library.Infrastructure.Logging;
 using Library.Infrastructure.Persistence;
+using Library.Infrastructure.Persistence.Dapper;
 using Library.Infrastructure.Persistence.Interceptors;
 using Library.Infrastructure.Persistence.Repositories.EfCore;
 using Library.Infrastructure.Persistence.Repositories.InMemory;
@@ -60,6 +62,21 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IMemberRepository, EfMemberRepository>();
         services.AddScoped<IBorrowRecordRepository, EfBorrowRecordRepository>();
         services.AddScoped<DatabaseSeeder>();
+
+        // Read-path ORM toggle: writes and advanced search always use EF Core;
+        // the dashboard aggregate can use Dapper (one round-trip of SQL COUNTs).
+        var dapperReads = database.UseDapperReads
+            && database.ResolvedProvider is DatabaseProvider.Postgres or DatabaseProvider.Sqlite;
+
+        if (dapperReads)
+        {
+            services.AddSingleton<IDbConnectionFactory, DbConnectionFactory>();
+            services.AddScoped<IDashboardReadStore, DapperDashboardReadStore>();
+        }
+        else
+        {
+            services.AddScoped<IDashboardReadStore, EfDashboardReadStore>();
+        }
     }
 
     private static void AddInMemory(IServiceCollection services)
@@ -74,6 +91,7 @@ public static class InfrastructureServiceExtensions
         services.AddSingleton<IMemberRepository>(sp => sp.GetRequiredService<InMemoryMemberRepository>());
         services.AddSingleton<IBorrowRecordRepository>(sp => sp.GetRequiredService<InMemoryBorrowRecordRepository>());
         services.AddSingleton<IUnitOfWork, NoOpUnitOfWork>();
+        services.AddScoped<IDashboardReadStore, InMemoryDashboardReadStore>();
 
         services.AddSingleton<InMemoryDataSeeder>();
     }
