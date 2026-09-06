@@ -3,6 +3,7 @@ using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
 
+using Library.UnitTests.Common;
 using Library.Infrastructure.Persistence;
 
 namespace Library.UnitTests.Features.Books;
@@ -23,7 +24,7 @@ public sealed class BookServiceTests
         var repository = new FakeBookRepository(
             [firstBook, secondBook]);
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
 var result = await service.GetAllAsync(
     new BookQuery(),
@@ -58,7 +59,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(),
@@ -84,7 +85,7 @@ var result = await service.GetAllAsync(
 
         var repository = new FakeBookRepository(books);
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -114,7 +115,7 @@ var result = await service.GetAllAsync(
         var repository = new FakeBookRepository(
             [matchingBook, nonMatchingBook]);
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -148,7 +149,7 @@ var result = await service.GetAllAsync(
         var repository = new FakeBookRepository(
             [titleMatch, authorMatch, isbnMatch, noMatch]);
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetAllAsync(
             new BookQuery(
@@ -181,7 +182,7 @@ var result = await service.GetAllAsync(
 
         var repository = new FakeBookRepository([book]);
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(book.Id);
 
@@ -200,7 +201,7 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var result = await service.GetByIdAsync(Guid.NewGuid());
 
@@ -212,13 +213,15 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var request = new CreateBookRequest(
             "978-0132350884",
             "Clean Code",
             "Robert C. Martin",
             2008,
+            "Software Engineering",
+            "Prentice Hall",
             "A handbook of agile software craftsmanship.");
 
         var result = await service.CreateAsync(request);
@@ -247,13 +250,15 @@ var result = await service.GetAllAsync(
     {
         var repository = new FakeBookRepository();
 
-        var service = new BookService(repository, new NoOpUnitOfWork());
+        var service = new BookService(repository, new StubBookCopyRepository(), new StubBorrowRecordRepository(), new NoOpUnitOfWork());
 
         var request = new CreateBookRequest(
             "978-1234567890",
             "Test Book",
             "Test Author",
             2024,
+            "General",
+            "Test Publisher",
             null);
 
         var result = await service.CreateAsync(request);

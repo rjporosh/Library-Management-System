@@ -15,7 +15,7 @@ import {
   StatusPill,
   TextInput,
 } from '@/components/ui'
-import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
+import { cascadeDelete, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import type { BookCopy } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
@@ -78,22 +78,15 @@ export default function BookCopiesPage() {
     onError: (e) => toastError(normaliseError(e).message),
   })
 
-  const remove = useMutation({
-    mutationFn: (id: string) => copiesApi.remove(id),
-    onSuccess: () => {
-      toastSuccess('Copy deleted')
-      void qc.invalidateQueries({ queryKey: ['copies'] })
-    },
-    onError: (e) => toastError(normaliseError(e).message),
-  })
-
   const askDelete = async (c: BookCopy) => {
-    const ok = await confirmAction({
-      title: `Delete copy ${c.barcode}?`,
-      danger: true,
-      confirmText: 'Delete',
-    })
-    if (ok) remove.mutate(c.id)
+    const deleted = await cascadeDelete(
+      (force) => copiesApi.remove(c.id, force),
+      { title: `Delete copy ${c.barcode}?`, entity: 'book copy' },
+    )
+    if (deleted) {
+      void qc.invalidateQueries({ queryKey: ['copies'] })
+      void qc.invalidateQueries({ queryKey: ['dashboard'] })
+    }
   }
 
   const columns: Column<BookCopy>[] = [

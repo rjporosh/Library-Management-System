@@ -8,47 +8,31 @@ public sealed class InMemoryBorrowRecordRepository : IBorrowRecordRepository
 {
     private readonly List<BorrowRecord> _records = [];
 
-    public Task<BorrowRecord?> GetByIdAsync(
-        Guid id,
-        CancellationToken cancellationToken = default)
-    {
-        var record = _records.FirstOrDefault(x => x.Id == id);
+    public Task<BorrowRecord?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_records.FirstOrDefault(x => x.Id == id && !x.IsDeleted));
 
-        return Task.FromResult(record);
-    }
+    public IQueryable<BorrowRecord> Query() => _records.Where(r => !r.IsDeleted).AsQueryable();
 
-    public IQueryable<BorrowRecord> Query() => _records.AsQueryable();
-
-    public Task<IReadOnlyList<BorrowRecord>> GetByMemberIdAsync(
-        Guid memberId,
-        CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<BorrowRecord>> GetByMemberIdAsync(Guid memberId, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<BorrowRecord> records =
-            [.. _records.Where(x => x.MemberId == memberId).OrderByDescending(x => x.BorrowedAt)];
-
+            [.. _records.Where(x => x.MemberId == memberId && !x.IsDeleted).OrderByDescending(x => x.BorrowedAt)];
         return Task.FromResult(records);
     }
 
-    public Task<IReadOnlyList<BorrowRecord>> GetAllAsync(
-        CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<BorrowRecord>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<BorrowRecord> records = [.. _records];
-
+        IReadOnlyList<BorrowRecord> records = [.. _records.Where(r => !r.IsDeleted)];
         return Task.FromResult(records);
     }
 
-    public Task AddAsync(
-        BorrowRecord record,
-        CancellationToken cancellationToken = default)
+    public Task AddAsync(BorrowRecord record, CancellationToken cancellationToken = default)
     {
         _records.Add(record);
-
         return Task.CompletedTask;
     }
 
-    public Task UpdateAsync(
-        BorrowRecord record,
-        CancellationToken cancellationToken = default)
+    public Task UpdateAsync(BorrowRecord record, CancellationToken cancellationToken = default)
     {
         var index = _records.FindIndex(x => x.Id == record.Id);
         if (index >= 0)
@@ -59,40 +43,23 @@ public sealed class InMemoryBorrowRecordRepository : IBorrowRecordRepository
         return Task.CompletedTask;
     }
 
-    public Task<bool> HasActiveBorrowAsync(
-        Guid memberId,
-        CancellationToken cancellationToken = default)
+    public Task DeleteAsync(BorrowRecord record, CancellationToken cancellationToken = default)
     {
-        var hasActive = _records.Any(x =>
-            x.MemberId == memberId &&
-            x.Status == BorrowStatus.Active);
-
-        return Task.FromResult(hasActive);
+        record.MarkDeleted();
+        return Task.CompletedTask;
     }
 
-    public Task<bool> HasActiveBorrowForCopyAsync(
-        Guid bookCopyId,
-        CancellationToken cancellationToken = default)
+    public Task<bool> HasActiveBorrowAsync(Guid memberId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_records.Any(x => x.MemberId == memberId && !x.IsDeleted && x.Status == BorrowStatus.Active));
+
+    public Task<bool> HasActiveBorrowForCopyAsync(Guid bookCopyId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_records.Any(x => x.BookCopyId == bookCopyId && !x.IsDeleted && x.Status == BorrowStatus.Active));
+
+    public Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(DateTime asOfUtc, CancellationToken cancellationToken = default)
     {
-        var hasActive = _records.Any(x =>
-            x.BookCopyId == bookCopyId &&
-            x.Status == BorrowStatus.Active);
-
-        return Task.FromResult(hasActive);
-    }
-
-    public Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(
-        DateTime asOfUtc,
-        CancellationToken cancellationToken = default)
-    {
-        IReadOnlyList<BorrowRecord> overdue =
-            [.. _records.Where(x => x.IsOverdue(asOfUtc))];
-
+        IReadOnlyList<BorrowRecord> overdue = [.. _records.Where(x => !x.IsDeleted && x.IsOverdue(asOfUtc))];
         return Task.FromResult(overdue);
     }
 
-    public void Seed(IEnumerable<BorrowRecord> records)
-    {
-        _records.AddRange(records);
-    }
+    public void Seed(IEnumerable<BorrowRecord> records) => _records.AddRange(records);
 }

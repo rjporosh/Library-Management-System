@@ -84,6 +84,8 @@ public sealed class BooksApiTests
             "Integration Testing with ASP.NET Core",
             "Test Author",
             2026,
+            "Testing",
+            "CI Press",
             "Created by an integration test.");
 
         var response = await client.PostAsJsonAsync(
@@ -115,6 +117,8 @@ public sealed class BooksApiTests
             "Retrievable Integration Book",
             "Integration Test Author",
             2026,
+            "Testing",
+            "CI Press",
             null);
 
         var createResponse = await client.PostAsJsonAsync(

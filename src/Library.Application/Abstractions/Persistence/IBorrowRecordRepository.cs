@@ -26,6 +26,11 @@ public interface IBorrowRecordRepository
         BorrowRecord record,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Soft-deletes a borrow record (used by member cascade delete).</summary>
+    Task DeleteAsync(
+        BorrowRecord record,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// True when the member already has an active (not yet returned)
     /// borrow. Enforces the "one active book per member" business rule.

@@ -9,7 +9,8 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
 {
     public string ResourceName => "book";
 
-    public IReadOnlyList<string> RequiredHeaders { get; } = ["ISBN", "Title", "Author", "PublishedYear"];
+    public IReadOnlyList<string> RequiredHeaders { get; } =
+        ["ISBN", "Title", "Author", "Category", "Publisher", "PublishedYear"];
 
     public ImportTemplateSpec Template { get; } = new(
         "book-import-template",
@@ -18,12 +19,14 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
             new ImportColumn("ISBN", true, "10- or 13-digit ISBN; hyphens allowed.", SupportedValues.Isbn),
             new ImportColumn("Title", true, "Book title."),
             new ImportColumn("Author", true, "Primary author."),
+            new ImportColumn("Category", true, "Subject / shelf category, e.g. Software Engineering."),
+            new ImportColumn("Publisher", true, "Publishing house."),
             new ImportColumn("PublishedYear", true, "Year of publication.", SupportedValues.PublishedYear),
             new ImportColumn("Description", false, "Optional short description.")
         ],
         [
-            ["9780132350884", "Clean Code", "Robert C. Martin", "2008", "A handbook of agile software craftsmanship."],
-            ["978-0135957059", "The Pragmatic Programmer", "David Thomas & Andrew Hunt", "2019", "Your journey to mastery."]
+            ["9780132350884", "Clean Code", "Robert C. Martin", "Software Engineering", "Prentice Hall", "2008", "A handbook of agile software craftsmanship."],
+            ["978-0135957059", "The Pragmatic Programmer", "David Thomas & Andrew Hunt", "Software Engineering", "Addison-Wesley", "2019", "Your journey to mastery."]
         ]);
 
     public ValueTask<RowParseResult<Book>> ParseRowAsync(ImportRow row, CancellationToken cancellationToken) =>
@@ -34,6 +37,8 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
         var isbn = row.Cells.GetValueOrDefault("ISBN");
         var title = row.Cells.GetValueOrDefault("Title");
         var author = row.Cells.GetValueOrDefault("Author");
+        var category = row.Cells.GetValueOrDefault("Category");
+        var publisher = row.Cells.GetValueOrDefault("Publisher");
         var yearRaw = row.Cells.GetValueOrDefault("PublishedYear");
         var description = row.Cells.GetValueOrDefault("Description");
 
@@ -46,7 +51,8 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
                 "publishedYear", row.RowNumber, true, SupportedValues.PublishedYear));
         }
 
-        errors.AddRange(BookValidator.Validate(new BookCandidate(isbn, title, author, year, description), row.RowNumber));
+        errors.AddRange(BookValidator.Validate(
+            new BookCandidate(isbn, title, author, year, category, publisher, description), row.RowNumber));
 
         if (errors.Count > 0)
         {
@@ -54,7 +60,8 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
         }
 
         var book = new Book(Guid.NewGuid(), isbn!.Trim(), title!.Trim(), author!.Trim(), year,
-            string.IsNullOrWhiteSpace(description) ? null : description!.Trim());
+            string.IsNullOrWhiteSpace(description) ? null : description!.Trim(),
+            category!.Trim(), publisher!.Trim());
 
         return new RowParseResult<Book>(book, [], NormaliseIsbn(isbn!));
     }

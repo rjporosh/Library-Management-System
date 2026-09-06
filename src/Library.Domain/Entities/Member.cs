@@ -1,16 +1,19 @@
+using Library.Domain.Common;
 using Library.Domain.Enums;
 
 namespace Library.Domain.Entities;
 
-public sealed class Member
+public sealed class Member : Entity
 {
-    public Guid Id { get; init; }
-
     public string MembershipNumber { get; private set; } = string.Empty;
 
     public string Name { get; private set; } = string.Empty;
 
     public string Email { get; private set; } = string.Empty;
+
+    public string Phone { get; private set; } = string.Empty;
+
+    public string Address { get; private set; } = string.Empty;
 
     public MemberStatus Status { get; private set; }
 
@@ -42,12 +45,16 @@ public sealed class Member
         string membershipNumber,
         string name,
         string email,
-        DateTime? membershipExpiresAt = null)
+        DateTime? membershipExpiresAt = null,
+        string phone = "",
+        string address = "")
+        : base(id)
     {
-        Id = id;
         MembershipNumber = membershipNumber;
         Name = name;
         Email = email;
+        Phone = phone;
+        Address = address;
         Status = MemberStatus.Active;
         MembershipExpiresAt = membershipExpiresAt
             ?? DateTime.UtcNow.Date.AddDays(MembershipTermDays);
@@ -57,11 +64,13 @@ public sealed class Member
     public bool IsExpired(DateTime asOfUtc) => MembershipExpiresAt < asOfUtc;
 
     /// <summary>Updates the editable profile fields. Does not touch status or expiry.</summary>
-    public void UpdateProfile(string membershipNumber, string name, string email)
+    public void UpdateProfile(string membershipNumber, string name, string email, string phone = "", string address = "")
     {
         MembershipNumber = membershipNumber;
         Name = name;
         Email = email;
+        Phone = phone;
+        Address = address;
     }
 
     public bool CanBorrow()

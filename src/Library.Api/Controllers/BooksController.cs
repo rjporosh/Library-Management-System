@@ -206,19 +206,20 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     /// <param name="id">The unique identifier of the book.</param>
     /// <response code="204">The book was successfully deleted.</response>
     /// <response code="404">No book exists with the specified identifier.</response>
+    /// <summary>
+    /// Deletes a book (soft delete). If the book has copies, the call is
+    /// rejected with <c>BOOK_HAS_DEPENDENT_COPIES</c> unless <c>force=true</c>,
+    /// in which case the book and all its copies are deleted together. If any
+    /// copy is currently borrowed the delete is always blocked
+    /// (<c>BOOK_HAS_BORROWED_COPIES</c>).
+    /// </summary>
+    /// <response code="204">Deleted.</response>
+    /// <response code="404">No book with that id.</response>
+    /// <response code="409">Dependent copies exist (confirm with force=true) or a copy is borrowed.</response>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(
-        Guid id,
-        CancellationToken cancellationToken)
-    {
-        var deleted = await bookService.DeleteAsync(
-            id,
-            cancellationToken);
-
-        return deleted
-            ? NoContent()
-            : NotFound();
-    }
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] bool force = false, CancellationToken cancellationToken = default) =>
+        (await bookService.DeleteAsync(id, force, cancellationToken)).ToActionResult(this, StatusCodes.Status204NoContent);
 }

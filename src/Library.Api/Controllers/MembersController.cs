@@ -134,8 +134,8 @@ public sealed class MembersController(MemberService memberService, BulkImportSer
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
-        (await memberService.DeleteAsync(id, cancellationToken)).ToActionResult(this, StatusCodes.Status204NoContent);
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] bool force = false, CancellationToken cancellationToken = default) =>
+        (await memberService.DeleteAsync(id, force, cancellationToken)).ToActionResult(this, StatusCodes.Status204NoContent);
 
     /// <summary>Suspends a member (same action the nightly job performs for overdue borrowers).</summary>
     /// <response code="200">The suspended member.</response>

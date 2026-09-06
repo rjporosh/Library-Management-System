@@ -144,6 +144,6 @@ public sealed class BookCopiesController(BookCopyService bookCopyService, BulkIm
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
-        (await bookCopyService.DeleteAsync(id, cancellationToken)).ToActionResult(this, StatusCodes.Status204NoContent);
+    public async Task<ActionResult> Delete(Guid id, [FromQuery] bool force = false, CancellationToken cancellationToken = default) =>
+        (await bookCopyService.DeleteAsync(id, force, cancellationToken)).ToActionResult(this, StatusCodes.Status204NoContent);
 }

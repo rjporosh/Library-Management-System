@@ -1,48 +1,45 @@
 using Library.Application.Abstractions.Persistence;
 using Library.Domain.Entities;
 
-namespace Library.Infrastructure.Persistence.Repositories.InMemory;
+namespace Library.UnitTests.Common;
 
-public sealed class InMemoryBookCopyRepository : IBookCopyRepository
+/// <summary>In-memory <see cref="IBookCopyRepository"/> for service tests. Seed copies via the constructor.</summary>
+public sealed class StubBookCopyRepository(IEnumerable<BookCopy>? copies = null) : IBookCopyRepository
 {
-    private readonly List<BookCopy> _copies = [];
+    public List<BookCopy> Copies { get; } = copies?.ToList() ?? [];
 
     public Task<IReadOnlyList<BookCopy>> GetByBookIdAsync(Guid bookId, CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<BookCopy> copies = [.. _copies.Where(x => x.BookId == bookId && !x.IsDeleted)];
-        return Task.FromResult(copies);
+        IReadOnlyList<BookCopy> r = [.. Copies.Where(c => c.BookId == bookId && !c.IsDeleted)];
+        return Task.FromResult(r);
     }
 
-    public IQueryable<BookCopy> Query() => _copies.Where(c => !c.IsDeleted).AsQueryable();
+    public IQueryable<BookCopy> Query() => Copies.Where(c => !c.IsDeleted).AsQueryable();
 
     public Task<BookCopy?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_copies.FirstOrDefault(x => x.Id == id && !x.IsDeleted));
+        Task.FromResult(Copies.FirstOrDefault(c => c.Id == id && !c.IsDeleted));
 
     public Task<bool> ExistsByBarcodeAsync(string barcode, Guid? excludingId = null, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_copies.Any(x => !x.IsDeleted
-            && string.Equals(x.Barcode, barcode, StringComparison.OrdinalIgnoreCase)
-            && (excludingId is null || x.Id != excludingId)));
+        Task.FromResult(Copies.Any(c => !c.IsDeleted
+            && string.Equals(c.Barcode, barcode, StringComparison.OrdinalIgnoreCase)
+            && (excludingId is null || c.Id != excludingId)));
 
     public Task AddAsync(BookCopy bookCopy, CancellationToken cancellationToken = default)
     {
-        _copies.Add(bookCopy);
+        Copies.Add(bookCopy);
         return Task.CompletedTask;
     }
 
     public Task AddRangeAsync(IEnumerable<BookCopy> bookCopies, CancellationToken cancellationToken = default)
     {
-        _copies.AddRange(bookCopies);
+        Copies.AddRange(bookCopies);
         return Task.CompletedTask;
     }
 
     public Task UpdateAsync(BookCopy bookCopy, CancellationToken cancellationToken = default)
     {
-        var index = _copies.FindIndex(x => x.Id == bookCopy.Id);
-        if (index >= 0)
-        {
-            _copies[index] = bookCopy;
-        }
-
+        var i = Copies.FindIndex(c => c.Id == bookCopy.Id);
+        if (i >= 0) Copies[i] = bookCopy;
         return Task.CompletedTask;
     }
 
@@ -51,6 +48,4 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         bookCopy.MarkDeleted();
         return Task.CompletedTask;
     }
-
-    public void Seed(IEnumerable<BookCopy> copies) => _copies.AddRange(copies);
 }

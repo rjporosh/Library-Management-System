@@ -13,7 +13,7 @@ import {
   PageHeader,
   TextInput,
 } from '@/components/ui'
-import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
+import { cascadeDelete, normaliseError, toastSuccess } from '@/lib/api'
 import type { Book } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
@@ -21,6 +21,8 @@ const FIELDS: FieldDef[] = [
   { name: 'title', label: 'Title', type: 'text' },
   { name: 'author', label: 'Author', type: 'text' },
   { name: 'isbn', label: 'ISBN', type: 'text' },
+  { name: 'category', label: 'Category', type: 'text' },
+  { name: 'publisher', label: 'Publisher', type: 'text' },
   { name: 'publishedYear', label: 'Published year', type: 'number' },
 ]
 
@@ -28,6 +30,8 @@ interface FormValues {
   isbn: string
   title: string
   author: string
+  category: string
+  publisher: string
   publishedYear: string
   description: string
 }
@@ -36,6 +40,8 @@ const EMPTY_FORM: FormValues = {
   isbn: '',
   title: '',
   author: '',
+  category: '',
+  publisher: '',
   publishedYear: '',
   description: '',
 }
@@ -66,6 +72,8 @@ export default function BooksPage() {
       isbn: book.isbn,
       title: book.title,
       author: book.author,
+      category: book.category,
+      publisher: book.publisher,
       publishedYear: String(book.publishedYear),
       description: book.description ?? '',
     })
@@ -79,6 +87,8 @@ export default function BooksPage() {
         isbn: form.isbn.trim(),
         title: form.title.trim(),
         author: form.author.trim(),
+        category: form.category.trim(),
+        publisher: form.publisher.trim(),
         publishedYear: Number(form.publishedYear),
         description: form.description.trim() || null,
       }
@@ -98,23 +108,16 @@ export default function BooksPage() {
     },
   })
 
-  const remove = useMutation({
-    mutationFn: (id: string) => booksApi.remove(id),
-    onSuccess: () => {
-      toastSuccess('Book deleted')
-      void qc.invalidateQueries({ queryKey: ['books'] })
-    },
-    onError: (e) => toastError(normaliseError(e).message),
-  })
-
   const askDelete = async (book: Book) => {
-    const ok = await confirmAction({
-      title: `Delete “${book.title}”?`,
-      text: 'This cannot be undone.',
-      danger: true,
-      confirmText: 'Delete',
-    })
-    if (ok) remove.mutate(book.id)
+    const deleted = await cascadeDelete(
+      (force) => booksApi.remove(book.id, force),
+      { title: `Delete “${book.title}”?`, entity: 'book' },
+    )
+    if (deleted) {
+      void qc.invalidateQueries({ queryKey: ['books'] })
+      void qc.invalidateQueries({ queryKey: ['copies'] })
+      void qc.invalidateQueries({ queryKey: ['dashboard'] })
+    }
   }
 
   const columns: Column<Book>[] = [
@@ -130,6 +133,17 @@ export default function BooksPage() {
       ),
     },
     { key: 'isbn', header: 'ISBN', sortable: true, render: (b) => <span className="font-mono text-xs">{b.isbn}</span> },
+    {
+      key: 'category',
+      header: 'Category',
+      sortable: true,
+      render: (b) => (
+        <div className="text-sm">
+          {b.category}
+          <span className="block text-xs text-slate-400">{b.publisher}</span>
+        </div>
+      ),
+    },
     { key: 'publishedYear', header: 'Year', sortable: true, render: (b) => b.publishedYear },
     {
       key: 'actions',
@@ -230,6 +244,22 @@ export default function BooksPage() {
               onChange={(e) => setForm({ ...form, author: e.target.value })}
             />
           </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Category" error={fieldErrors.category}>
+              <TextInput
+                value={form.category}
+                invalid={!!fieldErrors.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Publisher" error={fieldErrors.publisher}>
+              <TextInput
+                value={form.publisher}
+                invalid={!!fieldErrors.publisher}
+                onChange={(e) => setForm({ ...form, publisher: e.target.value })}
+              />
+            </FormField>
+          </div>
           <FormField label="Published year" error={fieldErrors.publishedYear}>
             <TextInput
               type="number"

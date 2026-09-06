@@ -64,8 +64,11 @@ public static class ResultActionExtensions
             return StatusCodes.Status404NotFound;
         }
 
-        if (code.EndsWith("_DUPLICATE", StringComparison.Ordinal) ||
-            code is ErrorCodes.Conflict or ErrorCodes.MemberHasActiveBorrow or ErrorCodes.BookCopyBorrowed)
+        if (code.EndsWith("_DUPLICATE", StringComparison.Ordinal)
+            || code.EndsWith("_HAS_BORROWED_COPIES", StringComparison.Ordinal)
+            || code.EndsWith("_HAS_DEPENDENT_COPIES", StringComparison.Ordinal)
+            || code.EndsWith("_HAS_BORROW_HISTORY", StringComparison.Ordinal)
+            || code is ErrorCodes.Conflict or ErrorCodes.MemberHasActiveBorrow or ErrorCodes.BookCopyBorrowed)
         {
             return StatusCodes.Status409Conflict;
         }

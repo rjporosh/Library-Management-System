@@ -4,10 +4,14 @@ namespace Library.Application.Features.Members.Models;
 public sealed record CreateMemberRequest(
     string MembershipNumber,
     string Name,
-    string Email);
+    string Email,
+    string Phone,
+    string Address);
 
 /// <summary>Editable member fields.</summary>
 public sealed record UpdateMemberRequest(
     string MembershipNumber,
     string Name,
-    string Email);
+    string Email,
+    string Phone,
+    string Address);

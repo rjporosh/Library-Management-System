@@ -16,6 +16,8 @@ export interface Book {
   isbn: string
   title: string
   author: string
+  category: string
+  publisher: string
   description?: string | null
   publishedYear: number
 }
@@ -32,6 +34,8 @@ export interface Member {
   membershipNumber: string
   name: string
   email: string
+  phone: string
+  address: string
   status: MemberStatus
   membershipExpiresAt: string
   suspendedAt?: string | null

@@ -20,9 +20,13 @@ public static class ErrorCodes
     public const string BookIsbnInvalid = "BOOK_ISBN_INVALID";
     public const string BookTitleRequired = "BOOK_TITLE_REQUIRED";
     public const string BookAuthorRequired = "BOOK_AUTHOR_REQUIRED";
+    public const string BookCategoryRequired = "BOOK_CATEGORY_REQUIRED";
+    public const string BookPublisherRequired = "BOOK_PUBLISHER_REQUIRED";
     public const string BookYearInvalid = "BOOK_YEAR_INVALID";
     public const string BookIsbnDuplicate = "BOOK_ISBN_DUPLICATE";
     public const string BookNotFound = "BOOK_NOT_FOUND";
+    public const string BookHasBorrowedCopies = "BOOK_HAS_BORROWED_COPIES";
+    public const string BookHasDependentCopies = "BOOK_HAS_DEPENDENT_COPIES";
 
     // Member
     public const string MemberNumberRequired = "MEMBER_NUMBER_REQUIRED";
@@ -31,8 +35,13 @@ public static class ErrorCodes
     public const string MemberEmailInvalid = "MEMBER_EMAIL_INVALID";
     public const string MemberNumberDuplicate = "MEMBER_NUMBER_DUPLICATE";
     public const string MemberEmailDuplicate = "MEMBER_EMAIL_DUPLICATE";
+    public const string MemberNameInvalid = "MEMBER_NAME_INVALID";
+    public const string MemberPhoneRequired = "MEMBER_PHONE_REQUIRED";
+    public const string MemberAddressRequired = "MEMBER_ADDRESS_REQUIRED";
     public const string MemberNotFound = "MEMBER_NOT_FOUND";
     public const string MemberHasActiveBorrow = "MEMBER_HAS_ACTIVE_BORROW";
+    public const string MemberHasBorrowHistory = "MEMBER_HAS_BORROW_HISTORY";
+    public const string MemberDuplicate = "MEMBER_DUPLICATE";
     public const string MemberStatusInvalid = "MEMBER_STATUS_INVALID";
 
     // Book copy
@@ -43,6 +52,7 @@ public static class ErrorCodes
     public const string BookCopyNotFound = "BOOKCOPY_NOT_FOUND";
     public const string BookCopyStatusInvalid = "BOOKCOPY_STATUS_INVALID";
     public const string BookCopyBorrowed = "BOOKCOPY_BORROWED";
+    public const string BookCopyHasBorrowHistory = "BOOKCOPY_HAS_BORROW_HISTORY";
 
     // Search
     public const string SearchFieldUnknown = "SEARCH_FIELD_UNKNOWN";

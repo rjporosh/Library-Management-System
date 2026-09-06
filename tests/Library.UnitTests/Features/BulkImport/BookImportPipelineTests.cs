@@ -11,7 +11,8 @@ namespace Library.UnitTests.Features.BulkImport;
 /// <summary>Covers the ten bulk-import acceptance scenarios from MASTER_SPECIFICATION.md §21.</summary>
 public sealed class BookImportPipelineTests
 {
-    private static readonly string[] Headers = ["ISBN", "Title", "Author", "PublishedYear", "Description"];
+    private static readonly string[] Headers =
+        ["ISBN", "Title", "Author", "Category", "Publisher", "PublishedYear", "Description"];
 
     private static (BulkImportPipeline Pipeline, StubBookRepository Books) Build(WorkbookData workbook)
     {
@@ -28,6 +29,8 @@ public sealed class BookImportPipelineTests
             ["ISBN"] = r.Isbn,
             ["Title"] = r.Title,
             ["Author"] = r.Author,
+            ["Category"] = "Software Engineering",
+            ["Publisher"] = "Test Press",
             ["PublishedYear"] = r.Year,
             ["Description"] = r.Desc
         })).ToList<ImportRow>();

@@ -528,6 +528,12 @@ public sealed class BorrowingServiceTests
             return Task.CompletedTask;
         }
 
+        public Task DeleteAsync(BorrowRecord record, CancellationToken cancellationToken = default)
+        {
+            record.MarkDeleted();
+            return Task.CompletedTask;
+        }
+
         public Task<bool> HasActiveBorrowAsync(
             Guid memberId,
             CancellationToken cancellationToken = default)

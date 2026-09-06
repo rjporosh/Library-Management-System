@@ -96,3 +96,63 @@ export async function confirmAction(options: {
   })
   return result.isConfirmed
 }
+
+/**
+ * Runs a delete that supports smart cascade:
+ *  - first attempt without force;
+ *  - if the API asks to confirm dependent data (code ends `_HAS_DEPENDENT_COPIES`
+ *    or `_HAS_BORROW_HISTORY`), shows the API's message and retries with force;
+ *  - if the API blocks the delete (code ends `_HAS_BORROWED_COPIES` /
+ *    `_HAS_ACTIVE_BORROW`), shows a blocking alert and stops.
+ * Returns true when something was actually deleted.
+ */
+export async function cascadeDelete(
+  run: (force: boolean) => Promise<unknown>,
+  opts: { title: string; entity: string },
+): Promise<boolean> {
+  const confirmed = await confirmAction({
+    title: opts.title,
+    text: `The ${opts.entity} will be soft-deleted (recoverable). Continue?`,
+    danger: true,
+    confirmText: 'Delete',
+  })
+  if (!confirmed) return false
+
+  try {
+    await run(false)
+    toastSuccess(`${opts.entity[0].toUpperCase() + opts.entity.slice(1)} deleted`)
+    return true
+  } catch (err) {
+    const n = normaliseError(err)
+    const code = n.errors[0]?.errorCode ?? ''
+
+    if (/_HAS_BORROWED_COPIES$|_HAS_ACTIVE_BORROW$/.test(code)) {
+      await Swal.fire({ icon: 'error', title: 'Cannot delete', text: n.message })
+      return false
+    }
+
+    if (/_HAS_DEPENDENT_COPIES$|_HAS_BORROW_HISTORY$/.test(code)) {
+      const go = await Swal.fire({
+        icon: 'warning',
+        title: 'Dependent data exists',
+        text: n.message,
+        showCancelButton: true,
+        confirmButtonText: 'Delete everything',
+        confirmButtonColor: '#dc2626',
+        reverseButtons: true,
+      })
+      if (!go.isConfirmed) return false
+      try {
+        await run(true)
+        toastSuccess(`${opts.entity[0].toUpperCase() + opts.entity.slice(1)} and related data deleted`)
+        return true
+      } catch (err2) {
+        toastError(normaliseError(err2).message)
+        return false
+      }
+    }
+
+    toastError(n.message)
+    return false
+  }
+}

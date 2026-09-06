@@ -54,7 +54,9 @@ public sealed class MemberServiceTests
             new CreateMemberRequest(
                 "MEM-001",
                 "John Doe",
-                "john@example.com"));
+                "john@example.com",
+                "555-0001",
+                "1 Main St"));
 
         Assert.True(outcome.IsSuccess);
         var result = outcome.Value!;
@@ -86,13 +88,17 @@ public sealed class MemberServiceTests
             new CreateMemberRequest(
                 "MEM-001",
                 "John Doe",
-                "john@example.com"));
+                "john@example.com",
+                "555-0001",
+                "1 Main St"));
 
         var second = await service.CreateAsync(
             new CreateMemberRequest(
                 "MEM-002",
                 "Jane Doe",
-                "jane@example.com"));
+                "jane@example.com",
+                "555-0002",
+                "2 Main St"));
 
         Assert.True(first.IsSuccess);
         Assert.True(second.IsSuccess);

@@ -1,26 +1,24 @@
+using Library.Domain.Common;
 using Library.Domain.Enums;
 
 namespace Library.Domain.Entities;
 
-public sealed class BookCopy
+public sealed class BookCopy : Entity
 {
-    public Guid Id { get; init; }
-
-    public Guid BookId { get; init; }
+    public Guid BookId { get; private init; }
 
     public string Barcode { get; private set; } = string.Empty;
 
     public BookCopyStatus Status { get; private set; }
 
     // EF Core materialisation only.
-    private BookCopy() { }
-
-    public BookCopy(
-        Guid id,
-        Guid bookId,
-        string barcode)
+    private BookCopy()
     {
-        Id = id;
+    }
+
+    public BookCopy(Guid id, Guid bookId, string barcode)
+        : base(id)
+    {
         BookId = bookId;
         Barcode = barcode;
         Status = BookCopyStatus.Available;

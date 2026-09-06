@@ -21,7 +21,8 @@ export const booksApi = {
     http.post<Book>('/books', body).then((r) => r.data),
   update: (id: string, body: Omit<Book, 'id'>) =>
     http.put<Book>(`/books/${id}`, body).then((r) => r.data),
-  remove: (id: string) => http.delete(`/books/${id}`).then((r) => r.data),
+  remove: (id: string, force = false) =>
+    http.delete(`/books/${id}`, { params: { force } }).then((r) => r.data),
   importTemplateUrl: `${http.defaults.baseURL}/books/import/template`,
   import: (file: File) => uploadFile('/books/import', file),
 }
@@ -43,13 +44,21 @@ export const copiesApi = {
     http
       .post<BookCopy>(`/book-copies/${id}/status`, { status })
       .then((r) => r.data),
-  remove: (id: string) =>
-    http.delete(`/book-copies/${id}`).then((r) => r.data),
+  remove: (id: string, force = false) =>
+    http.delete(`/book-copies/${id}`, { params: { force } }).then((r) => r.data),
   importTemplateUrl: `${http.defaults.baseURL}/book-copies/import/template`,
   import: (file: File) => uploadFile('/book-copies/import', file),
 }
 
 // --- members ----------------------------------------------------------
+
+export interface MemberInput {
+  membershipNumber: string
+  name: string
+  email: string
+  phone: string
+  address: string
+}
 
 export const membersApi = {
   search: (req: SearchRequest) =>
@@ -57,13 +66,12 @@ export const membersApi = {
   get: (id: string) => http.get<Member>(`/members/${id}`).then((r) => r.data),
   detail: (id: string) =>
     http.get<MemberDetail>(`/members/${id}/detail`).then((r) => r.data),
-  create: (body: { membershipNumber: string; name: string; email: string }) =>
+  create: (body: MemberInput) =>
     http.post<Member>('/members', body).then((r) => r.data),
-  update: (
-    id: string,
-    body: { membershipNumber: string; name: string; email: string },
-  ) => http.put<Member>(`/members/${id}`, body).then((r) => r.data),
-  remove: (id: string) => http.delete(`/members/${id}`).then((r) => r.data),
+  update: (id: string, body: MemberInput) =>
+    http.put<Member>(`/members/${id}`, body).then((r) => r.data),
+  remove: (id: string, force = false) =>
+    http.delete(`/members/${id}`, { params: { force } }).then((r) => r.data),
   lifecycle: (id: string, action: 'suspend' | 'reactivate' | 'renew' | 'deactivate') =>
     http.post<Member>(`/members/${id}/${action}`).then((r) => r.data),
   importTemplateUrl: `${http.defaults.baseURL}/members/import/template`,

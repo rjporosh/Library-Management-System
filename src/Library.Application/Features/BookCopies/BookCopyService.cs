@@ -122,7 +122,7 @@ public sealed class BookCopyService(
         return Result.Success(Map(copy));
     }
 
-    public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<Result> DeleteAsync(Guid id, bool force = false, CancellationToken cancellationToken = default)
     {
         var copy = await bookCopyRepository.GetByIdAsync(id, cancellationToken);
         if (copy is null)
@@ -134,11 +134,31 @@ public sealed class BookCopyService(
             await borrowRecordRepository.HasActiveBorrowForCopyAsync(id, cancellationToken))
         {
             return Result.Failure(new ApiError(ErrorCodes.BookCopyBorrowed,
-                "This copy is currently borrowed and cannot be deleted.", "id"));
+                $"Copy '{copy.Barcode}' is currently borrowed and cannot be deleted. Process the return first.", "id"));
+        }
+
+        var historyCount = borrowRecordRepository.Query().Count(r => r.BookCopyId == id);
+        if (historyCount > 0 && !force)
+        {
+            return Result.Failure(new ApiError(
+                ErrorCodes.BookCopyHasBorrowHistory,
+                $"Copy '{copy.Barcode}' has {historyCount} past borrow record(s). Deleting it will also remove " +
+                "that history. Confirm to proceed.",
+                "id"));
+        }
+
+        await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        if (force)
+        {
+            foreach (var record in borrowRecordRepository.Query().Where(r => r.BookCopyId == id).ToList())
+            {
+                await borrowRecordRepository.DeleteAsync(record, cancellationToken);
+            }
         }
 
         await bookCopyRepository.DeleteAsync(copy, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
         return Result.Success();
     }
 

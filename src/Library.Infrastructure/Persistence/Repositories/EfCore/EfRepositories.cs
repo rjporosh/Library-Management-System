@@ -74,7 +74,8 @@ public sealed class EfBookRepository(LibraryDbContext db) : IBookRepository
 
     public Task DeleteAsync(Book book, CancellationToken cancellationToken = default)
     {
-        db.Books.Remove(book);
+        book.MarkDeleted();
+        db.Books.Update(book);
         return Task.CompletedTask;
     }
 }
@@ -106,7 +107,8 @@ public sealed class EfBookCopyRepository(LibraryDbContext db) : IBookCopyReposit
 
     public Task DeleteAsync(BookCopy bookCopy, CancellationToken cancellationToken = default)
     {
-        db.BookCopies.Remove(bookCopy);
+        bookCopy.MarkDeleted();
+        db.BookCopies.Update(bookCopy);
         return Task.CompletedTask;
     }
 }
@@ -138,7 +140,8 @@ public sealed class EfMemberRepository(LibraryDbContext db) : IMemberRepository
 
     public Task DeleteAsync(Member member, CancellationToken cancellationToken = default)
     {
-        db.Members.Remove(member);
+        member.MarkDeleted();
+        db.Members.Update(member);
         return Task.CompletedTask;
     }
 
@@ -165,6 +168,13 @@ public sealed class EfBorrowRecordRepository(LibraryDbContext db) : IBorrowRecor
 
     public Task UpdateAsync(BorrowRecord record, CancellationToken cancellationToken = default)
     {
+        db.BorrowRecords.Update(record);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(BorrowRecord record, CancellationToken cancellationToken = default)
+    {
+        record.MarkDeleted();
         db.BorrowRecords.Update(record);
         return Task.CompletedTask;
     }

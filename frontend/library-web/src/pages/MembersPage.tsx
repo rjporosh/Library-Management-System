@@ -25,7 +25,7 @@ import {
   StatusPill,
   TextInput,
 } from '@/components/ui'
-import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
+import { cascadeDelete, confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDate, relativeExpiry } from '@/lib/format'
 import type { Member } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
@@ -34,13 +34,14 @@ const FIELDS: FieldDef[] = [
   { name: 'name', label: 'Name', type: 'text' },
   { name: 'membershipNumber', label: 'Membership #', type: 'text' },
   { name: 'email', label: 'Email', type: 'text' },
+  { name: 'phone', label: 'Phone', type: 'text' },
   { name: 'status', label: 'Status', type: 'enum', options: ['Active', 'Suspended', 'Inactive'] },
   { name: 'membershipExpiresAt', label: 'Expires', type: 'date' },
 ]
 
 type Action = 'suspend' | 'reactivate' | 'renew' | 'deactivate'
 
-const EMPTY = { membershipNumber: '', name: '', email: '' }
+const EMPTY = { membershipNumber: '', name: '', email: '', phone: '', address: '' }
 
 export default function MembersPage() {
   const qc = useQueryClient()
@@ -65,7 +66,13 @@ export default function MembersPage() {
   }
   const openEdit = (m: Member) => {
     setEditing(m)
-    setForm({ membershipNumber: m.membershipNumber, name: m.name, email: m.email })
+    setForm({
+      membershipNumber: m.membershipNumber,
+      name: m.name,
+      email: m.email,
+      phone: m.phone,
+      address: m.address,
+    })
     setFieldErrors({})
     setFormError(null)
   }
@@ -98,15 +105,6 @@ export default function MembersPage() {
     onError: (e) => toastError(normaliseError(e).message),
   })
 
-  const remove = useMutation({
-    mutationFn: (id: string) => membersApi.remove(id),
-    onSuccess: () => {
-      toastSuccess('Member deleted')
-      void qc.invalidateQueries({ queryKey: ['members'] })
-    },
-    onError: (e) => toastError(normaliseError(e).message),
-  })
-
   const runAction = async (m: Member, action: Action) => {
     setMenuFor(null)
     const labels: Record<Action, string> = {
@@ -126,13 +124,14 @@ export default function MembersPage() {
 
   const askDelete = async (m: Member) => {
     setMenuFor(null)
-    const ok = await confirmAction({
-      title: `Delete ${m.name}?`,
-      text: 'Blocked if they have an active borrow.',
-      danger: true,
-      confirmText: 'Delete',
-    })
-    if (ok) remove.mutate(m.id)
+    const deleted = await cascadeDelete(
+      (force) => membersApi.remove(m.id, force),
+      { title: `Delete ${m.name}?`, entity: 'member' },
+    )
+    if (deleted) {
+      void qc.invalidateQueries({ queryKey: ['members'] })
+      void qc.invalidateQueries({ queryKey: ['dashboard'] })
+    }
   }
 
   const columns: Column<Member>[] = [
@@ -287,6 +286,22 @@ export default function MembersPage() {
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Phone" error={fieldErrors.phone}>
+              <TextInput
+                value={form.phone}
+                invalid={!!fieldErrors.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </FormField>
+            <FormField label="Address" error={fieldErrors.address}>
+              <TextInput
+                value={form.address}
+                invalid={!!fieldErrors.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+              />
+            </FormField>
+          </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button type="button" variant="secondary" onClick={() => setEditing(undefined)}>
               Cancel

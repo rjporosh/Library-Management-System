@@ -19,10 +19,14 @@ namespace Library.Infrastructure.Persistence.Migrations
                     ISBN = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     Title = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: false),
                     Author = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: false),
+                    Category = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Publisher = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(4000)", maxLength: 4000, nullable: true),
                     PublishedYear = table.Column<int>(type: "integer", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -37,12 +41,16 @@ namespace Library.Infrastructure.Persistence.Migrations
                     MembershipNumber = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Phone = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    Address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     SuspendedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     LastRenewedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     MembershipExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -58,7 +66,9 @@ namespace Library.Infrastructure.Persistence.Migrations
                     Barcode = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -83,7 +93,9 @@ namespace Library.Infrastructure.Persistence.Migrations
                     ReturnedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Status = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -114,15 +126,30 @@ namespace Library.Infrastructure.Persistence.Migrations
                 column: "BookId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_book_copies_IsDeleted",
+                table: "book_copies",
+                column: "IsDeleted");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_book_copies_Status",
                 table: "book_copies",
                 column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_books_Category",
+                table: "books",
+                column: "Category");
 
             migrationBuilder.CreateIndex(
                 name: "IX_books_ISBN",
                 table: "books",
                 column: "ISBN",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_books_IsDeleted",
+                table: "books",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_books_Title",
@@ -133,6 +160,11 @@ namespace Library.Infrastructure.Persistence.Migrations
                 name: "IX_borrow_records_BookCopyId",
                 table: "borrow_records",
                 column: "BookCopyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_borrow_records_IsDeleted",
+                table: "borrow_records",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_borrow_records_MemberId_Status",
@@ -149,6 +181,11 @@ namespace Library.Infrastructure.Persistence.Migrations
                 table: "members",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_members_IsDeleted",
+                table: "members",
+                column: "IsDeleted");
 
             migrationBuilder.CreateIndex(
                 name: "IX_members_MembershipExpiresAt",

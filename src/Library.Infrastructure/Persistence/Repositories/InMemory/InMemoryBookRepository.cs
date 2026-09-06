@@ -15,7 +15,7 @@ public sealed class InMemoryBookRepository : IBookRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        IEnumerable<Book> filteredBooks = _books;
+        IEnumerable<Book> filteredBooks = _books.Where(b => !b.IsDeleted);
 
         var search = query.Search?.Trim();
 
@@ -50,7 +50,7 @@ public sealed class InMemoryBookRepository : IBookRepository
             ((IReadOnlyList<Book>)items, totalItems));
     }
 
-    public IQueryable<Book> Query() => _books.AsQueryable();
+    public IQueryable<Book> Query() => _books.Where(b => !b.IsDeleted).AsQueryable();
 
     public Task<Book?> GetByIdAsync(
         Guid id,
@@ -58,7 +58,7 @@ public sealed class InMemoryBookRepository : IBookRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var book = _books.FirstOrDefault(x => x.Id == id);
+        var book = _books.FirstOrDefault(x => x.Id == id && !x.IsDeleted);
 
         return Task.FromResult(book);
     }
@@ -69,7 +69,7 @@ public sealed class InMemoryBookRepository : IBookRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var book = _books.FirstOrDefault(x =>
+        var book = _books.FirstOrDefault(x => !x.IsDeleted &&
             string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase));
 
         return Task.FromResult(book);
@@ -82,7 +82,7 @@ public sealed class InMemoryBookRepository : IBookRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var exists = _books.Any(x =>
+        var exists = _books.Any(x => !x.IsDeleted &&
             string.Equals(x.ISBN, isbn, StringComparison.OrdinalIgnoreCase)
             && (excludingId is null || x.Id != excludingId));
 
@@ -133,7 +133,7 @@ public sealed class InMemoryBookRepository : IBookRepository
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        _books.Remove(book);
+        book.MarkDeleted();
 
         return Task.CompletedTask;
     }

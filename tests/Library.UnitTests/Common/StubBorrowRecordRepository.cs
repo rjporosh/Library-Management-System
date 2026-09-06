@@ -37,6 +37,12 @@ public sealed class StubBorrowRecordRepository : IBorrowRecordRepository
 
     public Task UpdateAsync(BorrowRecord record, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
+    public Task DeleteAsync(BorrowRecord record, CancellationToken cancellationToken = default)
+    {
+        record.MarkDeleted();
+        return Task.CompletedTask;
+    }
+
     public Task<bool> HasActiveBorrowAsync(Guid memberId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Records.Any(x => x.MemberId == memberId && x.Status == BorrowStatus.Active));
 

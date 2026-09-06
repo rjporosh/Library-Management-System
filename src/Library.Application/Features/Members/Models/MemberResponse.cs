@@ -8,6 +8,8 @@ public sealed record MemberResponse(
     string MembershipNumber,
     string Name,
     string Email,
+    string Phone,
+    string Address,
     MemberStatus Status,
     DateTime MembershipExpiresAt,
     DateTime? SuspendedAt = null,

@@ -98,6 +98,14 @@ export default function MemberDetailPage() {
         }
       />
 
+      <Card className="mb-4 p-5">
+        <p className="text-xs font-semibold uppercase text-slate-400">Contact</p>
+        <div className="mt-1 flex flex-wrap gap-x-8 gap-y-1 text-sm text-slate-700">
+          <span>{m.phone || '—'}</span>
+          <span>{m.address || '—'}</span>
+        </div>
+      </Card>
+
       <div className="grid gap-4 lg:grid-cols-4">
         <Card className="p-5">
           <p className="text-xs font-semibold uppercase text-slate-400">Status</p>
