@@ -212,6 +212,30 @@ cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
   (case-insensitive routing, no consumer impact).
 - Verified: build 0/0, unit 57/57, integration 21/21, newman smoke 9/9.
 
+## 4c. Startup DB fix (this session)
+
+Symptom: `dotnet run` crashed with an unhandled
+`Npgsql.PostgresException 42P07: relation "books" already exists` when the
+target database already had the tables but an empty (or missing)
+`__EFMigrationsHistory` - e.g. a DB built from `docs/database/schema.sql`, an
+old `EnsureCreated()`, or a restored dump.
+
+- **`src/Library.Infrastructure/Persistence/DatabaseBootstrapper.cs`** (new) -
+  replaces the bare `db.Database.MigrateAsync()`. Ensures the history table
+  exists, then: if there are pending migrations, no applied migrations and the
+  DB already has tables, it **baselines** every migration (writes the history
+  rows) instead of re-running `CREATE TABLE`. Then migrates normally.
+- **`Program.cs`** - migrate step now calls `DatabaseBootstrapper.MigrateAsync`;
+  the catch writes the one-line diagnostic then `Environment.Exit(1)` (no more
+  raw stack dump). New diagnostic branch for `42P07` / "already exists".
+- Tests: `tests/Library.IntegrationTests/Persistence/DatabaseBootstrapperTests.cs`
+  (empty DB migrates; schema-without-history adopts). 23 integration tests now.
+- Verified on real Postgres 16: fresh DB, schema-with-empty-history, and
+  schema-with-no-history-table all boot healthy and seed; DB-down exits 1 with
+  the diagnostic.
+- `MIGRATIONS.md` + `guide.md` §7 now carry the add-migration / update-db /
+  regenerate-schema / drop commands, all runnable from the repo root.
+
 ## 5. Landmines
 
 - **Positional-record DTOs** are consumed positionally in tests - any field

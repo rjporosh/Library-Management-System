@@ -218,7 +218,10 @@ try
 
         if (databaseOptions.MigrateOnStartup)
         {
-            await db.Database.MigrateAsync();
+            var migrationLogger = scope.ServiceProvider
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("Library.Api.Startup.Database");
+            await Library.Infrastructure.Persistence.DatabaseBootstrapper.MigrateAsync(db, migrationLogger);
         }
 
         if (databaseOptions.SeedOnStartup)
@@ -236,7 +239,9 @@ try
 catch (Exception ex)
 {
     WriteDatabaseDiagnostic(ex, app.Environment.ContentRootPath, observabilitySettings, databaseOptions);
-    throw;
+    // Fail fast with a readable one-line cause instead of an unhandled-exception
+    // stack dump. Full details (type, message, stack) are in logs/build-error-logs/.
+    Environment.Exit(1);
 }
 
 try
@@ -314,6 +319,10 @@ static void WriteDatabaseDiagnostic(
         "PostgresException" when ex.Message.Contains("3D000") =>
             ("The target database does not exist.",
              "Create it, or run `dotnet ef database update` to create the schema."),
+        _ when ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase)
+               || ex.Message.Contains("42P07", StringComparison.OrdinalIgnoreCase) =>
+            ("The schema already exists but is not recorded in EF's migration history.",
+             "Next run adopts it automatically. To reset instead: `dotnet ef database drop -f --project src/Library.Infrastructure --startup-project src/Library.Api` then `dotnet ef database update --project src/Library.Infrastructure --startup-project src/Library.Api`."),
         "SqlException" =>
             ($"The '{database.Provider}' database could not be opened.",
              "Verify the server is running and the connection string / credentials are correct."),

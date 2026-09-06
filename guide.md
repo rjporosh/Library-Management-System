@@ -108,8 +108,43 @@ See `tests/DEVELOPERS-GUIDE.md`.
 
 ## 7. Migrations & databases
 
-See `MIGRATIONS.md`. Switch provider with `Database:Provider`
-(`Postgres` primary, also `SqlServer`, `Sqlite`, `InMemory`).
+Full reference: **`MIGRATIONS.md`** (repo root). The essentials, run from the
+repo root:
+
+```bash
+# one-time
+dotnet tool install --global dotnet-ef --version 10.0.11
+docker compose up -d db                                    # local Postgres on :5432
+
+# add a schema change
+dotnet ef migrations add <Name> \
+  --project src/Library.Infrastructure --startup-project src/Library.Api \
+  --output-dir Persistence/Migrations
+
+# apply it (Development also does this automatically on `dotnet run`)
+dotnet ef database update \
+  --project src/Library.Infrastructure --startup-project src/Library.Api
+
+# refresh the checked-in schema script
+dotnet ef migrations script --idempotent --output docs/database/schema.sql \
+  --project src/Library.Infrastructure --startup-project src/Library.Api
+
+# start over if the database is in a bad state
+dotnet ef database drop -f \
+  --project src/Library.Infrastructure --startup-project src/Library.Api
+```
+
+On startup the API brings the database to the current schema, **including the
+case where the tables already exist but EF's `__EFMigrationsHistory` is empty**
+(a DB created from `docs/database/schema.sql`, an old `EnsureCreated`, or a
+restored dump) — it adopts the existing schema instead of failing with
+`42P07 relation "books" already exists`.
+
+SQL files in `docs/database/`: `schema.sql` (full schema, generated),
+`seed-data.sql` (runnable demo rows), `er-diagram.md`.
+
+Switch provider with `Database:Provider` (`Postgres` primary, also `SqlServer`,
+`Sqlite`, `InMemory`).
 
 ---
 
