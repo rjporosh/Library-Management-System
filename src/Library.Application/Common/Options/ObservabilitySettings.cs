@@ -42,4 +42,12 @@ public sealed class ObservabilitySettings
     public int RateLimitPermitPerWindow { get; set; } = 120;
 
     public int RateLimitWindowSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Serve the OpenAPI document (<c>/openapi/v1.json</c>) and the Scalar API
+    /// reference UI (<c>/scalar</c>). On by default in every environment so the
+    /// dockerised (Production) stack still exposes the API console; set to
+    /// <c>false</c> to hide it in a hardened deployment.
+    /// </summary>
+    public bool EnableApiReference { get; set; } = true;
 }

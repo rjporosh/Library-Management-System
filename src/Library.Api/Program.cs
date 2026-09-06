@@ -152,7 +152,7 @@ if (observabilitySettings.EnableRateLimiting)
 // Use the CORS policy
 app.UseCors("Frontend");
 
-if (app.Environment.IsDevelopment())
+if (observabilitySettings.EnableApiReference)
 {
     app.MapOpenApi();
 
