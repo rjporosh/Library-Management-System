@@ -15,8 +15,35 @@ export const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Send the chosen UI language on every request (query param + header) so the
-// API returns localized messages.
+const AUTH_STORAGE_KEY = 'lms.auth'
+
+export interface StoredAuth {
+  accessToken: string
+  role: 'Librarian' | 'Member'
+  username: string
+  memberId: string | null
+}
+
+export function getStoredAuth(): StoredAuth | null {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as StoredAuth) : null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredAuth(auth: StoredAuth | null) {
+  try {
+    if (auth) localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth))
+    else localStorage.removeItem(AUTH_STORAGE_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+// Send the chosen UI language and the bearer token (once signed in) on
+// every request so the API returns localized, authorized responses.
 http.interceptors.request.use((config) => {
   let lang = 'en'
   try {
@@ -26,8 +53,28 @@ http.interceptors.request.use((config) => {
   }
   config.params = { ...(config.params as object), culture: lang }
   config.headers.set('Accept-Language', lang)
+
+  const auth = getStoredAuth()
+  if (auth?.accessToken) {
+    config.headers.set('Authorization', `Bearer ${auth.accessToken}`)
+  }
+
   return config
 })
+
+/** Fired when a 401 clears the session, so the app can redirect to /login. */
+export const AUTH_LOGOUT_EVENT = 'lms:auth-logout'
+
+http.interceptors.response.use(
+  (r) => r,
+  (error: unknown) => {
+    if (axios.isAxiosError(error) && error.response?.status === 401 && getStoredAuth()) {
+      setStoredAuth(null)
+      window.dispatchEvent(new Event(AUTH_LOGOUT_EVENT))
+    }
+    return Promise.reject(error)
+  },
+)
 
 /** Turns any axios failure into a predictable, field-aware shape. */
 export function normaliseError(error: unknown): NormalisedError {

@@ -109,6 +109,24 @@ export const metadataApi = {
       .then((r) => r.data),
 }
 
+// --- auth -----------------------------------------------------------
+
+export interface LoginResponse {
+  accessToken: string
+  expiresAtUtc: string
+  userId: string
+  username: string
+  role: 'Librarian' | 'Member'
+  memberId: string | null
+}
+
+export const authApi = {
+  login: (usernameOrEmail: string, password: string) =>
+    http.post<LoginResponse>('/auth/login', { usernameOrEmail, password }).then((r) => r.data),
+  register: (body: { name: string; email: string; password: string; phone?: string; address?: string }) =>
+    http.post<LoginResponse>('/auth/register', body).then((r) => r.data),
+}
+
 // --- helpers --------------------------------------------------------
 
 async function uploadFile(path: string, file: File) {
