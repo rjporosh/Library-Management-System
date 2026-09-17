@@ -1,4 +1,5 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common;
 using Library.Domain.Entities;
 
 namespace Library.Infrastructure.Persistence.Repositories.InMemory;
@@ -51,6 +52,9 @@ public sealed class InMemoryBookCopyRepository : IBookCopyRepository
         bookCopy.MarkDeleted();
         return Task.CompletedTask;
     }
+
+    public Task<int> GetMaxBarcodeNumberAsync(string prefix, CancellationToken cancellationToken = default) =>
+        Task.FromResult(BarcodeSequence.MaxSuffix(prefix, _copies.Select(c => c.Barcode)));
 
     public void Seed(IEnumerable<BookCopy> copies) => _copies.AddRange(copies);
 }

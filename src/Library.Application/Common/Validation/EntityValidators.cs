@@ -5,7 +5,9 @@ namespace Library.Application.Common.Validation;
 /// <summary>Field-level candidate values for a book, from an API request or an Excel row.</summary>
 public readonly record struct BookCandidate(
     string? Isbn, string? Title, string? Author, int PublishedYear,
-    string? Category, string? Publisher, string? Description);
+    string? Category, string? Publisher, string? Description,
+    bool HasEbook = false, string? EbookUrl = null,
+    bool HasAudiobook = false, string? AudiobookUrl = null);
 
 /// <summary>Field-level candidate values for a member.</summary>
 public readonly record struct MemberCandidate(
@@ -25,6 +27,21 @@ public static class BookValidator
         FieldRules.Required(c.Category, "category", ErrorCodes.BookCategoryRequired, "Category is required.", errors, line);
         FieldRules.Required(c.Publisher, "publisher", ErrorCodes.BookPublisherRequired, "Publisher is required.", errors, line);
         FieldRules.PublishedYear(c.PublishedYear, "publishedYear", errors, line);
+
+        if (c.HasEbook && string.IsNullOrWhiteSpace(c.EbookUrl))
+        {
+            errors.Add(new ApiError(
+                ErrorCodes.BookEbookUrlRequired, "An ebook URL is required when the ebook is marked available.",
+                "ebookUrl", line, Required: true));
+        }
+
+        if (c.HasAudiobook && string.IsNullOrWhiteSpace(c.AudiobookUrl))
+        {
+            errors.Add(new ApiError(
+                ErrorCodes.BookAudiobookUrlRequired, "An audiobook URL is required when the audiobook is marked available.",
+                "audiobookUrl", line, Required: true));
+        }
+
         return errors;
     }
 }

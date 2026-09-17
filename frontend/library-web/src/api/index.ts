@@ -2,6 +2,7 @@ import { http } from '@/lib/api'
 import type {
   Book,
   BookCopy,
+  BookDetail,
   BorrowRecord,
   DashboardSnapshot,
   MaintenanceResult,
@@ -13,11 +14,16 @@ import type {
 
 // --- books ---------------------------------------------------------------
 
+export interface CreateBookBody extends Omit<Book, 'id'> {
+  totalCopies?: number
+}
+
 export const booksApi = {
   search: (req: SearchRequest) =>
     http.post<Paged<Book>>('/books/search', req).then((r) => r.data),
   get: (id: string) => http.get<Book>(`/books/${id}`).then((r) => r.data),
-  create: (body: Omit<Book, 'id'>) =>
+  detail: (id: string) => http.get<BookDetail>(`/books/${id}/detail`).then((r) => r.data),
+  create: (body: CreateBookBody) =>
     http.post<Book>('/books', body).then((r) => r.data),
   update: (id: string, body: Omit<Book, 'id'>) =>
     http.put<Book>(`/books/${id}`, body).then((r) => r.data),

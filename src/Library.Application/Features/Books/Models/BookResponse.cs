@@ -9,4 +9,12 @@ public sealed record BookResponse(
     string Category,
     string Publisher,
     string? Description,
-    int PublishedYear);
+    int PublishedYear,
+    string? CoverImageUrl = null,
+    string? Edition = null,
+    bool HasEbook = false,
+    string? EbookUrl = null,
+    bool HasAudiobook = false,
+    string? AudiobookUrl = null,
+    string? ExternalBuyUrl = null,
+    string? ExternalPdfUrl = null);

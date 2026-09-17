@@ -1,4 +1,5 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common;
 using Library.Application.Common.Pagination;
 using Library.Application.Features.Books.Models;
 using Library.Domain.Entities;
@@ -110,6 +111,15 @@ public sealed class EfBookCopyRepository(LibraryDbContext db) : IBookCopyReposit
         bookCopy.MarkDeleted();
         db.BookCopies.Update(bookCopy);
         return Task.CompletedTask;
+    }
+
+    public async Task<int> GetMaxBarcodeNumberAsync(string prefix, CancellationToken cancellationToken = default)
+    {
+        var barcodes = await db.BookCopies.AsNoTracking()
+            .Where(c => c.Barcode.StartsWith(prefix))
+            .Select(c => c.Barcode)
+            .ToListAsync(cancellationToken);
+        return BarcodeSequence.MaxSuffix(prefix, barcodes);
     }
 }
 

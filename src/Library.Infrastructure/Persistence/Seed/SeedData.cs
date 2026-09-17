@@ -27,13 +27,18 @@ public static class SeedData
 
         var cleanCode = new Book(Guid.NewGuid(), "9780132350884", "Clean Code",
             "Robert C. Martin", 2008, "A handbook of agile software craftsmanship.",
-            "Software Engineering", "Prentice Hall");
+            "Software Engineering", "Prentice Hall",
+            edition: "1st Edition");
         var pragmatic = new Book(Guid.NewGuid(), "9780135957059", "The Pragmatic Programmer",
             "David Thomas & Andrew Hunt", 2019, "Your journey to mastery.",
-            "Software Engineering", "Addison-Wesley");
+            "Software Engineering", "Addison-Wesley",
+            edition: "20th Anniversary Edition");
+        // DDD's only copy is Lost (below) - a real demo of the "no physical
+        // copy -> suggest a purchase link" smart-availability fallback.
         var ddd = new Book(Guid.NewGuid(), "9780321125217", "Domain-Driven Design",
             "Eric Evans", 2003, "Tackling complexity in the heart of software.",
-            "Software Architecture", "Addison-Wesley");
+            "Software Architecture", "Addison-Wesley",
+            externalBuyUrl: "https://www.amazon.com/s?k=Domain-Driven+Design+Eric+Evans");
         var refactoring = new Book(Guid.NewGuid(), "9780134757599", "Refactoring",
             "Martin Fowler", 2018, "Improving the design of existing code.",
             "Software Engineering", "Addison-Wesley");

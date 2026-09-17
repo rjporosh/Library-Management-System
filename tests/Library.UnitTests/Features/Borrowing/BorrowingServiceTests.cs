@@ -495,6 +495,9 @@ public sealed class BorrowingServiceTests
 
         public Task DeleteAsync(BookCopy bookCopy, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
+
+        public Task<int> GetMaxBarcodeNumberAsync(string prefix, CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
     }
     private sealed class FakeBorrowRecordRepository(
         BorrowRecord? initialRecord = null)

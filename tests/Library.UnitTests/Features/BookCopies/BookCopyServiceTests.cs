@@ -189,5 +189,8 @@ public sealed class BookCopyServiceTests
             Copies.RemoveAll(x => x.Id == bookCopy.Id);
             return Task.CompletedTask;
         }
+
+        public Task<int> GetMaxBarcodeNumberAsync(string prefix, CancellationToken cancellationToken = default) =>
+            Task.FromResult(Library.Application.Common.BarcodeSequence.MaxSuffix(prefix, Copies.Select(c => c.Barcode)));
     }
 }

@@ -20,6 +20,30 @@ export interface Book {
   publisher: string
   description?: string | null
   publishedYear: number
+  coverImageUrl?: string | null
+  edition?: string | null
+  hasEbook: boolean
+  ebookUrl?: string | null
+  hasAudiobook: boolean
+  audiobookUrl?: string | null
+  externalBuyUrl?: string | null
+  externalPdfUrl?: string | null
+}
+
+export type BookAvailabilityStatus = 'PhysicalAvailable' | 'Ebook' | 'Audiobook' | 'Unavailable'
+
+export interface BookAvailability {
+  status: BookAvailabilityStatus
+  totalCopies: number
+  availableCopies: number
+  accessUrl?: string | null
+  externalBuyUrl?: string | null
+  externalPdfUrl?: string | null
+}
+
+export interface BookDetail {
+  book: Book
+  availability: BookAvailability
 }
 
 export interface BookCopy {

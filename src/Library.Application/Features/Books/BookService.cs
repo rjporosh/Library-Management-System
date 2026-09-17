@@ -51,16 +51,38 @@ public sealed class BookService(
     {
         await ValidateAsync(
             new BookCandidate(request.ISBN, request.Title, request.Author, request.PublishedYear,
-                request.Category, request.Publisher, request.Description),
+                request.Category, request.Publisher, request.Description,
+                request.HasEbook, request.EbookUrl, request.HasAudiobook, request.AudiobookUrl),
             null, cancellationToken);
+
+        if (request.TotalCopies < 0)
+        {
+            throw new ValidationException([
+                new ApiError(ErrorCodes.BookTotalCopiesInvalid, "Total copies cannot be negative.", "totalCopies")
+            ]);
+        }
 
         var book = new Book(
             Guid.NewGuid(), request.ISBN.Trim(), request.Title.Trim(), request.Author.Trim(),
             request.PublishedYear, request.Description?.Trim(),
-            request.Category.Trim(), request.Publisher.Trim());
+            request.Category.Trim(), request.Publisher.Trim(),
+            request.CoverImageUrl?.Trim(), request.Edition?.Trim(),
+            request.HasEbook, request.EbookUrl?.Trim(),
+            request.HasAudiobook, request.AudiobookUrl?.Trim(),
+            request.ExternalBuyUrl?.Trim(), request.ExternalPdfUrl?.Trim());
 
+        await using var tx = await unitOfWork.BeginTransactionAsync(cancellationToken);
         await bookRepository.AddAsync(book, cancellationToken);
+
+        if (request.TotalCopies > 0)
+        {
+            await bookCopyRepository.AddRangeAsync(
+                await GenerateSequentialCopiesAsync(book.Id, request.TotalCopies, cancellationToken),
+                cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
         return Map(book);
     }
 
@@ -74,16 +96,59 @@ public sealed class BookService(
 
         await ValidateAsync(
             new BookCandidate(request.ISBN, request.Title, request.Author, request.PublishedYear,
-                request.Category, request.Publisher, request.Description),
+                request.Category, request.Publisher, request.Description,
+                request.HasEbook, request.EbookUrl, request.HasAudiobook, request.AudiobookUrl),
             id, cancellationToken);
 
         book.Update(
             request.ISBN.Trim(), request.Title.Trim(), request.Author.Trim(), request.PublishedYear,
-            request.Description?.Trim(), request.Category.Trim(), request.Publisher.Trim());
+            request.Description?.Trim(), request.Category.Trim(), request.Publisher.Trim(),
+            request.CoverImageUrl?.Trim(), request.Edition?.Trim(),
+            request.HasEbook, request.EbookUrl?.Trim(),
+            request.HasAudiobook, request.AudiobookUrl?.Trim(),
+            request.ExternalBuyUrl?.Trim(), request.ExternalPdfUrl?.Trim());
 
         await bookRepository.UpdateAsync(book, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Map(book);
+    }
+
+    /// <summary>Retrieves a book with its "smart availability" resolution (physical -> ebook -> audiobook -> external suggestion).</summary>
+    public async Task<BookDetailResponse?> GetDetailAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var book = await bookRepository.GetByIdAsync(id, cancellationToken);
+        if (book is null)
+        {
+            return null;
+        }
+
+        var copies = await bookCopyRepository.GetByBookIdAsync(id, cancellationToken);
+        var totalCopies = copies.Count;
+        var availableCopies = copies.Count(c => c.Status == BookCopyStatus.Available);
+
+        var availability = availableCopies > 0
+            ? new BookAvailabilitySummary(BookAvailabilityStatus.PhysicalAvailable, totalCopies, availableCopies, null, null, null)
+            : book.HasEbook
+                ? new BookAvailabilitySummary(BookAvailabilityStatus.Ebook, totalCopies, availableCopies, book.EbookUrl, null, null)
+                : book.HasAudiobook
+                    ? new BookAvailabilitySummary(BookAvailabilityStatus.Audiobook, totalCopies, availableCopies, book.AudiobookUrl, null, null)
+                    : new BookAvailabilitySummary(BookAvailabilityStatus.Unavailable, totalCopies, availableCopies, null, book.ExternalBuyUrl, book.ExternalPdfUrl);
+
+        return new BookDetailResponse(Map(book), availability);
+    }
+
+    private async Task<List<BookCopy>> GenerateSequentialCopiesAsync(Guid bookId, int count, CancellationToken cancellationToken)
+    {
+        const string prefix = "BC-";
+        var start = await bookCopyRepository.GetMaxBarcodeNumberAsync(prefix, cancellationToken);
+
+        var copies = new List<BookCopy>(count);
+        for (var i = 1; i <= count; i++)
+        {
+            copies.Add(new BookCopy(Guid.NewGuid(), bookId, $"{prefix}{start + i:D4}"));
+        }
+
+        return copies;
     }
 
     /// <summary>
@@ -163,5 +228,7 @@ public sealed class BookService(
 
     private static BookResponse Map(Book book) =>
         new(book.Id, book.ISBN, book.Title, book.Author, book.Category, book.Publisher,
-            book.Description, book.PublishedYear);
+            book.Description, book.PublishedYear, book.CoverImageUrl, book.Edition,
+            book.HasEbook, book.EbookUrl, book.HasAudiobook, book.AudiobookUrl,
+            book.ExternalBuyUrl, book.ExternalPdfUrl);
 }

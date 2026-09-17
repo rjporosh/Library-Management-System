@@ -31,6 +31,12 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
             e.Property(x => x.Category).HasMaxLength(200).IsRequired();
             e.Property(x => x.Publisher).HasMaxLength(200).IsRequired();
             e.Property(x => x.Description).HasMaxLength(4000);
+            e.Property(x => x.CoverImageUrl).HasMaxLength(1000);
+            e.Property(x => x.Edition).HasMaxLength(100);
+            e.Property(x => x.EbookUrl).HasMaxLength(1000);
+            e.Property(x => x.AudiobookUrl).HasMaxLength(1000);
+            e.Property(x => x.ExternalBuyUrl).HasMaxLength(1000);
+            e.Property(x => x.ExternalPdfUrl).HasMaxLength(1000);
             e.HasIndex(x => x.ISBN).IsUnique();
             e.HasIndex(x => x.Title);
             e.HasIndex(x => x.Category);

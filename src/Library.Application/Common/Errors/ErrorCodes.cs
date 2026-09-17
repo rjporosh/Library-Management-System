@@ -27,6 +27,9 @@ public static class ErrorCodes
     public const string BookNotFound = "BOOK_NOT_FOUND";
     public const string BookHasBorrowedCopies = "BOOK_HAS_BORROWED_COPIES";
     public const string BookHasDependentCopies = "BOOK_HAS_DEPENDENT_COPIES";
+    public const string BookEbookUrlRequired = "BOOK_EBOOK_URL_REQUIRED";
+    public const string BookAudiobookUrlRequired = "BOOK_AUDIOBOOK_URL_REQUIRED";
+    public const string BookTotalCopiesInvalid = "BOOK_TOTAL_COPIES_INVALID";
 
     // Member
     public const string MemberNumberRequired = "MEMBER_NUMBER_REQUIRED";

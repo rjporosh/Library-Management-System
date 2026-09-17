@@ -14,6 +14,7 @@ import { getLang, setLang, t } from '@/lib/i18n'
 import type { MessageKey } from '@/lib/locales'
 import DashboardPage from '@/pages/DashboardPage'
 import BooksPage from '@/pages/BooksPage'
+import BookDetailPage from '@/pages/BookDetailPage'
 import BookCopiesPage from '@/pages/BookCopiesPage'
 import MembersPage from '@/pages/MembersPage'
 import MemberDetailPage from '@/pages/MemberDetailPage'
@@ -148,6 +149,7 @@ export default function App() {
               }
             />
             <Route path="/books" element={<BooksPage />} />
+            <Route path="/books/:id" element={<BookDetailPage />} />
             <Route
               path="/book-copies"
               element={

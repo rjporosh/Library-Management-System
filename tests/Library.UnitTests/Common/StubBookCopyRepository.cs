@@ -1,4 +1,5 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common;
 using Library.Domain.Entities;
 
 namespace Library.UnitTests.Common;
@@ -48,4 +49,7 @@ public sealed class StubBookCopyRepository(IEnumerable<BookCopy>? copies = null)
         bookCopy.MarkDeleted();
         return Task.CompletedTask;
     }
+
+    public Task<int> GetMaxBarcodeNumberAsync(string prefix, CancellationToken cancellationToken = default) =>
+        Task.FromResult(BarcodeSequence.MaxSuffix(prefix, Copies.Select(c => c.Barcode)));
 }

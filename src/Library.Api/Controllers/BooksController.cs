@@ -131,6 +131,22 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     }
 
     /// <summary>
+    /// Retrieves a book with its "smart availability" resolution: a physical
+    /// copy if one is available, else an ebook link, else an audiobook link,
+    /// else a suggested external buy/PDF link.
+    /// </summary>
+    /// <response code="200">The book and its resolved availability.</response>
+    /// <response code="404">No book exists with the specified identifier.</response>
+    [HttpGet("{id:guid}/detail")]
+    [ProducesResponseType(typeof(BookDetailResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<BookDetailResponse>> GetDetail(Guid id, CancellationToken cancellationToken)
+    {
+        var detail = await bookService.GetDetailAsync(id, cancellationToken);
+        return detail is null ? NotFound() : Ok(detail);
+    }
+
+    /// <summary>
     /// Adds a new book to the library catalog.
     /// </summary>
     /// <remarks>

@@ -35,4 +35,14 @@ public interface IBookCopyRepository
     Task DeleteAsync(
         BookCopy bookCopy,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Highest numeric suffix currently used by a barcode starting with
+    /// <paramref name="prefix"/> (e.g. "BC-"), or 0 if none exist. Used to
+    /// continue a sequential barcode series (BC-0001, BC-0002, ...) rather
+    /// than restart it when auto-generating copies for a new book.
+    /// </summary>
+    Task<int> GetMaxBarcodeNumberAsync(
+        string prefix,
+        CancellationToken cancellationToken = default);
 }

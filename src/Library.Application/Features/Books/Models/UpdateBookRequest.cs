@@ -8,4 +8,12 @@ public sealed record UpdateBookRequest(
     int PublishedYear,
     string Category,
     string Publisher,
-    string? Description = null);
+    string? Description = null,
+    string? CoverImageUrl = null,
+    string? Edition = null,
+    bool HasEbook = false,
+    string? EbookUrl = null,
+    bool HasAudiobook = false,
+    string? AudiobookUrl = null,
+    string? ExternalBuyUrl = null,
+    string? ExternalPdfUrl = null);
