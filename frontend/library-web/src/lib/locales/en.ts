@@ -54,6 +54,8 @@ export const en = {
   'common.dash': '—',
   'common.requestFailed': 'Request failed.',
   'common.unexpectedError': 'Unexpected error',
+  'common.supportMessage':
+    'Something went wrong. Please contact service provider MD. IKRAMUL ISLAM SIDDIQUE POROSH, phone: +8801672896992 for details.',
   'common.entity.book': 'book',
   'common.entity.member': 'member',
   'common.entity.copy': 'book copy',

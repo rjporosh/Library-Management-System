@@ -56,6 +56,8 @@ export const bn: Record<MessageKey, string> = {
   'common.dash': '—',
   'common.requestFailed': 'অনুরোধ ব্যর্থ হয়েছে।',
   'common.unexpectedError': 'অপ্রত্যাশিত ত্রুটি',
+  'common.supportMessage':
+    'কিছু একটা সমস্যা হয়েছে। বিস্তারিত জানতে সেবা প্রদানকারী MD. IKRAMUL ISLAM SIDDIQUE POROSH-এর সাথে যোগাযোগ করুন, ফোন: +৮৮০১৬৭২৮৯৬৯৯২।',
   'common.entity.book': 'বইটি',
   'common.entity.member': 'সদস্যটি',
   'common.entity.copy': 'কপিটি',

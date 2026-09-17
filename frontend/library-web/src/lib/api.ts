@@ -3,8 +3,9 @@ import Swal from 'sweetalert2'
 import { localizeError, t } from './i18n'
 import type { ApiErrorResponse, NormalisedError } from './types'
 
-const SUPPORT_MESSAGE =
-  'Something went wrong. Please contact service provider MD. IKRAMUL ISLAM SIDDIQUE POROSH, phone: +8801672896992 for details.'
+function supportMessage(): string {
+  return t('common.supportMessage')
+}
 
 export const API_BASE_URL: string =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ??
@@ -107,12 +108,12 @@ export function normaliseError(error: unknown): NormalisedError {
     const message =
       problem?.detail ??
       problem?.title ??
-      (status && status >= 500 ? SUPPORT_MESSAGE : err.message)
+      (status && status >= 500 ? supportMessage() : err.message)
 
     return { message, errors: [], fieldErrors: {}, rowErrors: [], status }
   }
 
-  return { message: SUPPORT_MESSAGE, errors: [], fieldErrors: {}, rowErrors: [] }
+  return { message: supportMessage(), errors: [], fieldErrors: {}, rowErrors: [] }
 }
 
 /** Show a blocking error alert for unexpected / server failures. */
