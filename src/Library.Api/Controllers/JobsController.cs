@@ -1,6 +1,7 @@
 using Library.Application.Common.Errors;
 using Library.Application.Common.Options;
 using Library.Application.Features.Members;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -8,6 +9,7 @@ namespace Library.Api.Controllers;
 /// <summary>Manual triggers for the scheduled background jobs.</summary>
 [ApiController]
 [Route("api/jobs")]
+[Authorize(Roles = "Librarian")]
 public sealed class JobsController(
     MemberMaintenanceService maintenanceService,
     ObservabilitySettings settings) : ControllerBase

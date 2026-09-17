@@ -17,6 +17,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
     public DbSet<BookCopy> BookCopies => Set<BookCopy>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<BorrowRecord> BorrowRecords => Set<BorrowRecord>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -72,6 +73,19 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
             e.HasIndex(x => new { x.Status, x.DueAt });
             e.HasOne<BookCopy>().WithMany().HasForeignKey(x => x.BookCopyId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Member>().WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        b.Entity<User>(e =>
+        {
+            e.ToTable("users");
+            ConfigureEntity(e);
+            e.Property(x => x.Username).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(256).IsRequired();
+            e.Property(x => x.PasswordHash).HasMaxLength(512).IsRequired();
+            e.Property(x => x.Role).HasConversion<string>().HasMaxLength(32).IsRequired();
+            e.HasIndex(x => x.Username).IsUnique();
+            e.HasIndex(x => x.Email).IsUnique();
+            e.HasIndex(x => x.MemberId).IsUnique();
         });
     }
 

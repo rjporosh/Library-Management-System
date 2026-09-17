@@ -1,4 +1,5 @@
 using Library.Application.Features.Dashboard;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -6,6 +7,7 @@ namespace Library.Api.Controllers;
 /// <summary>Live aggregate figures for the librarian dashboard.</summary>
 [ApiController]
 [Route("api/dashboard")]
+[Authorize(Roles = "Librarian")]
 public sealed class DashboardController(DashboardService dashboardService) : ControllerBase
 {
     /// <summary>

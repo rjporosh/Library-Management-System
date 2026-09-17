@@ -4,6 +4,7 @@ using Library.Application.Common.Pagination;
 using Library.Application.Common.Results;
 using Library.Application.Features.Borrowing;
 using Library.Application.Features.Borrowing.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -11,6 +12,7 @@ namespace Library.Api.Controllers;
 /// <summary>Issue and return workflows.</summary>
 [ApiController]
 [Route("api/borrowing")]
+[Authorize(Roles = "Librarian")]
 public sealed class BorrowingController(BorrowingService borrowingService) : ControllerBase
 {
     /// <summary>Advanced multi-field search for borrow records (status matched by name).</summary>

@@ -7,7 +7,7 @@ namespace Library.IntegrationTests.Features;
 
 public sealed class MembersAndJobsApiTests(LibraryApiFactory factory) : IClassFixture<LibraryApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateLibrarianClient();
 
     private async Task<JsonElement> CreateMemberAsync(string number)
     {

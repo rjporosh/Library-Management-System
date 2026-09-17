@@ -12,7 +12,7 @@ public sealed class BooksApiTests
     public async Task GetAll_ShouldReturnSeededBooks()
     {
         await using var factory = new LibraryApiFactory();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateLibrarianClient();
 
         var response = await client.GetAsync("/api/books");
 
@@ -34,7 +34,7 @@ public sealed class BooksApiTests
     public async Task GetById_WhenBookDoesNotExist_ShouldReturnNotFound()
     {
         await using var factory = new LibraryApiFactory();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateLibrarianClient();
 
         var response = await client.GetAsync(
             $"/api/books/{Guid.NewGuid()}");
@@ -46,7 +46,7 @@ public sealed class BooksApiTests
     public async Task   GetById_WhenBookExists_ShouldReturnBook()
     {
         await using var factory = new LibraryApiFactory();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateLibrarianClient();
 
         var result = await client.  GetFromJsonAsync<PagedBookResponse>(
             "/api/books");
@@ -77,7 +77,7 @@ public sealed class BooksApiTests
     public async Task Create_ShouldReturnCreatedBook()
     {
         await using var factory = new LibraryApiFactory();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateLibrarianClient();
 
         var request = new CreateBookRequest(
             "9780000000001",
@@ -110,7 +110,7 @@ public sealed class BooksApiTests
     public async Task Create_ShouldMakeBookRetrievable()
     {
         await using var factory = new LibraryApiFactory();
-        using var client = factory.CreateClient();
+        using var client = factory.CreateLibrarianClient();
 
         var request = new CreateBookRequest(
             "9780000000002",

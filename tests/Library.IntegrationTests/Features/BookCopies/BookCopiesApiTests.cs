@@ -16,7 +16,7 @@ public sealed class BookCopiesApiTests
     public BookCopiesApiTests(
         LibraryApiFactory factory)
     {
-        _client = factory.CreateClient();
+        _client = factory.CreateLibrarianClient();
     }
 
     [Fact]

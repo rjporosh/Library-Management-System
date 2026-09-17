@@ -1,9 +1,11 @@
+using System.Text;
 using System.Text.Json.Serialization;
 using Library.Api.BackgroundJobs;
 using Library.Api.HealthChecks;
 using Library.Api.Infrastructure;
 using Library.Api.Middleware;
 using Library.Api.Observability;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Library.Application.Common.Options;
@@ -12,6 +14,7 @@ using Library.Infrastructure.DependencyInjection;
 using Library.Infrastructure.Persistence.Repositories.InMemory.Seed;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +31,16 @@ var databaseOptions =
     builder.Configuration.GetSection("Database").Get<DatabaseOptions>()
     ?? new DatabaseOptions();
 
+var jwtOptions =
+    builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
+    ?? new JwtOptions();
+if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
+{
+    throw new InvalidOperationException(
+        "Jwt:SigningKey is not configured. Set it in appsettings.{Environment}.json " +
+        "or the Jwt__SigningKey environment variable before starting the API.");
+}
+
 // Observability (OpenTelemetry -> OTLP -> Jaeger). Off unless
 // FeatureFlags.EnableOpenTelemetry is true.
 builder.Services.AddLibraryObservability(observabilitySettings);
@@ -37,7 +50,26 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(
     observabilitySettings,
     databaseOptions,
-    builder.Environment.ContentRootPath);
+    builder.Environment.ContentRootPath,
+    jwtOptions);
+
+// JWT bearer authentication + role-based authorization (Librarian / Member).
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtOptions.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+        };
+    });
+builder.Services.AddAuthorization();
 
 // MVC Controllers - enums serialize as their string name (e.g. "Active",
 // not 0) so the UI never has to translate numeric status codes itself,
@@ -151,6 +183,9 @@ if (observabilitySettings.EnableRateLimiting)
 
 // Use the CORS policy
 app.UseCors("Frontend");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 if (observabilitySettings.EnableApiReference)
 {

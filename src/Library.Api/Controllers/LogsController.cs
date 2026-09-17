@@ -2,6 +2,7 @@ using Library.Application.Common.Errors;
 using Library.Application.Common.Logging;
 using Library.Application.Common.Options;
 using Library.Infrastructure.Logging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -14,6 +15,7 @@ namespace Library.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/logs")]
+[Authorize(Roles = "Librarian")]
 public sealed class LogsController(
     ObservabilitySettings settings,
     IWebHostEnvironment environment) : ControllerBase

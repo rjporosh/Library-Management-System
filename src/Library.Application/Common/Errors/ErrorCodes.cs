@@ -72,6 +72,15 @@ public static class ErrorCodes
     public const string ImportDuplicateInDatabase = "IMPORT_DUPLICATE_IN_DATABASE";
     public const string ImportRowInvalid = "IMPORT_ROW_INVALID";
     public const string ImportPersistFailed = "IMPORT_PERSIST_FAILED";
+
+    // Auth
+    public const string AuthUsernameRequired = "AUTH_USERNAME_REQUIRED";
+    public const string AuthUsernameDuplicate = "AUTH_USERNAME_DUPLICATE";
+    public const string AuthEmailDuplicate = "AUTH_EMAIL_DUPLICATE";
+    public const string AuthPasswordTooWeak = "AUTH_PASSWORD_TOO_WEAK";
+    public const string AuthInvalidCredentials = "AUTH_INVALID_CREDENTIALS";
+    public const string AuthAccountInactive = "AUTH_ACCOUNT_INACTIVE";
+    public const string AuthMemberNotFound = "AUTH_MEMBER_NOT_FOUND";
 }
 
 /// <summary>Human-readable descriptions of the accepted value / format for a field.</summary>

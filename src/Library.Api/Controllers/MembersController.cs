@@ -5,6 +5,7 @@ using Library.Application.Common.Results;
 using Library.Application.Features.BulkImport;
 using Library.Application.Features.Members;
 using Library.Application.Features.Members.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -12,6 +13,7 @@ namespace Library.Api.Controllers;
 /// <summary>Library member management: enrolment, profile edits, search and lifecycle.</summary>
 [ApiController]
 [Route("api/members")]
+[Authorize(Roles = "Librarian")]
 public sealed class MembersController(MemberService memberService, BulkImportService bulkImport) : ControllerBase
 {
     /// <summary>Downloads the Excel template for bulk member import.</summary>

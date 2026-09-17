@@ -43,6 +43,7 @@ services:
       Database__SeedOnStartup: "true"
       FeatureFlags__EnableOpenTelemetry: "true"
       FeatureFlags__OtlpEndpoint: "http://jaeger:4317"
+      Jwt__SigningKey: "docker-compose-signing-key-CHANGE-ME-not-for-production-1234567890"
     ports:
       - "5254:8080"
 

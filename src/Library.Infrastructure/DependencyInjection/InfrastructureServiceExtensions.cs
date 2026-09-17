@@ -1,3 +1,4 @@
+using Library.Application.Abstractions;
 using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Logging;
 using Library.Application.Common.Options;
@@ -12,6 +13,7 @@ using Library.Infrastructure.Persistence.Repositories.EfCore;
 using Library.Infrastructure.Persistence.Repositories.InMemory;
 using Library.Infrastructure.Persistence.Repositories.InMemory.Seed;
 using Library.Infrastructure.Persistence.Seed;
+using Library.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,10 +25,13 @@ public static class InfrastructureServiceExtensions
         this IServiceCollection services,
         ObservabilitySettings settings,
         DatabaseOptions database,
-        string contentRootPath)
+        string contentRootPath,
+        JwtOptions? jwt = null)
     {
         services.AddSingleton(settings);
         services.AddSingleton(database);
+        services.AddSingleton(jwt ?? new JwtOptions());
+        services.AddSingleton<ITokenService, JwtTokenService>();
 
         services.AddSingleton<IAppLogWriter>(new FileAppLogWriter(settings, contentRootPath));
 
@@ -61,6 +66,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBookCopyRepository, EfBookCopyRepository>();
         services.AddScoped<IMemberRepository, EfMemberRepository>();
         services.AddScoped<IBorrowRecordRepository, EfBorrowRecordRepository>();
+        services.AddScoped<IUserRepository, EfUserRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         // Read-path ORM toggle: writes and advanced search always use EF Core;
@@ -85,11 +91,13 @@ public static class InfrastructureServiceExtensions
         services.AddSingleton<InMemoryBookCopyRepository>();
         services.AddSingleton<InMemoryMemberRepository>();
         services.AddSingleton<InMemoryBorrowRecordRepository>();
+        services.AddSingleton<InMemoryUserRepository>();
 
         services.AddSingleton<IBookRepository>(sp => sp.GetRequiredService<InMemoryBookRepository>());
         services.AddSingleton<IBookCopyRepository>(sp => sp.GetRequiredService<InMemoryBookCopyRepository>());
         services.AddSingleton<IMemberRepository>(sp => sp.GetRequiredService<InMemoryMemberRepository>());
         services.AddSingleton<IBorrowRecordRepository>(sp => sp.GetRequiredService<InMemoryBorrowRecordRepository>());
+        services.AddSingleton<IUserRepository>(sp => sp.GetRequiredService<InMemoryUserRepository>());
         services.AddSingleton<IUnitOfWork, NoOpUnitOfWork>();
         services.AddScoped<IDashboardReadStore, InMemoryDashboardReadStore>();
 

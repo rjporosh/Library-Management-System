@@ -5,6 +5,7 @@ using Library.Application.Common.Results;
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.BookCopies.Models;
 using Library.Application.Features.BulkImport;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
@@ -12,6 +13,7 @@ namespace Library.Api.Controllers;
 /// <summary>Physical book-copy management: registration, condition changes, search.</summary>
 [ApiController]
 [Route("api/book-copies")]
+[Authorize(Roles = "Librarian")]
 public sealed class BookCopiesController(BookCopyService bookCopyService, BulkImportService bulkImport) : ControllerBase
 {
     /// <summary>Downloads the Excel template for bulk copy import (by book ISBN + barcode).</summary>

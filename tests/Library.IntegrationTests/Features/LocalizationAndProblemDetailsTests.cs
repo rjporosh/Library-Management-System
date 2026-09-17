@@ -8,7 +8,7 @@ namespace Library.IntegrationTests.Features;
 public sealed class LocalizationAndProblemDetailsTests(LibraryApiFactory factory)
     : IClassFixture<LibraryApiFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.CreateLibrarianClient();
 
     [Fact]
     public async Task Messages_DefaultCulture_IsEnglish()

@@ -1,3 +1,4 @@
+using Library.Application.Common.Security;
 using Library.Domain.Entities;
 using Library.Domain.Enums;
 
@@ -17,7 +18,8 @@ public static class SeedData
         IReadOnlyList<Book> Books,
         IReadOnlyList<BookCopy> Copies,
         IReadOnlyList<Member> Members,
-        IReadOnlyList<BorrowRecord> Borrows);
+        IReadOnlyList<BorrowRecord> Borrows,
+        IReadOnlyList<User> Users);
 
     public static Dataset Build()
     {
@@ -69,11 +71,20 @@ public static class SeedData
             new BorrowRecord(Guid.NewGuid(), overdueCopy.Id, erin.Id, now.AddDays(-30), now.AddDays(-9)),
         };
 
+        var passwordHasher = new Pbkdf2PasswordHasher();
+        var librarian = new User(
+            Guid.NewGuid(), "librarian", "librarian@library.local",
+            passwordHasher.Hash("Librarian@123"), UserRole.Librarian);
+        var aliceLogin = new User(
+            Guid.NewGuid(), alice.Email, alice.Email,
+            passwordHasher.Hash("Member@123"), UserRole.Member, alice.Id);
+
         return new Dataset(
             [cleanCode, pragmatic, ddd, refactoring],
             copies,
             [alice, bob, charlie, dana, erin],
-            borrows);
+            borrows,
+            [librarian, aliceLogin]);
     }
 
     private static Member Member(string number, string name, string email, string phone, string address, DateTime expires) =>

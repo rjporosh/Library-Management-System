@@ -5,16 +5,20 @@ using Library.Application.Common.Results;
 using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Library.Application.Features.BulkImport;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Library.Api.Controllers;
 
+/// <summary>Book catalog. Any authenticated user (Librarian or Member) can browse; only Librarians can manage the catalog.</summary>
 [ApiController]
 [Route("api/books")]
+[Authorize]
 public sealed class BooksController(BookService bookService, BulkImportService bulkImport) : ControllerBase
 {
     /// <summary>Downloads the Excel template for bulk book import (headers, examples, instructions sheet).</summary>
     /// <response code="200">The .xlsx template.</response>
+    [Authorize(Roles = "Librarian")]
     [HttpGet("import/template")]
     [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     public IActionResult DownloadImportTemplate()
@@ -31,6 +35,7 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     /// </summary>
     /// <response code="200">Every row imported. Body: <c>{ success, imported }</c>.</response>
     /// <response code="422">Validation failed - nothing was written. Body lists every error.</response>
+    [Authorize(Roles = "Librarian")]
     [HttpPost("import")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(6 * 1024 * 1024)]
@@ -135,6 +140,7 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     /// <param name="request">The book information to create.</param>
     /// <response code="201">The book was successfully created.</response>
     /// <response code="400">The supplied book information is invalid.</response>
+    [Authorize(Roles = "Librarian")]
     [HttpPost]
     [ProducesResponseType(
         StatusCodes.Status201Created,
@@ -162,6 +168,7 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     /// <response code="200">The book was successfully updated.</response>
     /// <response code="404">No book exists with the specified identifier.</response>
     /// <response code="400">The supplied book information is invalid.</response>
+    [Authorize(Roles = "Librarian")]
     [HttpPut("{id:guid}")]
     [ProducesResponseType(
         StatusCodes.Status200OK,
@@ -193,6 +200,7 @@ public sealed class BooksController(BookService bookService, BulkImportService b
     /// <response code="204">Deleted.</response>
     /// <response code="404">No book with that id.</response>
     /// <response code="409">Dependent copies exist (confirm with force=true) or a copy is borrowed.</response>
+    [Authorize(Roles = "Librarian")]
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

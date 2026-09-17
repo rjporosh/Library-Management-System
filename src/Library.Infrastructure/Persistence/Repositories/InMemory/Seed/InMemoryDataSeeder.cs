@@ -7,7 +7,8 @@ public sealed class InMemoryDataSeeder(
     InMemoryBookRepository bookRepository,
     InMemoryBookCopyRepository bookCopyRepository,
     InMemoryMemberRepository memberRepository,
-    InMemoryBorrowRecordRepository borrowRecordRepository)
+    InMemoryBorrowRecordRepository borrowRecordRepository,
+    InMemoryUserRepository userRepository)
 {
     public void Seed()
     {
@@ -16,5 +17,6 @@ public sealed class InMemoryDataSeeder(
         bookCopyRepository.Seed(data.Copies);
         memberRepository.Seed(data.Members);
         borrowRecordRepository.Seed(data.Borrows);
+        userRepository.Seed(data.Users);
     }
 }

@@ -20,6 +20,7 @@ public sealed class DatabaseSeeder(LibraryDbContext db)
         db.BookCopies.AddRange(data.Copies);
         db.Members.AddRange(data.Members);
         db.BorrowRecords.AddRange(data.Borrows);
+        db.Users.AddRange(data.Users);
 
         await db.SaveChangesAsync(cancellationToken);
     }

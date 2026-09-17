@@ -1,3 +1,5 @@
+using Library.Application.Common.Security;
+using Library.Application.Features.Auth;
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.Books;
 using Library.Application.Features.Borrowing;
@@ -20,6 +22,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<MemberMaintenanceService>();
         services.AddScoped<BorrowingService>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<AuthService>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 
         // Bulk import
         services.AddScoped<BookImportDefinition>();
