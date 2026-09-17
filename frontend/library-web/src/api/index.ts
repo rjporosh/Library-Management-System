@@ -4,6 +4,8 @@ import type {
   BookCopy,
   BookDetail,
   BorrowRecord,
+  BorrowRequestRecord,
+  BorrowRequestType,
   DashboardSnapshot,
   MaintenanceResult,
   Member,
@@ -99,6 +101,25 @@ export const borrowingApi = {
 
 export const dashboardApi = {
   get: () => http.get<DashboardSnapshot>('/dashboard').then((r) => r.data),
+}
+
+// --- borrow requests --------------------------------------------------
+
+export const borrowRequestsApi = {
+  create: (body: {
+    type: BorrowRequestType
+    bookId?: string
+    suggestedTitle?: string
+    suggestedAuthor?: string
+    note?: string
+  }) => http.post<BorrowRequestRecord>('/borrow-requests', body).then((r) => r.data),
+  mine: () => http.get<BorrowRequestRecord[]>('/borrow-requests/mine').then((r) => r.data),
+  search: (req: SearchRequest) =>
+    http.post<Paged<BorrowRequestRecord>>('/borrow-requests/search', req).then((r) => r.data),
+  approve: (id: string) =>
+    http.post<BorrowRequestRecord>(`/borrow-requests/${id}/approve`).then((r) => r.data),
+  reject: (id: string) =>
+    http.post<BorrowRequestRecord>(`/borrow-requests/${id}/reject`).then((r) => r.data),
 }
 
 export const jobsApi = {

@@ -208,3 +208,25 @@ export interface SearchRequest {
   pageSize: number
   search?: string
 }
+
+// --- borrow requests -------------------------------------------------
+
+export type BorrowRequestType = 'Borrow' | 'Purchase'
+export type BorrowRequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Fulfilled'
+
+export interface BorrowRequestRecord {
+  id: string
+  memberId: string
+  memberName: string
+  membershipNumber: string
+  type: BorrowRequestType
+  bookId?: string | null
+  bookTitle?: string | null
+  suggestedTitle?: string | null
+  suggestedAuthor?: string | null
+  note?: string | null
+  status: BorrowRequestStatus
+  requestedAt: string
+  decidedAt?: string | null
+  borrowRecordId?: string | null
+}

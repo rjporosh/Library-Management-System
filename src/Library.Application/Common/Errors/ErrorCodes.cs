@@ -84,6 +84,15 @@ public static class ErrorCodes
     public const string AuthInvalidCredentials = "AUTH_INVALID_CREDENTIALS";
     public const string AuthAccountInactive = "AUTH_ACCOUNT_INACTIVE";
     public const string AuthMemberNotFound = "AUTH_MEMBER_NOT_FOUND";
+
+    // Borrow requests
+    public const string BorrowRequestBookRequired = "BORROW_REQUEST_BOOK_REQUIRED";
+    public const string BorrowRequestTitleRequired = "BORROW_REQUEST_TITLE_REQUIRED";
+    public const string BorrowRequestBookNotFound = "BORROW_REQUEST_BOOK_NOT_FOUND";
+    public const string BorrowRequestDuplicate = "BORROW_REQUEST_DUPLICATE";
+    public const string BorrowRequestNotFound = "BORROW_REQUEST_NOT_FOUND";
+    public const string BorrowRequestAlreadyDecided = "BORROW_REQUEST_ALREADY_DECIDED";
+    public const string BorrowRequestNoCopyAvailable = "BORROW_REQUEST_NO_COPY_AVAILABLE";
 }
 
 /// <summary>Human-readable descriptions of the accepted value / format for a field.</summary>

@@ -1,17 +1,30 @@
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BookOpen, ExternalLink, Headphones, ShoppingCart } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, BookOpen, ExternalLink, Headphones, Send, ShoppingCart } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import { booksApi } from '@/api'
-import { Badge, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
+import { booksApi, borrowRequestsApi } from '@/api'
+import { Badge, Button, Card, ErrorState, PageHeader, Spinner } from '@/components/ui'
+import { useAuth } from '@/context/authContextValue'
+import { normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { t } from '@/lib/i18n'
 import { coverImageSrc, PLACEHOLDER_COVER } from '@/lib/covers'
 
 export default function BookDetailPage() {
   const { id = '' } = useParams()
+  const { isMember } = useAuth()
+  const qc = useQueryClient()
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['books', id, 'detail'],
     queryFn: () => booksApi.detail(id),
+  })
+
+  const requestBorrow = useMutation({
+    mutationFn: () => borrowRequestsApi.create({ type: 'Borrow', bookId: id }),
+    onSuccess: () => {
+      toastSuccess(t('bookDetail.requestSent'))
+      void qc.invalidateQueries({ queryKey: ['borrowRequests', 'mine'] })
+    },
+    onError: (e) => toastError(normaliseError(e).message),
   })
 
   if (isLoading) return <Spinner />
@@ -26,7 +39,17 @@ export default function BookDetailPage() {
         <ArrowLeft size={14} /> {t('bookDetail.back')}
       </Link>
 
-      <PageHeader title={book.title} subtitle={`${book.author} · ${book.isbn}`} />
+      <PageHeader
+        title={book.title}
+        subtitle={`${book.author} · ${book.isbn}`}
+        actions={
+          isMember && (
+            <Button onClick={() => requestBorrow.mutate()} disabled={requestBorrow.isPending}>
+              <Send size={16} /> {requestBorrow.isPending ? t('bookDetail.requesting') : t('bookDetail.requestBorrow')}
+            </Button>
+          )
+        }
+      />
 
       <div className="grid gap-4 lg:grid-cols-[200px_1fr]">
         <Card className="overflow-hidden p-0">

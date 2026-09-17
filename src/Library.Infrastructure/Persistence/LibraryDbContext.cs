@@ -18,6 +18,7 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
     public DbSet<Member> Members => Set<Member>();
     public DbSet<BorrowRecord> BorrowRecords => Set<BorrowRecord>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<BorrowRequest> BorrowRequests => Set<BorrowRequest>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -92,6 +93,21 @@ public sealed class LibraryDbContext(DbContextOptions<LibraryDbContext> options)
             e.HasIndex(x => x.Username).IsUnique();
             e.HasIndex(x => x.Email).IsUnique();
             e.HasIndex(x => x.MemberId).IsUnique();
+        });
+
+        b.Entity<BorrowRequest>(e =>
+        {
+            e.ToTable("borrow_requests");
+            ConfigureEntity(e);
+            e.Property(x => x.Type).HasConversion<string>().HasMaxLength(32).IsRequired();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            e.Property(x => x.SuggestedTitle).HasMaxLength(400);
+            e.Property(x => x.SuggestedAuthor).HasMaxLength(400);
+            e.Property(x => x.Note).HasMaxLength(1000);
+            e.HasIndex(x => new { x.MemberId, x.Status });
+            e.HasIndex(x => x.Status);
+            e.HasOne<Member>().WithMany().HasForeignKey(x => x.MemberId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Book>().WithMany().HasForeignKey(x => x.BookId).OnDelete(DeleteBehavior.Restrict);
         });
     }
 

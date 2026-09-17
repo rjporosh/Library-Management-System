@@ -67,6 +67,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IMemberRepository, EfMemberRepository>();
         services.AddScoped<IBorrowRecordRepository, EfBorrowRecordRepository>();
         services.AddScoped<IUserRepository, EfUserRepository>();
+        services.AddScoped<IBorrowRequestRepository, EfBorrowRequestRepository>();
         services.AddScoped<DatabaseSeeder>();
 
         // Read-path ORM toggle: writes and advanced search always use EF Core;
@@ -98,6 +99,8 @@ public static class InfrastructureServiceExtensions
         services.AddSingleton<IMemberRepository>(sp => sp.GetRequiredService<InMemoryMemberRepository>());
         services.AddSingleton<IBorrowRecordRepository>(sp => sp.GetRequiredService<InMemoryBorrowRecordRepository>());
         services.AddSingleton<IUserRepository>(sp => sp.GetRequiredService<InMemoryUserRepository>());
+        services.AddSingleton<InMemoryBorrowRequestRepository>();
+        services.AddSingleton<IBorrowRequestRepository>(sp => sp.GetRequiredService<InMemoryBorrowRequestRepository>());
         services.AddSingleton<IUnitOfWork, NoOpUnitOfWork>();
         services.AddScoped<IDashboardReadStore, InMemoryDashboardReadStore>();
 

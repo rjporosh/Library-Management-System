@@ -1,6 +1,7 @@
 import {
   BookMarked,
   BookOpen,
+  ClipboardList,
   LayoutDashboard,
   Library,
   LogOut,
@@ -19,6 +20,8 @@ import BookCopiesPage from '@/pages/BookCopiesPage'
 import MembersPage from '@/pages/MembersPage'
 import MemberDetailPage from '@/pages/MemberDetailPage'
 import BorrowingPage from '@/pages/BorrowingPage'
+import BorrowRequestsPage from '@/pages/BorrowRequestsPage'
+import MyRequestsPage from '@/pages/MyRequestsPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 
@@ -28,6 +31,7 @@ const NAV: { to: string; labelKey: MessageKey; icon: typeof BookOpen; end?: bool
   { to: '/book-copies', labelKey: 'nav.copies', icon: BookMarked, librarianOnly: true },
   { to: '/members', labelKey: 'nav.members', icon: Users, librarianOnly: true },
   { to: '/borrowing', labelKey: 'nav.borrowing', icon: Repeat, librarianOnly: true },
+  { to: '/requests', labelKey: 'nav.requests', icon: ClipboardList },
 ]
 
 export default function App() {
@@ -182,6 +186,7 @@ export default function App() {
                 </RequireLibrarian>
               }
             />
+            <Route path="/requests" element={isLibrarian ? <BorrowRequestsPage /> : <MyRequestsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
