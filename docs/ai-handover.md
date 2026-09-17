@@ -1,7 +1,7 @@
 # AI Handover --- Library Management System
 
-**Last updated:** 2026-09-06 (fourth checkpoint - OpenAPI titles/descriptions
-now rendered, Postman collection with runnable examples)
+**Last updated:** 2026-09-17 (fifth checkpoint - JWT auth + RBAC foundation
+for the member self-service / smart-library feature set)
 **Written by:** Claude (principal-engineer role), in a sandbox **with a
 working .NET 10 SDK, NuGet, Node 26 and Docker** - so unlike the 0.2.0
 session, everything below is **built, tested and smoke-verified**.
@@ -9,22 +9,28 @@ session, everything below is **built, tested and smoke-verified**.
 Read this file first. `docs/ROADMAP.md` and `docs/MASTER_SPECIFICATION.md`
 describe the long-term plan; this file is exactly where execution stands.
 
+**If you are the next agent picking this up:** jump straight to
+[§4f "Fifth checkpoint"](#4f-fifth-checkpoint-2026-09-17--auth-foundation)
+and [§4g "Exact plan for the remaining smart-library feature set"](#4g-exact-plan-for-the-remaining-smart-library-feature-set-not-started-yet)
+below - a large, multi-milestone feature set was requested and only the
+auth foundation (milestone 1 of ~9) is done so far.
+
 ---
 
-## 0. Current state (verified this session)
+## 0. Current state (verified this session, 2026-09-17)
 
 | Check | Result |
 |---|---|
 | `dotnet build LibraryManagementSystem.slnx` | **0 warnings, 0 errors** (TreatWarningsAsErrors on) |
-| `dotnet test` | **78 pass** (57 unit + 21 integration), 0 fail |
-| `npm test` (frontend, Vitest) | **7 pass** |
+| `dotnet test` | **86 pass** (57 unit + 29 integration), 0 fail |
+| `npm test` (frontend, Vitest) | **11 pass** |
 | `npm run build` / `npm run lint` (frontend) | clean |
-| End-to-end (headless browser, API + web) | 0 console errors, 0 failed requests, every page renders and flows work |
-| `docker compose up --build` | all 4 services up; `/health` "Postgres database is reachable"; web proxies API; Jaeger receives `Library.Api` traces |
-| EF Core against a real PostgreSQL 17 | migration applies, seed runs, advanced search translates to SQL (enum-by-name), bulk-import rollback, query log written |
+| End-to-end auth flow (headless browser, real API + web, real Postgres) | librarian login -> dashboard -> logout -> member login -> `/books` with staff nav hidden; 0 console errors, 0 failed requests |
+| EF Core migration `AddUsers` | generated + compiles; not yet applied to a long-lived dev DB (see §4f) |
 
 Branch: `feat/enterprise-completion` (off `main`). Commits are one-per-milestone
-with full messages.
+with full messages. Two new commits this session: `bbc47ef` (backend auth) and
+`927b075` (frontend auth UI) - see `git log` for the full messages.
 
 ## 1. What was completed this session
 
@@ -167,19 +173,26 @@ git checkout feat/enterprise-completion
 
 # backend - confirm green
 dotnet build LibraryManagementSystem.slnx      # expect 0/0
-dotnet test  LibraryManagementSystem.slnx      # expect 78 pass
-( cd frontend/library-web && npm ci && npm test && npm run build )   # 7 tests, clean
+dotnet test  LibraryManagementSystem.slnx      # expect 86 pass (57 unit + 29 integration)
+( cd frontend/library-web && npm ci && npm test && npm run build && npm run lint )   # 11 tests, clean
 
 # run the API - Development uses Postgres (docker compose up -d db first);
 # for a no-database demo:  Database__Provider=InMemory dotnet run --project src/Library.Api
 dotnet run --project src/Library.Api            # http://localhost:5254  (/scalar for docs)
+
+# log in as the seeded demo accounts (see §4f) and reuse the token:
+curl -X POST localhost:5254/api/auth/login -H 'content-type: application/json' \
+  -d '{"usernameOrEmail":"librarian","password":"Librarian@123"}'
+curl -X POST localhost:5254/api/auth/login -H 'content-type: application/json' \
+  -d '{"usernameOrEmail":"alice@example.com","password":"Member@123"}'
+TOKEN=<accessToken from above>
 curl -X POST localhost:5254/api/books/search -H 'content-type: application/json' \
+  -H "Authorization: Bearer $TOKEN" \
   -d '{"filters":[{"field":"author","operator":"contains","value":"martin"}],"sort":[{"field":"publishedYear","direction":"desc"}]}'
-curl -X POST localhost:5254/api/members/search -H 'content-type: application/json' \
-  -d '{"filters":[{"field":"status","operator":"in","values":["Suspended","Inactive"]}]}'
-curl -X POST localhost:5254/api/jobs/member-maintenance/run
-curl -OJ localhost:5254/api/books/import/template
-curl -X POST localhost:5254/api/books/import -F file=@book.xlsx
+
+# apply the new AddUsers migration to a real Postgres before relying on it outside InMemory:
+docker compose up -d db
+dotnet ef database update --project src/Library.Infrastructure --startup-project src/Library.Api
 
 # full stack
 docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
@@ -187,10 +200,11 @@ docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
 # frontend only
 cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
 
-# The enterprise scope is complete. Remaining items (§3d) are optional
-# follow-ups - MySQL/Oracle drivers when packages ship, more Dapper read
-# stores, the deferred success envelope, wider Bangla / frontend-test coverage.
-# Suggested next: merge feat/enterprise-completion to main after review.
+# NEXT STEP: this is NOT the end of the work. Read §4f and §4g above -
+# a large "smart library" feature set was requested and only milestone 1
+# (auth) is done. Continue with milestone 2 (book catalog enrichment:
+# cover/edition/format + book detail page) next, in the exact order §4g
+# lays out, committing one milestone at a time.
 ```
 
 ## 4b. Fourth checkpoint (this session)
@@ -279,6 +293,261 @@ Fixed along the way:
 
 Tests: 57 unit + 23 integration + 11 Vitest, all green; build 0/0.
 
+## 4f. Fifth checkpoint (2026-09-17) - auth foundation
+
+The user asked for a large "smart library" feature set on top of the already-
+enterprise-ready MVP (see §4g for the full list and exact remaining plan).
+Authentication was the correct place to start because several requested
+features (member self-service, borrow requests, admin approval) are
+impossible without a login/role system, and none existed before this session
+- every endpoint was fully anonymous.
+
+**What was built (backend):**
+- `Library.Domain.Entities.User` (username, email, PBKDF2 password hash,
+  `UserRole` enum `{Librarian, Member}`, optional `MemberId` link for member
+  accounts, active flag, login timestamp). `Entity` base gives it soft-delete
+  for free (unused for now, but consistent).
+- `Pbkdf2PasswordHasher` (`Library.Application.Common.Security`) -
+  RFC 2898/PBKDF2-HMACSHA256, 210k iterations, no external Identity package
+  dependency; format `{iterations}.{saltB64}.{hashB64}` so the work factor
+  can be raised later without invalidating existing hashes.
+- `JwtTokenService` (`Library.Infrastructure.Security`) - HS256 via
+  `System.IdentityModel.Tokens.Jwt`; claims: `sub`, name, email, `role`,
+  `memberId` (when applicable), `jti`; expiry from `Jwt:AccessTokenMinutes`.
+- `JwtOptions` bound from the `Jwt` config section (`Issuer`, `Audience`,
+  `SigningKey`, `AccessTokenMinutes`). **`Program.cs` throws at startup if
+  `Jwt:SigningKey` is empty** (fail-fast, same philosophy as the existing
+  DB-down diagnostic) - so every environment's appsettings/env vars must set
+  a real key. Dev/local/docker-compose already have placeholder keys
+  (`*-CHANGE-ME-not-for-production-*`); **Production's `Jwt:SigningKey` is
+  intentionally blank** - it must come from the `Jwt__SigningKey` environment
+  variable (or a secrets manager) before a real deployment, same pattern as
+  `Database:ConnectionString`.
+- `AuthService` (`Library.Application.Features.Auth`) - `LoginAsync`,
+  `RegisterMemberAsync` (creates the `Member` row AND the `User` login
+  together, auto-generates a `MEM-<timestamp>` membership number),
+  `RegisterLibrarianAsync` (librarian-only, for provisioning more staff).
+  Uses the existing `Result`/`ApiError` pattern - duplicate email/username
+  and weak-password errors all come back together, not one at a time.
+- `AuthController`: `POST /api/auth/login` (anonymous), `POST /api/auth/
+  register` (anonymous, member self-service), `POST /api/auth/librarians`
+  (`[Authorize(Roles="Librarian")]`).
+- **Every existing controller is now behind `[Authorize]`**: `BooksController`
+  is `[Authorize]` at the class level (any signed-in role can browse/search/
+  get) with `[Authorize(Roles="Librarian")]` added to Import/Create/Update/
+  Delete individually. `BookCopiesController`, `MembersController`,
+  `BorrowingController`, `DashboardController`, `JobsController`,
+  `LogsController` are all `[Authorize(Roles="Librarian")]` at the class
+  level (members have no reason to see any of those yet - member-facing
+  borrow-request endpoints are still to be built, see §4g milestone 6).
+  `MetadataController` and `ReleaseNotesController` were deliberately left
+  anonymous (needed pre-login, e.g. for the login page's language switch).
+- EF: `users` table (unique indexes on username/email/memberId), migration
+  `20260917165936_AddUsers`. InMemory: `InMemoryUserRepository` mirroring the
+  EF one, same DI-swap pattern as every other entity.
+- Seed data (`SeedData.Build()`, shared by both providers) now also seeds a
+  demo librarian (`librarian` / `Librarian@123`) and a member account linked
+  to the existing seeded "Alice Johnson" member (`alice@example.com` /
+  `Member@123`) - use these for manual testing and in any new automated test.
+
+**What was built (frontend):**
+- `AuthContext`/`authContextValue` (split into two files on purpose - a
+  single file exporting both the provider component and the `useAuth` hook
+  fails the `react-refresh/only-export-components` ESLint rule). Session
+  persisted in `localStorage` under `lms.auth`.
+- `src/lib/api.ts` - the axios instance now attaches `Authorization: Bearer
+  <token>` from `localStorage` on every request, and a 401 anywhere clears
+  the session and fires `window` event `lms:auth-logout` (`AuthContext`
+  listens and updates state, so a token expiring mid-session correctly boots
+  the user back to `/login`, not just the next request that happens to check).
+- `LoginPage.tsx` / `RegisterPage.tsx` - plain, bilingual, follow the
+  existing form conventions (`FormField`/`TextInput`/`Button` from
+  `components/ui.tsx`, `normaliseError()` for error display).
+- `App.tsx` - unauthenticated users only ever see `/login` and `/register`;
+  once signed in, `nav` is filtered by `librarianOnly` per item (Dashboard,
+  Book Copies, Members, Borrowing are hidden for a Member account), the `/`
+  route resolves to the Dashboard for a Librarian and redirects a Member to
+  `/books`, and a defensive `RequireLibrarian` wrapper still blocks direct
+  URL navigation to a staff-only route even though the nav link is hidden.
+  Sidebar shows "Signed in as `<username>`" + a logout button.
+- New locale keys under `auth.*` and `nav.logout` added to **both** `en.ts`
+  and `bn.ts` (the `Record<MessageKey,string>` typing means a missing key in
+  `bn.ts` is a compile error, so parity is guaranteed here already).
+
+**Testing:**
+- `LibraryApiFactory` (integration test host) now mints matching test JWTs
+  (`CreateLibrarianClient()` / `CreateMemberClient(memberId)`) instead of
+  every test hitting anonymous endpoints. **Important gotcha discovered and
+  fixed**: overriding `Jwt:*` config only via `ConfigureAppConfiguration` in
+  the test factory was silently ignored for the minimal-hosting `Program.cs`
+  pattern - it had to also go through `builder.UseSetting(...)` (exactly
+  like the pre-existing `Database:Provider` override already did). If you
+  add another appsettings key that a test factory needs to override, use
+  `UseSetting`, not only `ConfigureAppConfiguration`.
+- New `tests/Library.IntegrationTests/Features/Auth/AuthApiTests.cs` - login
+  success/failure, member self-registration, anonymous-401, member-on-
+  librarian-route-403, member-can-browse-books-200. Enum deserialization in
+  tests needs `PropertyNameCaseInsensitive = true` in the test's
+  `JsonSerializerOptions` (the API returns camelCase, `record` positional
+  binding is case-sensitive by default) - without it every field silently
+  binds to its default value instead of throwing, which is a sharp edge if
+  you add more auth-shaped tests.
+- Verified live in a headless browser against the real running stack
+  (script and full transcript are not preserved, but the behavior asserted
+  was: login redirect, nav visibility per role, default landing route per
+  role, logout, re-login as a different role - all correct, 0 console
+  errors, 0 failed network requests).
+
+**Not done in this session (see §4g for the ordered remaining plan):** book
+cover/thumbnail/edition/format fields, book-copy auto-generation, the 1-copy
+borrow limit (still 1, not 2), member status filter UI, borrow-request/
+approval workflow, voice search, the agentic chat assistant, and a
+localization audit of the two new pages (LoginPage/RegisterPage are already
+fully bilingual via `t()`, so this is really just "verify," not "build").
+
+## 4g. Exact plan for the remaining smart-library feature set (not started yet)
+
+The user's full ask (paraphrased, in the order it makes sense to build - each
+is independent enough to be its own commit/milestone, and later ones depend
+on earlier ones):
+
+1. ~~**Auth (JWT, Librarian/Member RBAC)**~~ - **DONE, §4f above.**
+2. **Book catalog enrichment**: `Book.CoverImageUrl` (nullable string - store
+   as a URL/data-URI reference, do not build file upload/blob storage unless
+   asked), `Book.Edition` (nullable, optional - show only if present),
+   `Book.Format` (new enum `BookFormat { Physical, Ebook, AudioBook }` -
+   **note**: a single physical book can plausibly also have an ebook/
+   audiobook edition, so consider whether this should be a set of flags/
+   separate boolean availability fields rather than a single enum before
+   implementing - this is a real design decision, ask the user or pick the
+   flags design, since a single enum cannot represent "available as both
+   physical and ebook"), `Book.ExternalBuyUrl`/`Book.ExternalPdfUrl`
+   (nullable - the "smart suggest a purchase/PDF link when nothing is
+   available" fallback). Needs: domain field additions (mind the
+   **positional-record landmine**, §5), EF migration, DTO/validator updates,
+   a new **Book detail page** on the frontend (none exists today - Books is
+   list-only; Member detail page at `src/pages/MemberDetailPage.tsx` is the
+   template to copy for layout conventions), and "smart availability" logic
+   (physical copy available -> show it; else ebook -> show it; else
+   audiobook -> show it; else show the external buy/PDF link) most likely as
+   a computed field on the book-detail response rather than client-side logic.
+3. **Book-copy auto-generation on create**: add `Book.TotalCopies` (int,
+   default 0) to the create-book request only (not persisted as a `Book`
+   column necessarily - could be write-only, deriving the real count from
+   `BookCopy` rows as today) or add it as a real column if the librarian
+   needs to see/edit "intended total copies" separately from "copies that
+   currently exist." When `TotalCopies` > 0 on create, generate that many
+   `BookCopy` rows with **sequential barcodes** (`BC-0001`, `BC-0002`, ... -
+   continuing from the current max `BC-####` in the DB, not restarting at
+   0001 every time - check `BookCopyService`/`IBookCopyRepository` for how to
+   query the current max cleanly, probably a new repository method). This
+   must be one transaction (book + N copies all succeed or all fail) - use
+   the existing `IUnitOfWork` pattern, do not call `SaveChangesAsync` per
+   copy.
+4. **Borrow limit 1 -> 2**: `src/Library.Application/Features/Borrowing/
+   BorrowingService.cs` lines ~41-46 currently call
+   `IBorrowRecordRepository.HasActiveBorrowAsync` (a boolean "has any active
+   borrow"). Change this to a count-based check (`CountActiveBorrowsAsync`)
+   against a configurable limit (suggest a `BorrowingOptions.MaxActiveBorrows
+   = 2` in `Common/Options`, not a hardcoded literal, so it's a one-line
+   config change later). Update the EF and InMemory repository
+   implementations, the error message (currently says "Only one active
+   borrow is allowed per member"), and **grep `tests/` for "Only one active
+   borrow"** before changing - at least one existing test asserts that exact
+   string and will need updating to match the new limit/message.
+5. **Member list filters + borrow-count guard**: the member list/search
+   already supports filtering by `status` (`MemberSearchMap` + the advanced
+   search builder already whitelist it - verify field name in
+   `Features/Members/MemberSearchMap.cs`) - this may already be usable from
+   `MembersPage.tsx`'s `AdvancedSearch` component; confirm before building
+   new UI. "Member who currently has a book borrowed" is already computable
+   via `MemberDetailResponse.CurrentlyBorrowed` (see `MemberService.
+   GetDetailAsync`) but is not currently a list-page filter/column - adding a
+   "currently borrowing" column/filter to `MembersPage.tsx` would need either
+   a new search field backed by a join/subquery in `EfMemberRepository.
+   Query()`, or a denormalized flag - prefer the query-based approach to
+   avoid a new sync-on-write bug.
+6. **Borrow-request / admin-approval workflow** (net new - nothing like this
+   exists today, confirmed by the initial exploration pass): new
+   `BorrowRequest` entity (`MemberId`, `BookId` or `BookCopyId`, `Status`
+   enum `{Pending, Approved, Rejected, Fulfilled}`, `RequestedAt`,
+   `DecidedAt`, `DecidedByUserId`), a member-facing "request to borrow /
+   request to buy" endpoint (`[Authorize(Roles="Member")]`), and a
+   librarian-facing approval queue page + endpoints
+   (`[Authorize(Roles="Librarian")]`) that, on approval, actually calls the
+   existing `BorrowingService.IssueAsync` rather than duplicating that logic.
+   Follow the existing feature-folder pattern (`Features/BorrowRequests/`
+   with a `*Service.cs`, `Models/`, `*SearchMap.cs`) - see
+   `docs/programmers-guide/02-add-a-crud.md` for the house style.
+7. **Librarian search enhancements on the Borrowing page**: per the initial
+   exploration, `BorrowingPage.tsx` already has type-ahead search by member
+   name/membership number and by copy barcode - **re-verify this still
+   satisfies "member name, member id, book name, copy id all visible and
+   searchable"** before building anything new; likely only "book name" needs
+   adding to the existing search/result columns (copies are currently
+   searched/shown by barcode + book, not sure book title is a column - check
+   the table columns in that page first).
+8. **Localization audit**: per the initial exploration, UI-chrome
+   localization was already completed in an earlier session (verified: grep
+   of every `pages/*.tsx`/`components/*.tsx` for un-wrapped JSX text found
+   none) - so "some pages still English" from the user's request may already
+   be stale, OR may resurface once the new Book-detail/BorrowRequest pages
+   are built (those must use `t()` from the start, not be built in English
+   and translated after). Re-verify with a full-app click-through in both
+   languages once milestones 2-7 land, since new pages are exactly where
+   regressions happen.
+9. **Voice search (STT) + agentic chat assistant** - user explicitly wants
+   **both** provider tiers for each, all configurable via
+   `appsettings.{json,Development.json,local.json}` or environment
+   variables (matching the existing `Database`/`Jwt` config-driven-provider
+   convention in this codebase):
+   - **Speech**: Web Speech API (`SpeechRecognition`/`speechSynthesis`,
+     client-side, zero backend work, Chromium-only) as the default/
+     recommended path, **plus** a Hugging Face-backed server path (e.g.
+     Whisper via Inference API or a self-hosted endpoint) as a configurable
+     alternative - suggest a `Speech:Provider` config value (`WebSpeech` |
+     `HuggingFace`) with `Speech:HuggingFace:ApiKey`/`ModelId` sub-keys,
+     following the exact `DatabaseOptions`/`JwtOptions` POCO-bound-once
+     pattern already used everywhere else in this codebase. **Needs a
+     `HUGGINGFACE_API_KEY` the user must supply** - do not fabricate one.
+   - **Chat assistant**: a rule-based deterministic intent engine (parse
+     "how many copies of X", "most borrowed this month", "who borrowed the
+     most last month", etc. against the existing repositories/dashboard
+     queries - no new external dependency, always available) as the
+     default/fallback, **plus** a real LLM path supporting **both**
+     `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` (user explicitly asked for
+     both, said they have a trainer-provided OpenAI key to test with),
+     selectable via a `Chat:Provider` config value (`RuleBased` |
+     `Anthropic` | `OpenAI`), with the LLM path constrained to call the same
+     internal query "tools" (function-calling / tool-use) rather than given
+     free-form DB access - this is a real architectural decision (external
+     cost, latency, a new outbound network dependency) and was explicitly
+     confirmed with the user (see the two `AskUserQuestion` answers in the
+     conversation that requested this milestone) before starting; if a fresh
+     agent is continuing here without that context, it is safe to proceed
+     with this design as specified.
+   - Both must be documented in `guide.md` (the user explicitly asked for
+     "an easy step by step guide" there covering how to configure each
+     provider and how to switch between them) - update `guide.md` in the
+     same commit that adds the feature, not as an afterthought.
+10. **Everything above** must land with 0 build warnings/errors (the
+    `TreatWarningsAsErrors` gate already enforces this), no regressions in
+    the current 86 backend + 11 frontend tests, and a docs/roadmap/release-
+    notes update + commit **per milestone**, exactly like milestones 1
+    (backend auth) and 1b (frontend auth UI) in §4f were landed this
+    session - do not batch multiple milestones into one commit, and do not
+    leave a milestone half-done across a context/session boundary without
+    updating this file to say exactly which half is done.
+
+**If your context/token budget is running out before finishing a milestone**:
+stop at the next safe point (usually: after the backend for a milestone
+builds + tests pass, before starting its frontend half, or vice versa),
+commit what compiles and is tested, and add a `## 4h. <n>th checkpoint`
+section here describing exactly what changed, why, and the precise resume
+point - the same structure §4f uses. Do not leave partially-applied EF
+migrations, half-added positional-record fields, or TODO/stub code across a
+checkpoint boundary.
+
 ## 5. Landmines
 
 - **Positional-record DTOs** are consumed positionally in tests - any field
@@ -294,3 +563,14 @@ Tests: 57 unit + 23 integration + 11 Vitest, all green; build 0/0.
   "Clean Code" / `9780132350884` literals - keep them in any EF seeder.
 - `BorrowingController` conflict responses moved **400 -> 409**; the frontend
   handles it, but note it for any external consumer.
+- **Every controller except `AuthController`, `MetadataController` and
+  `ReleaseNotesController` now requires a bearer token** (see §4f). Any new
+  integration test that calls a controller endpoint needs
+  `factory.CreateLibrarianClient()` or `factory.CreateMemberClient(memberId)`
+  instead of `factory.CreateClient()`, or it will get a 401. Any new
+  frontend API call goes through the shared `http` instance in `lib/api.ts`
+  and gets the bearer token automatically - do not build a second axios
+  instance.
+- `Jwt:SigningKey` **must** be non-empty in every environment's config or
+  the API refuses to start (by design, fail-fast). If you add a new test
+  host or a new deployment environment file, give it a `Jwt:SigningKey` too.

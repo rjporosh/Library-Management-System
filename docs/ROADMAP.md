@@ -5,7 +5,12 @@ it into an enterprise-grade product.
 
 ------------------------------------------------------------------------
 
-## Progress snapshot (2026-09-06, branch `feat/enterprise-completion`)
+## Progress snapshot (2026-09-17, branch `feat/enterprise-completion`)
+
+**New:** Phase 17 (Smart Library feature set - auth, book formats/covers,
+copy auto-generation, borrow requests, voice search, agentic chat) was added
+2026-09-17. Only 17.1 (Auth/RBAC) is done; see `docs/ai-handover.md` §4g for
+the full ordered plan for 17.2-17.9.
 
 | Phase | Status |
 |---|---|
@@ -25,8 +30,17 @@ it into an enterprise-grade product.
 | 15 Release Notes API | **Done** - `GET /api/release-notes/current` |
 | 16 Release engineering / Docker / CI | **Done** - multi-stage Dockerfiles, docker-compose (db+jaeger+api+web), GitHub Actions CI (+ frontend Vitest), NBomber load tests |
 | 8 Domain integrity / soft delete | **Done** - Entity base, soft delete everywhere, smart cascade-delete, Book category/publisher + Member phone/address |
+| 17.1 Auth (JWT, Librarian/Member RBAC) | **Done** - see `docs/ai-handover.md` §4f |
+| 17.2 Book catalog enrichment (cover/edition/format, book detail page) | **Not started** |
+| 17.3 Book-copy auto-generation on create (`TotalCopies` -> `BC-####` rows) | **Not started** |
+| 17.4 Borrow limit 1 -> 2 (configurable) | **Not started** |
+| 17.5 Member list status filters / currently-borrowing indicator | **Not started** (may partly already work - verify first) |
+| 17.6 Borrow-request / admin-approval workflow | **Not started** |
+| 17.7 Borrowing page search verification (member/book/copy) | **Not started** (verify existing search first) |
+| 17.8 Localization audit of new pages | **Not started** |
+| 17.9 Voice search (Web Speech + Hugging Face) + agentic chat (rule-based + Anthropic/OpenAI) | **Not started** |
 
-See `docs/ai-handover.md` §3-4 for the exact next steps and commands.
+See `docs/ai-handover.md` §3-4 and §4f-4g for the exact next steps and commands.
 
 ------------------------------------------------------------------------
 
@@ -694,3 +708,72 @@ Enterprise hardening
         ↓
 Release-ready product
 ```
+
+------------------------------------------------------------------------
+
+# Phase 17 --- Smart Library Feature Set (added 2026-09-17)
+
+Requested on top of the already-enterprise-ready MVP. Full detail, exact
+file-level pointers and design caveats for each sub-phase are in
+`docs/ai-handover.md` §4f (done) and §4g (ordered plan for the rest) - this
+section is the durable summary; treat §4g as the source of truth for
+implementation detail since it is kept current per checkpoint.
+
+## 17.1 Auth (JWT, Librarian/Member RBAC) --- Done
+
+JWT bearer auth, PBKDF2 password hashing, a `users` table/migration, login +
+member self-registration + librarian-provisioning endpoints, every existing
+controller now authorized (Books browsable by both roles, everything else
+Librarian-only), a full login/register SPA flow with role-based nav and
+routing. See `docs/ai-handover.md` §4f for the complete file list.
+
+## 17.2 Book catalog enrichment --- Not started
+
+Cover/thumbnail, optional edition, ebook/audiobook availability (design
+decision: flags, not a single enum - a book can be physical AND ebook AND
+audiobook simultaneously), external buy/PDF fallback links, and a new Book
+detail page (none exists today) with "smart" availability resolution
+(physical -> ebook -> audiobook -> external link).
+
+## 17.3 Book-copy auto-generation --- Not started
+
+`TotalCopies` on book creation generates that many sequential `BC-####`
+`BookCopy` rows in one transaction, continuing the sequence rather than
+restarting it.
+
+## 17.4 Borrow limit 1 -> 2 --- Not started
+
+Move from a boolean "has an active borrow" check to a configurable count
+limit (`BorrowingOptions.MaxActiveBorrows`).
+
+## 17.5 Member list filters / borrowing indicator --- Not started
+
+Verify existing status search first (may already work); add a "currently
+borrowing" column/filter if not already derivable.
+
+## 17.6 Borrow-request / admin-approval workflow --- Not started
+
+Net new: a member requests a borrow (or a purchase/new-title suggestion), a
+librarian approval queue actions it via the existing `BorrowingService`.
+
+## 17.7 Borrowing page search verification --- Not started
+
+Re-verify member name/id, book name, copy id are all visible and searchable
+before adding anything - most of this may already exist.
+
+## 17.8 Localization audit --- Not started
+
+Re-verify full-app Bangla coverage once 17.2/17.6 add new pages (they must
+be built bilingual from the start via `t()`, not translated after the fact).
+
+## 17.9 Voice search + agentic chat assistant --- Not started
+
+Two provider tiers each, both configurable via appsettings/env vars:
+- Speech: Web Speech API (client-side, default) + Hugging Face STT (server,
+  configurable alternative).
+- Chat: rule-based deterministic intent engine (default/fallback, no
+  external dependency) + a real LLM path supporting both `ANTHROPIC_API_KEY`
+  and `OPENAI_API_KEY` (user wants both available, selectable by config).
+  The LLM path must call the same internal query "tools" rather than get
+  free-form DB access. `guide.md` must document configuration for both,
+  step by step.

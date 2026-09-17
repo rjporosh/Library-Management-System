@@ -14,6 +14,65 @@ and release verification.
 
 ------------------------------------------------------------------------
 
+# Release 0.5.0-dev --- Authentication & RBAC (in progress)
+
+**Release date:** 2026-09-17\
+**Status:** Built, tested (86 backend + 11 frontend tests), smoke-verified
+in a real browser against the real API - **but this is milestone 1 of a
+larger requested feature set, not a finished release.** See
+`docs/ai-handover.md` §4g for the exact remaining plan (book cover/edition/
+ebook/audiobook formats, book-copy auto-generation, a higher borrow limit,
+member list filters, a member borrow-request/librarian-approval workflow,
+voice search, and an agentic chat assistant).\
+**Release type:** Feature (breaking: every endpoint except `/api/auth/*`,
+`/api/metadata/*` and `/api/release-notes/*` now requires authentication)
+
+## New features
+
+- **JWT authentication with Librarian/Member RBAC.** `POST /api/auth/login`,
+  `POST /api/auth/register` (member self-service - creates the Member
+  profile and its login together), `POST /api/auth/librarians`
+  (librarian-only staff provisioning). PBKDF2-HMACSHA256 password hashing,
+  a `users` table/migration, HS256 tokens configurable via `Jwt:*`
+  appsettings or environment variables.
+- **Every existing endpoint is now authorized.** Books stays browsable
+  (read-only) by both roles; Book Copies, Members, Borrowing, Dashboard,
+  Jobs and Logs are Librarian-only.
+- **Full login/registration SPA flow** - bilingual (EN/BN), role-based
+  navigation (Members don't see staff-only pages), role-based default
+  landing route, session persisted across reloads, automatic logout on an
+  expired/invalid token.
+- Demo accounts seeded for manual testing: `librarian` / `Librarian@123`
+  (Librarian) and `alice@example.com` / `Member@123` (Member, linked to the
+  existing seeded "Alice Johnson" member record).
+
+## Changed behaviour
+
+- **Breaking:** any client calling the API anonymously now gets `401
+  Unauthorized` on every endpoint except `/api/auth/*`, `/api/metadata/*`
+  and `/api/release-notes/*`.
+- `Jwt:SigningKey` must be set (non-empty) in every environment's config or
+  the API refuses to start.
+
+## QA checklist
+
+- `dotnet build` -> 0 warnings, 0 errors; `dotnet test` -> 86/86
+- `npm test` -> 11/11; `npm run lint` / `npm run build` clean
+- Login with seeded librarian/member accounts; wrong password -> 400 with
+  the standard error envelope
+- Member token -> 403 on a Librarian-only endpoint, 200 browsing `/api/books`
+- Browser end-to-end: login redirect, nav visibility, default landing
+  route, logout, re-login as a different role - 0 console errors
+
+## Known issues / not yet done
+
+- The rest of the requested smart-library feature set (§4g of
+  `docs/ai-handover.md`): book cover/edition/format fields + book detail
+  page, book-copy auto-generation, borrow limit increase, member list
+  filters, borrow-request/approval workflow, voice search, agentic chat.
+
+------------------------------------------------------------------------
+
 # Release 0.4.0 --- Soft Delete, Cascade, Multi-Provider Polish & Localization
 
 **Release date:** 2026-09-06\
