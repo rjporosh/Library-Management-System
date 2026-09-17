@@ -64,6 +64,7 @@ export interface Member {
   membershipExpiresAt: string
   suspendedAt?: string | null
   lastRenewedAt?: string | null
+  currentlyBorrowed: number
 }
 
 export interface MemberBorrowSummary {
@@ -93,6 +94,10 @@ export interface BorrowRecord {
   dueAt: string
   returnedAt?: string | null
   status: BorrowStatus
+  memberName: string
+  membershipNumber: string
+  bookTitle: string
+  barcode: string
 }
 
 export interface Paged<T> {

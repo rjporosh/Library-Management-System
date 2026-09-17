@@ -1,3 +1,4 @@
+using Library.Application.Common.Options;
 using Library.Application.Common.Security;
 using Library.Application.Features.Auth;
 using Library.Application.Features.BookCopies;
@@ -14,8 +15,10 @@ namespace Library.Application.DependencyInjection;
 public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddApplication(
-        this IServiceCollection services)
+        this IServiceCollection services,
+        BorrowingOptions? borrowing = null)
     {
+        services.AddSingleton(borrowing ?? new BorrowingOptions());
         services.AddScoped<BookService>();
         services.AddScoped<BookCopyService>();
         services.AddScoped<MemberService>();

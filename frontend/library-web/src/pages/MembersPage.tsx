@@ -18,6 +18,7 @@ import { BulkImportModal } from '@/components/BulkImportModal'
 import { DataTable, type Column } from '@/components/DataTable'
 import { Pagination } from '@/components/Pagination'
 import {
+  Badge,
   Button,
   FormField,
   Modal,
@@ -163,6 +164,16 @@ export default function MembersPage() {
       ),
     },
     { key: 'status', header: t('members.col.status'), sortable: true, render: (m) => <StatusPill status={m.status} /> },
+    {
+      key: 'currentlyBorrowed',
+      header: t('members.col.borrowing'),
+      render: (m) =>
+        m.currentlyBorrowed > 0 ? (
+          <Badge tone="blue">{t('members.currentlyBorrowingCount', { count: m.currentlyBorrowed })}</Badge>
+        ) : (
+          <span className="text-xs text-slate-400">{t('members.notBorrowing')}</span>
+        ),
+    },
     {
       key: 'membershipExpiresAt',
       header: t('members.col.expires'),

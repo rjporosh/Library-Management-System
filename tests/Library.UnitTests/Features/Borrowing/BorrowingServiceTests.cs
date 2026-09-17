@@ -4,6 +4,7 @@ using Library.Application.Features.Borrowing.Models;
 using Library.Domain.Entities;
 using Library.Domain.Enums;
 using Library.Infrastructure.Persistence;
+using Library.UnitTests.Common;
 
 namespace Library.UnitTests.Features.Borrowing;
 
@@ -34,6 +35,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -63,6 +65,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -96,6 +99,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -112,54 +116,69 @@ public sealed class BorrowingServiceTests
     }
 
     [Fact]
-    public async Task IssueAsync_WhenMemberAlreadyHasActiveBorrow_ShouldThrow()
+    public async Task IssueAsync_WhenMemberIsBelowTheBorrowLimit_ShouldSucceed()
     {
         var memberId = Guid.NewGuid();
 
-        var member = new Member(
-            memberId,
-            "MEM-001",
-            "John Doe",
-            "john@example.com");
+        var member = new Member(memberId, "MEM-001", "John Doe", "john@example.com");
 
-        var existingCopy = new BookCopy(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            "BC-000");
+        var existingCopy = new BookCopy(Guid.NewGuid(), Guid.NewGuid(), "BC-000");
         existingCopy.Issue();
 
         var existingActiveRecord = new BorrowRecord(
-            Guid.NewGuid(),
-            existingCopy.Id,
-            memberId,
-            DateTime.UtcNow.AddDays(-1),
-            DateTime.UtcNow.AddDays(13));
+            Guid.NewGuid(), existingCopy.Id, memberId, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(13));
 
-        var newCopy = new BookCopy(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
-            "BC-001");
+        var newCopy = new BookCopy(Guid.NewGuid(), Guid.NewGuid(), "BC-001");
 
         var memberRepository = new FakeMemberRepository(member);
         var copyRepository = new FakeBookCopyRepository(newCopy);
         var borrowRepository = new FakeBorrowRecordRepository(existingActiveRecord);
 
+        // Default limit is 2 active borrows per member; one existing active
+        // borrow should not block a second.
         var service = new BorrowingService(
-            memberRepository,
-            copyRepository,
-            borrowRepository,
-            new NoOpUnitOfWork());
+            memberRepository, copyRepository, new StubBookRepository(), borrowRepository, new NoOpUnitOfWork());
+
+        var result = await service.IssueAsync(
+            new IssueBookRequest(memberId, newCopy.Id, DateTime.UtcNow.AddDays(14)));
+
+        Assert.Equal(newCopy.Id, result.BookCopyId);
+        Assert.Equal(2, borrowRepository.Records.Count);
+    }
+
+    [Fact]
+    public async Task IssueAsync_WhenMemberIsAtTheBorrowLimit_ShouldThrow()
+    {
+        var memberId = Guid.NewGuid();
+
+        var member = new Member(memberId, "MEM-001", "John Doe", "john@example.com");
+
+        var firstCopy = new BookCopy(Guid.NewGuid(), Guid.NewGuid(), "BC-000");
+        firstCopy.Issue();
+        var secondCopy = new BookCopy(Guid.NewGuid(), Guid.NewGuid(), "BC-001");
+        secondCopy.Issue();
+
+        var firstActiveRecord = new BorrowRecord(
+            Guid.NewGuid(), firstCopy.Id, memberId, DateTime.UtcNow.AddDays(-2), DateTime.UtcNow.AddDays(12));
+        var secondActiveRecord = new BorrowRecord(
+            Guid.NewGuid(), secondCopy.Id, memberId, DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(13));
+
+        var thirdCopy = new BookCopy(Guid.NewGuid(), Guid.NewGuid(), "BC-002");
+
+        var memberRepository = new FakeMemberRepository(member);
+        var copyRepository = new FakeBookCopyRepository(thirdCopy);
+        var borrowRepository = new FakeBorrowRecordRepository(firstActiveRecord, secondActiveRecord);
+
+        var service = new BorrowingService(
+            memberRepository, copyRepository, new StubBookRepository(), borrowRepository, new NoOpUnitOfWork());
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(
             () => service.IssueAsync(
-                new IssueBookRequest(
-                    memberId,
-                    newCopy.Id,
-                    DateTime.UtcNow.AddDays(14))));
+                new IssueBookRequest(memberId, thirdCopy.Id, DateTime.UtcNow.AddDays(14))));
 
-        Assert.Contains("one active borrow", exception.Message);
-        Assert.Single(borrowRepository.Records);
-        Assert.Equal(BookCopyStatus.Available, newCopy.Status);
+        Assert.Contains("at most 2 book(s)", exception.Message);
+        Assert.Equal(2, borrowRepository.Records.Count);
+        Assert.Equal(BookCopyStatus.Available, thirdCopy.Status);
     }
 
     [Fact]
@@ -180,6 +199,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -219,6 +239,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -254,6 +275,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -301,6 +323,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             memberRepository,
             copyRepository,
+            new StubBookRepository(),
             borrowRepository,
             new NoOpUnitOfWork());
 
@@ -321,6 +344,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(),
+            new StubBookRepository(),
             new FakeBorrowRecordRepository(),
             new NoOpUnitOfWork());
 
@@ -350,6 +374,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(),
+            new StubBookRepository(),
             new FakeBorrowRecordRepository(record),
             new NoOpUnitOfWork());
 
@@ -388,6 +413,7 @@ public sealed class BorrowingServiceTests
         var service = new BorrowingService(
             new FakeMemberRepository(),
             new FakeBookCopyRepository(copy),
+            new StubBookRepository(),
             new FakeBorrowRecordRepository(record),
             new NoOpUnitOfWork());
 
@@ -500,13 +526,10 @@ public sealed class BorrowingServiceTests
             Task.FromResult(0);
     }
     private sealed class FakeBorrowRecordRepository(
-        BorrowRecord? initialRecord = null)
+        params BorrowRecord[] initialRecords)
         : IBorrowRecordRepository
     {
-        public List<BorrowRecord> Records { get; } =
-            initialRecord is null
-                ? []
-                : [initialRecord];
+        public List<BorrowRecord> Records { get; } = [.. initialRecords];
 
         public Task<BorrowRecord?> GetByIdAsync(
             Guid id,
@@ -546,6 +569,17 @@ public sealed class BorrowingServiceTests
                 x.Status == BorrowStatus.Active);
 
             return Task.FromResult(hasActive);
+        }
+
+        public Task<int> CountActiveBorrowsAsync(
+            Guid memberId,
+            CancellationToken cancellationToken = default)
+        {
+            var count = Records.Count(x =>
+                x.MemberId == memberId &&
+                x.Status == BorrowStatus.Active);
+
+            return Task.FromResult(count);
         }
 
         public Task<IReadOnlyList<BorrowRecord>> GetOverdueActiveAsync(

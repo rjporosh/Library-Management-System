@@ -46,6 +46,9 @@ public sealed class StubBorrowRecordRepository : IBorrowRecordRepository
     public Task<bool> HasActiveBorrowAsync(Guid memberId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Records.Any(x => x.MemberId == memberId && x.Status == BorrowStatus.Active));
 
+    public Task<int> CountActiveBorrowsAsync(Guid memberId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Records.Count(x => x.MemberId == memberId && x.Status == BorrowStatus.Active));
+
     public Task<bool> HasActiveBorrowForCopyAsync(Guid bookCopyId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Records.Any(x => x.BookCopyId == bookCopyId && x.Status == BorrowStatus.Active));
 

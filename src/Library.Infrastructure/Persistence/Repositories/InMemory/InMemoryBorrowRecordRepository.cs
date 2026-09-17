@@ -52,6 +52,9 @@ public sealed class InMemoryBorrowRecordRepository : IBorrowRecordRepository
     public Task<bool> HasActiveBorrowAsync(Guid memberId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_records.Any(x => x.MemberId == memberId && !x.IsDeleted && x.Status == BorrowStatus.Active));
 
+    public Task<int> CountActiveBorrowsAsync(Guid memberId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_records.Count(x => x.MemberId == memberId && !x.IsDeleted && x.Status == BorrowStatus.Active));
+
     public Task<bool> HasActiveBorrowForCopyAsync(Guid bookCopyId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_records.Any(x => x.BookCopyId == bookCopyId && !x.IsDeleted && x.Status == BorrowStatus.Active));
 

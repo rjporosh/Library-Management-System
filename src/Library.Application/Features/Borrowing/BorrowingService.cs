@@ -1,4 +1,5 @@
 using Library.Application.Abstractions.Persistence;
+using Library.Application.Common.Options;
 using Library.Application.Common.Pagination;
 using Library.Application.Common.Results;
 using Library.Application.Common.Search;
@@ -10,17 +11,48 @@ namespace Library.Application.Features.Borrowing;
 public sealed class BorrowingService(
     IMemberRepository memberRepository,
     IBookCopyRepository bookCopyRepository,
+    IBookRepository bookRepository,
     IBorrowRecordRepository borrowRecordRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    BorrowingOptions? borrowingOptions = null)
 {
+    private readonly BorrowingOptions _options = borrowingOptions ?? new BorrowingOptions();
+
     public Result<PagedResult<BorrowRecordResponse>> Search(SearchRequest request)
     {
         var result = QueryableSearchBuilder.Apply(
             borrowRecordRepository.Query(), request, BorrowSearchMap.Fields);
 
-        return result.IsSuccess
-            ? Result.Success(result.Value!.Map(Map))
-            : Result.Failure<PagedResult<BorrowRecordResponse>>(result.Errors);
+        if (!result.IsSuccess)
+        {
+            return Result.Failure<PagedResult<BorrowRecordResponse>>(result.Errors);
+        }
+
+        var page = result.Value!;
+
+        var memberIds = page.Items.Select(r => r.MemberId).ToHashSet();
+        var members = memberRepository.Query()
+            .Where(m => memberIds.Contains(m.Id))
+            .ToDictionary(m => m.Id);
+
+        var copyIds = page.Items.Select(r => r.BookCopyId).ToHashSet();
+        var copies = bookCopyRepository.Query()
+            .Where(c => copyIds.Contains(c.Id))
+            .ToDictionary(c => c.Id);
+
+        var bookIds = copies.Values.Select(c => c.BookId).ToHashSet();
+        var books = bookRepository.Query()
+            .Where(b => bookIds.Contains(b.Id))
+            .ToDictionary(b => b.Id);
+
+        return Result.Success(page.Map(r =>
+        {
+            members.TryGetValue(r.MemberId, out var member);
+            copies.TryGetValue(r.BookCopyId, out var copy);
+            Book? book = copy is not null && books.TryGetValue(copy.BookId, out var b) ? b : null;
+
+            return Map(r, member?.Name ?? "", member?.MembershipNumber ?? "", book?.Title ?? "", copy?.Barcode ?? "");
+        }));
     }
 
     public async Task<BorrowRecordResponse> IssueAsync(
@@ -38,12 +70,11 @@ public sealed class BorrowingService(
             throw new InvalidOperationException(
                 "Member is not allowed to borrow books.");
 
-        if (await borrowRecordRepository.HasActiveBorrowAsync(
-                member.Id,
-                cancellationToken))
+        var activeBorrows = await borrowRecordRepository.CountActiveBorrowsAsync(member.Id, cancellationToken);
+        if (activeBorrows >= _options.MaxActiveBorrowsPerMember)
             throw new InvalidOperationException(
-                "Member already has an active borrowed book. " +
-                "Only one active borrow is allowed per member.");
+                $"Member already has {activeBorrows} active borrow(s). " +
+                $"A member may borrow at most {_options.MaxActiveBorrowsPerMember} book(s) at a time.");
 
         var copy = await bookCopyRepository.GetByIdAsync(
             request.BookCopyId,
@@ -125,7 +156,11 @@ public sealed class BorrowingService(
     }
 
     private static BorrowRecordResponse Map(
-        BorrowRecord record)
+        BorrowRecord record,
+        string memberName = "",
+        string membershipNumber = "",
+        string bookTitle = "",
+        string barcode = "")
     {
         return new BorrowRecordResponse(
             record.Id,
@@ -134,6 +169,10 @@ public sealed class BorrowingService(
             record.BorrowedAt,
             record.DueAt,
             record.ReturnedAt,
-            record.Status);
+            record.Status,
+            memberName,
+            membershipNumber,
+            bookTitle,
+            barcode);
     }
 }

@@ -192,6 +192,9 @@ public sealed class EfBorrowRecordRepository(LibraryDbContext db) : IBorrowRecor
     public Task<bool> HasActiveBorrowAsync(Guid memberId, CancellationToken cancellationToken = default) =>
         db.BorrowRecords.AnyAsync(r => r.MemberId == memberId && r.Status == BorrowStatus.Active, cancellationToken);
 
+    public Task<int> CountActiveBorrowsAsync(Guid memberId, CancellationToken cancellationToken = default) =>
+        db.BorrowRecords.CountAsync(r => r.MemberId == memberId && r.Status == BorrowStatus.Active, cancellationToken);
+
     public Task<bool> HasActiveBorrowForCopyAsync(Guid bookCopyId, CancellationToken cancellationToken = default) =>
         db.BorrowRecords.AnyAsync(r => r.BookCopyId == bookCopyId && r.Status == BorrowStatus.Active, cancellationToken);
 

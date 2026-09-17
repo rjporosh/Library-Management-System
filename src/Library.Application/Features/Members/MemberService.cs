@@ -19,9 +19,19 @@ public sealed class MemberService(
     {
         var result = QueryableSearchBuilder.Apply(memberRepository.Query(), request, MemberSearchMap.Fields);
 
-        return result.IsSuccess
-            ? Result.Success(result.Value!.Map(Map))
-            : Result.Failure<PagedResult<MemberResponse>>(result.Errors);
+        if (!result.IsSuccess)
+        {
+            return Result.Failure<PagedResult<MemberResponse>>(result.Errors);
+        }
+
+        var page = result.Value!;
+        var memberIds = page.Items.Select(m => m.Id).ToHashSet();
+        var activeCounts = borrowRecordRepository.Query()
+            .Where(r => memberIds.Contains(r.MemberId) && r.Status == BorrowStatus.Active)
+            .GroupBy(r => r.MemberId)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return Result.Success(page.Map(m => Map(m, activeCounts.GetValueOrDefault(m.Id))));
     }
 
     public async Task<MemberResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -191,7 +201,7 @@ public sealed class MemberService(
         }
     }
 
-    private static MemberResponse Map(Member member) =>
+    private static MemberResponse Map(Member member, int currentlyBorrowed = 0) =>
         new(member.Id, member.MembershipNumber, member.Name, member.Email, member.Phone, member.Address,
-            member.Status, member.MembershipExpiresAt, member.SuspendedAt, member.LastRenewedAt);
+            member.Status, member.MembershipExpiresAt, member.SuspendedAt, member.LastRenewedAt, currentlyBorrowed);
 }

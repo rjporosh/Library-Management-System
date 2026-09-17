@@ -45,8 +45,12 @@ if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey))
 // FeatureFlags.EnableOpenTelemetry is true.
 builder.Services.AddLibraryObservability(observabilitySettings);
 
+var borrowingOptions =
+    builder.Configuration.GetSection("Borrowing").Get<BorrowingOptions>()
+    ?? new BorrowingOptions();
+
 // Application & Infrastructure
-builder.Services.AddApplication();
+builder.Services.AddApplication(borrowingOptions);
 builder.Services.AddInfrastructure(
     observabilitySettings,
     databaseOptions,

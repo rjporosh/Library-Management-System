@@ -3,6 +3,11 @@ using Library.Domain.Enums;
 namespace Library.Application.Features.Members.Models;
 
 /// <summary>A library member as returned by the API.</summary>
+/// <param name="CurrentlyBorrowed">
+/// How many books this member currently has borrowed (not yet returned).
+/// 0 unless computed by the caller - the member list search computes it;
+/// single-member reads do not.
+/// </param>
 public sealed record MemberResponse(
     Guid Id,
     string MembershipNumber,
@@ -13,7 +18,8 @@ public sealed record MemberResponse(
     MemberStatus Status,
     DateTime MembershipExpiresAt,
     DateTime? SuspendedAt = null,
-    DateTime? LastRenewedAt = null);
+    DateTime? LastRenewedAt = null,
+    int CurrentlyBorrowed = 0);
 
 /// <summary>A member plus their borrowing summary (member detail view).</summary>
 public sealed record MemberDetailResponse(

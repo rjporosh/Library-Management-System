@@ -39,6 +39,11 @@ public interface IBorrowRecordRepository
         Guid memberId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>How many active (not yet returned) borrows the member currently has. Enforces the borrow limit.</summary>
+    Task<int> CountActiveBorrowsAsync(
+        Guid memberId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// True when the given book copy already has an active borrow.
     /// </summary>

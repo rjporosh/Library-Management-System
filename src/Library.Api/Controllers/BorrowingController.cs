@@ -26,12 +26,13 @@ public sealed class BorrowingController(BorrowingService borrowingService) : Con
 
     /// <summary>
     /// Issues a book copy to a member. The member must be active (not
-    /// suspended/inactive/expired) with no other active borrow, and the
+    /// suspended/inactive/expired) and below the active-borrow limit
+    /// (<c>Borrowing:MaxActiveBorrowsPerMember</c>, default 2), and the
     /// copy must be available.
     /// </summary>
     /// <response code="201">The book was issued and a borrow record created.</response>
     /// <response code="404">The member or copy was not found.</response>
-    /// <response code="409">The member cannot borrow, already has an active borrow, or the copy is unavailable.</response>
+    /// <response code="409">The member cannot borrow, is at the active-borrow limit, or the copy is unavailable.</response>
     /// <response code="422">The request payload is invalid (e.g. a past due date).</response>
     [HttpPost("issue")]
     [ProducesResponseType(typeof(BorrowRecordResponse), StatusCodes.Status201Created)]

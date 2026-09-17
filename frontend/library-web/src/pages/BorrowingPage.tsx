@@ -22,6 +22,7 @@ export default function BorrowingPage() {
   const [copyQ, setCopyQ] = useState('')
   const [memberId, setMemberId] = useState('')
   const [copyId, setCopyId] = useState('')
+  const [activeQ, setActiveQ] = useState('')
   const [dueAt, setDueAt] = useState(() => {
     const d = new Date()
     d.setDate(d.getDate() + 14)
@@ -95,9 +96,38 @@ export default function BorrowingPage() {
     onError: (e) => toastError(normaliseError(e).message),
   })
 
+  const activeItems = activeBorrows.data?.items ?? []
+  const activeFilter = activeQ.trim().toLowerCase()
+  const filteredActive = activeFilter
+    ? activeItems.filter((r) =>
+        [r.memberName, r.membershipNumber, r.bookTitle, r.barcode]
+          .join(' ')
+          .toLowerCase()
+          .includes(activeFilter),
+      )
+    : activeItems
+
   const columns: Column<BorrowRecord>[] = [
-    { key: 'copy', header: t('borrow.col.copy'), render: (r) => <span className="font-mono text-xs">{r.bookCopyId.slice(0, 8)}</span> },
-    { key: 'member', header: t('borrow.col.member'), render: (r) => <span className="font-mono text-xs">{r.memberId.slice(0, 8)}</span> },
+    {
+      key: 'book',
+      header: t('borrow.col.book'),
+      render: (r) => (
+        <div>
+          <p className="font-medium text-slate-900">{r.bookTitle || t('common.dash')}</p>
+          <p className="font-mono text-xs text-slate-400">{r.barcode}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'member',
+      header: t('borrow.col.member'),
+      render: (r) => (
+        <div>
+          <p className="font-medium text-slate-900">{r.memberName || t('common.dash')}</p>
+          <p className="text-xs text-slate-400">{r.membershipNumber}</p>
+        </div>
+      ),
+    },
     { key: 'borrowedAt', header: t('borrow.col.borrowed'), render: (r) => formatDate(r.borrowedAt) },
     {
       key: 'dueAt',
@@ -229,10 +259,17 @@ export default function BorrowingPage() {
           <h2 className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-700">
             <Undo2 size={16} /> {t('borrow.activeHeading')}
           </h2>
+          <div className="border-b border-slate-100 p-3">
+            <TextInput
+              placeholder={t('borrow.searchActivePlaceholder')}
+              value={activeQ}
+              onChange={(e) => setActiveQ(e.target.value)}
+            />
+          </div>
           <div className="p-2">
             <DataTable
               columns={columns}
-              rows={activeBorrows.data?.items ?? []}
+              rows={filteredActive}
               rowKey={(r) => r.id}
               loading={activeBorrows.isLoading}
               error={
