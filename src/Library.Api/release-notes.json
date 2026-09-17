@@ -1,10 +1,16 @@
 {
   "version": "0.5.0-dev",
-  "releaseDate": "2026-09-17",
+  "releaseDate": "2026-09-18",
   "newFeatures": [
     "JWT authentication with Librarian/Member RBAC: login, member self-registration, librarian-only staff provisioning; every catalog/member/borrowing/dashboard/jobs/logs endpoint now requires a bearer token (Books stays browsable read-only by Members; everything else is Librarian-only)",
+    "Book catalog enrichment: cover thumbnail (explicit URL or a derived Open Library cover-by-ISBN fallback), optional edition, ebook/audiobook availability flags with URLs, external buy/PDF suggestion links, and a new book detail page resolving smart availability (physical -> ebook -> audiobook -> external suggestion); Members see a read-only catalog with no mutating actions",
+    "Book-copy auto-generation: creating a book with TotalCopies > 0 generates that many BookCopy rows in one transaction with sequential barcodes (BC-0001, BC-0002, ...), continuing the existing sequence",
+    "Borrow limit raised from 1 to 2 active books per member, and made configurable (Borrowing:MaxActiveBorrowsPerMember)",
+    "Member list shows a currently-borrowing indicator per member (batched, not N+1); the Active/Suspended/Inactive status filter already existed and was verified working",
+    "Member borrow-request / librarian-approval workflow: a member can request to borrow an existing title or suggest a purchase; a librarian approval queue approves (issuing the book immediately if a copy is available, via the existing BorrowingService) or rejects",
+    "Borrowing page now shows real member names and book titles instead of truncated GUIDs, with a client-side search box across member name, membership number, book title and copy barcode",
+    "In progress: this is 8 of 9 smart-library milestones - only voice search and an agentic chat assistant remain, see docs/ai-handover.md §4i for the exact plan",
     "PBKDF2 password hashing, a users table/migration, and a full bilingual login/registration SPA flow with role-based navigation and route guarding",
-    "In progress: this is milestone 1 of a larger smart-library feature set (book cover/edition/ebook/audiobook formats, book-copy auto-generation, a higher borrow limit, member list filters, a member borrow-request/librarian-approval workflow, voice search, and an agentic chat assistant) - see docs/ai-handover.md §4g for the exact remaining plan",
     "OpenAPI/Scalar now renders a title and description for every endpoint (XML doc file enabled); Postman collection (postman/) with runnable example requests for all 43 endpoints plus a verified end-to-end Smoke Flow folder",
     "Soft delete on every entity (Domain.Common.Entity base) - nothing is physically removed; deleted rows are hidden from reads, search, duplicate checks and aggregates",
     "Smart cascade delete: DELETE /api/{books|members|book-copies}/{id}?force= - borrowed dependents block, other dependents ask to confirm, force cascades in one transaction",
@@ -18,10 +24,14 @@
     "EF Core + PostgreSQL with configuration-only provider switching, OpenTelemetry/Jaeger, dockerised stack, GitHub Actions CI (from 0.3.0)"
   ],
   "fixed": [
-    "The 0.2.0 backend is now built, tested and verified (86 backend + 11 frontend tests)"
+    "appsettings.Development.json had Database:Provider \"PostgreSql\" (a typo not matching the Postgres enum name), which silently fell back to InMemory - Development had never actually been exercising Postgres; also fixed its connection string (wrong port/credentials)",
+    "A hardcoded English network/server-error fallback message that rendered regardless of the active language - moved to a locale key",
+    "A member's own borrow-request list showed a blank book title (only the librarian queue had the name/title enrichment lookup) - fixed with a regression test",
+    "The 0.2.0 backend is now built, tested and verified (98 backend + 11 frontend tests)"
   ],
   "changedBehaviour": [
     "Every endpoint except /api/auth/*, /api/metadata/* and /api/release-notes/* now requires an Authorization: Bearer <token> header, or returns 401",
+    "Borrow-limit conflict messages now say \"at most N book(s)\" instead of \"only one active borrow\"",
     "Create/Update Book requests require Category and Publisher; Create/Update Member requests require Phone and Address",
     "Failure responses use Content-Type application/problem+json",
     "DELETE endpoints accept an optional ?force= query parameter",
@@ -29,21 +39,22 @@
   ],
   "qaChecklist": [
     "dotnet build LibraryManagementSystem.slnx -> 0 warnings, 0 errors",
-    "dotnet test -> 86/86 (57 unit + 29 integration)",
+    "dotnet test -> 98/98 (58 unit + 40 integration)",
     "frontend npm test -> 11/11; npm run lint + npm run build clean",
     "POST /api/auth/login with the seeded librarian/member accounts returns a bearer token; wrong password returns 400 with the standard error envelope",
     "a Member token gets 403 on a Librarian-only endpoint and 200 browsing /api/books",
-    "browser end-to-end: login redirect, role-based nav visibility, role-based default landing route, logout, re-login as a different role - 0 console errors",
+    "browser end-to-end: auth flows for both roles; book cover rendering + the DDD no-physical-copy-> external-buy-link fallback; the full borrow-request -> approve -> fulfilled workflow; borrowing page shows names not GUIDs - 0 console errors in every pass",
     "cascade delete: blocked / confirm / force paths",
     "soft-deleted rows excluded from search, duplicate checks and dashboard",
     "rate limiting returns 429 after the window; RFC 7807 problem+json shape",
-    "localization: en/bn message catalogue via ?culture= and Accept-Language, full UI chrome",
+    "localization: en/bn message catalogue via ?culture= and Accept-Language, full UI chrome including the new pages",
     "Dapper vs EF dashboard aggregate parity",
     "advanced search operators + enum-by-name; all ten bulk-import acceptance scenarios",
-    "docker compose up --build -> /health healthy, web proxies API, Jaeger receives traces"
+    "docker compose up --build -> /health healthy, web proxies API, Jaeger receives traces",
+    "all three new migrations (AddUsers, AddBookCatalogEnrichment, AddBorrowRequests) applied cleanly to a real local Postgres"
   ],
   "knownIssues": [
-    "Smart-library feature set (book covers/formats, copy auto-generation, higher borrow limit, member filters, borrow-request workflow, voice search, agentic chat) is in progress - only auth (this release) is done; see docs/ai-handover.md §4g",
+    "Voice search (Web Speech API + Hugging Face, configurable) and an agentic chat assistant (rule-based + Anthropic/OpenAI, configurable) are not yet built - see docs/ai-handover.md §4i for the exact plan",
     "Database:Orm=Dapper covers the dashboard aggregate; other read paths use EF Core",
     "No EF Core 10 driver for MySQL/Oracle yet (provider slots + ADR-0001 ready)",
     "Success response envelope deferred (ADR-0005)"

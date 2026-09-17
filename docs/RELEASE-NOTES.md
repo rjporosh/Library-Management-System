@@ -14,34 +14,57 @@ and release verification.
 
 ------------------------------------------------------------------------
 
-# Release 0.5.0-dev --- Authentication & RBAC (in progress)
+# Release 0.5.0-dev --- Smart Library Feature Set (8 of 9 milestones done)
 
-**Release date:** 2026-09-17\
-**Status:** Built, tested (86 backend + 11 frontend tests), smoke-verified
-in a real browser against the real API - **but this is milestone 1 of a
-larger requested feature set, not a finished release.** See
-`docs/ai-handover.md` §4g for the exact remaining plan (book cover/edition/
-ebook/audiobook formats, book-copy auto-generation, a higher borrow limit,
-member list filters, a member borrow-request/librarian-approval workflow,
-voice search, and an agentic chat assistant).\
+**Release date:** 2026-09-18 (updated; originally 2026-09-17 for auth only)\
+**Status:** Built, tested (98 backend + 11 frontend tests), smoke-verified
+in a real browser against a real running API for every milestone below -
+**but this is 8 of 9 requested milestones, not a finished release.** Only
+voice search + an agentic chat assistant remain. See `docs/ai-handover.md`
+§4h (what shipped) and §4i (the exact remaining plan).\
 **Release type:** Feature (breaking: every endpoint except `/api/auth/*`,
 `/api/metadata/*` and `/api/release-notes/*` now requires authentication)
 
 ## New features
 
 - **JWT authentication with Librarian/Member RBAC.** `POST /api/auth/login`,
-  `POST /api/auth/register` (member self-service - creates the Member
-  profile and its login together), `POST /api/auth/librarians`
-  (librarian-only staff provisioning). PBKDF2-HMACSHA256 password hashing,
-  a `users` table/migration, HS256 tokens configurable via `Jwt:*`
-  appsettings or environment variables.
-- **Every existing endpoint is now authorized.** Books stays browsable
-  (read-only) by both roles; Book Copies, Members, Borrowing, Dashboard,
-  Jobs and Logs are Librarian-only.
-- **Full login/registration SPA flow** - bilingual (EN/BN), role-based
-  navigation (Members don't see staff-only pages), role-based default
-  landing route, session persisted across reloads, automatic logout on an
-  expired/invalid token.
+  `POST /api/auth/register` (member self-service), `POST /api/auth/
+  librarians` (librarian-only staff provisioning). PBKDF2-HMACSHA256
+  password hashing, a `users` table/migration, HS256 tokens configurable
+  via `Jwt:*` appsettings or environment variables. Every existing endpoint
+  is now authorized (Books stays browsable read-only by both roles; Book
+  Copies/Members/Borrowing/Dashboard/Jobs/Logs are Librarian-only). Full
+  bilingual login/registration SPA flow with role-based navigation and
+  routing.
+- **Book catalog enrichment.** Cover thumbnail (explicit URL, or a derived
+  Open Library cover-by-ISBN fallback, or a neutral placeholder), optional
+  edition label, ebook/audiobook availability flags with URLs, and external
+  buy/PDF suggestion links. New `GET /api/books/{id}/detail` resolves
+  "smart availability": physical copy -> ebook -> audiobook -> external
+  suggestion. New Book detail page. The Books list hides all mutating
+  actions from the Member role (view-only).
+- **Book-copy auto-generation.** `POST /api/books` accepts `TotalCopies`;
+  when `> 0`, that many `BookCopy` rows are generated in one transaction
+  with sequential barcodes (`BC-0001`, `BC-0002`, ...), continuing the
+  existing sequence.
+- **Borrow limit raised from 1 to 2**, and made configurable
+  (`Borrowing:MaxActiveBorrowsPerMember`).
+- **Member list "currently borrowing" indicator** (batched per-page query).
+  The Active/Suspended/Inactive status filter already existed and was
+  verified working.
+- **Member borrow-request / librarian-approval workflow.** A member can
+  request to borrow an existing title or suggest a purchase; a librarian
+  approval queue approves (issuing the book immediately if a copy is
+  available) or rejects. New `BorrowRequest` entity/table, `POST /api/
+  borrow-requests`, `GET /api/borrow-requests/mine`, `POST /api/
+  borrow-requests/search`, `POST /{id}/approve`, `POST /{id}/reject`. New
+  `/requests` page (role-switched: own requests + a purchase-suggestion
+  form for a Member, the approval queue for a Librarian) and a "Request to
+  borrow" button on the Book detail page.
+- **Borrowing page now shows real names, not GUIDs.** The active-borrows
+  table shows member name/membership number and book title/copy barcode
+  (previously truncated raw GUIDs), with a client-side search box across
+  all four fields.
 - Demo accounts seeded for manual testing: `librarian` / `Librarian@123`
   (Librarian) and `alice@example.com` / `Member@123` (Member, linked to the
   existing seeded "Alice Johnson" member record).
@@ -53,23 +76,43 @@ voice search, and an agentic chat assistant).\
   and `/api/release-notes/*`.
 - `Jwt:SigningKey` must be set (non-empty) in every environment's config or
   the API refuses to start.
+- Borrow-limit conflict messages now say "at most N book(s)" instead of
+  "only one active borrow."
+
+## Fixed
+
+- `appsettings.Development.json` had `Database:Provider: "PostgreSql"` (a
+  typo not matching the `Postgres` enum name), which silently fell back to
+  `InMemory` - **Development had never actually been exercising Postgres**.
+  Also fixed its connection string (wrong port/credentials, didn't match
+  `docker-compose.yml`).
+- A hardcoded English network/server-error fallback message that would
+  render regardless of the active language - moved to a locale key.
+- A member's own borrow-request list was showing a blank book title (only
+  the librarian queue had the enrichment lookup) - fixed with a regression
+  test.
 
 ## QA checklist
 
-- `dotnet build` -> 0 warnings, 0 errors; `dotnet test` -> 86/86
+- `dotnet build` -> 0 warnings, 0 errors; `dotnet test` -> 98/98
+  (58 unit + 40 integration)
 - `npm test` -> 11/11; `npm run lint` / `npm run build` clean
 - Login with seeded librarian/member accounts; wrong password -> 400 with
   the standard error envelope
 - Member token -> 403 on a Librarian-only endpoint, 200 browsing `/api/books`
-- Browser end-to-end: login redirect, nav visibility, default landing
-  route, logout, re-login as a different role - 0 console errors
+- Browser end-to-end (each verified live against a running API): auth flows
+  for both roles; book cover rendering + the DDD "no physical copy ->
+  external buy link" fallback; the full borrow-request -> approve ->
+  fulfilled workflow; borrowing page shows names not GUIDs - 0 console
+  errors in every pass
+- All three new migrations (`AddUsers`, `AddBookCatalogEnrichment`,
+  `AddBorrowRequests`) applied cleanly to a real local Postgres
 
 ## Known issues / not yet done
 
-- The rest of the requested smart-library feature set (§4g of
-  `docs/ai-handover.md`): book cover/edition/format fields + book detail
-  page, book-copy auto-generation, borrow limit increase, member list
-  filters, borrow-request/approval workflow, voice search, agentic chat.
+- Voice search (Web Speech API + Hugging Face, configurable) and an
+  agentic chat assistant (rule-based + Anthropic/OpenAI, configurable) -
+  see `docs/ai-handover.md` §4i for the exact plan.
 
 ------------------------------------------------------------------------
 
