@@ -1,13 +1,28 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using NBomber.Contracts;
 using NBomber.CSharp;
 using NBomber.Http.CSharp;
 
 // Load / stress scenarios for the Library API.
 //   dotnet run --project tests/Library.LoadTests -c Release [-- <baseUrl>]
-// Requires a running API (e.g. `docker compose up` or `dotnet run --project src/Library.Api`).
+// Requires a running API (e.g. `docker compose up` or `dotnet run --project src/Library.Api`)
+// seeded with the default demo accounts (see docs/ai-handover.md).
 
 var baseUrl = (args.Length > 0 ? args[0] : "http://localhost:5254").TrimEnd('/');
 using var http = new HttpClient { BaseAddress = new Uri(baseUrl) };
+
+// Every scenario below hits an endpoint that now requires a bearer token
+// (auth was added after these scenarios were first written) - log in as
+// the seeded librarian once, up front, and reuse the token for every request.
+var loginResponse = await http.PostAsJsonAsync("/api/auth/login", new
+{
+    usernameOrEmail = "librarian",
+    password = "Librarian@123",
+});
+loginResponse.EnsureSuccessStatusCode();
+var login = await loginResponse.Content.ReadFromJsonAsync<LoginResult>();
+http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", login!.AccessToken);
 
 var dashboard = Scenario.Create("dashboard", async _ =>
 {
@@ -45,3 +60,5 @@ NBomberRunner
     .RegisterScenarios(dashboard, search, issueReturn)
     .WithReportFolder("reports")
     .Run();
+
+internal sealed record LoginResult(string AccessToken);

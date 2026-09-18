@@ -40,3 +40,4 @@ coverage/
 
 # NBomber load-test reports
 tests/Library.LoadTests/reports/
+reports/
