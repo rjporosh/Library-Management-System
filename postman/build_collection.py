@@ -24,11 +24,23 @@ def q(key, value, desc=None, disabled=False):
     return d
 
 
+def bearer(var):
+    """Per-request auth override: use a specific token variable instead of the
+    collection default ({{bearerToken}}, the librarian - set by Auth > Login as
+    librarian). Pass e.g. '{{memberBearerToken}}' for member-only endpoints."""
+    return {"type": "bearer", "bearer": [{"key": "token", "value": var, "type": "string"}]}
+
+
+NO_AUTH = {"type": "noauth"}
+
+
 def req(name, method, path, desc, body=None, query=None, form=None, tests=None, prereq=None,
-        auth_note=None):
+        auth=None):
     r = {"name": name, "request": {"method": method,
          "header": [{"key": "Accept", "value": "application/json"}],
          "url": url(path, query), "description": desc}}
+    if auth is not None:
+        r["request"]["auth"] = auth
     if body is not None:
         r["request"]["header"].append({"key": "Content-Type", "value": "application/json"})
         r["request"]["body"] = {"mode": "raw", "raw": json.dumps(body, indent=2),
@@ -71,6 +83,53 @@ paging = [q("pageNumber", 1, "1-based page (books)", True), q("pageSize", 20, ""
           q("search", "clean", "quick partial match", True),
           q("searchBy", "title,author", "comma list: title,author,isbn", True),
           q("sortBy", "publishedYear", "", True), q("sortDirection", "desc", "asc|desc", True)]
+
+LOGIN_LIBRARIAN_BODY = {"usernameOrEmail": "{{librarianUsername}}", "password": "{{librarianPassword}}"}
+LOGIN_MEMBER_BODY = {"usernameOrEmail": "{{memberUsername}}", "password": "{{memberPassword}}"}
+REGISTER_MEMBER_BODY = {"name": "Taylor Reed", "email": "taylor.reed.{{$timestamp}}@example.com",
+                        "password": "MemberPass1", "phone": "555-0199", "address": "9 Reader Row"}
+
+SET_BEARER_TOKEN = [
+    "pm.test('200 OK', () => pm.response.to.have.status(200));",
+    "const body = pm.response.json();",
+    "pm.collectionVariables.set('bearerToken', body.accessToken);",
+    "pm.test('token received', () => pm.expect(body.accessToken).to.be.a('string').and.not.empty);",
+]
+SET_MEMBER_BEARER_TOKEN = [
+    "const body = pm.response.json();",
+    "if (body.accessToken) {",
+    "    pm.collectionVariables.set('memberBearerToken', body.accessToken);",
+    "    pm.collectionVariables.set('memberId', body.memberId);",
+    "}",
+    "pm.test('token received', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+]
+
+auth_folder = folder(
+    "Auth",
+    "Run **1. Login as librarian** first (or use the Collection Runner on this "
+    "folder) - it sets the `bearerToken` collection variable that every other "
+    "folder's requests use automatically via the collection's default auth. "
+    "Seeded demo accounts: librarian / Librarian@123 and "
+    "alice@example.com / Member@123 (see docs/ai-handover.md).",
+    [
+        req("1. Login as librarian", "POST", "/api/auth/login",
+            "Sets the `bearerToken` collection variable used as the default Bearer auth "
+            "for every other request in this collection.",
+            body=LOGIN_LIBRARIAN_BODY, auth=NO_AUTH, tests=SET_BEARER_TOKEN),
+        req("2. Login as member (optional)", "POST", "/api/auth/login",
+            "Sets `memberBearerToken` for the handful of Member-only requests "
+            "(Borrow Requests > Create/Mine) that explicitly use it instead of the "
+            "default librarian token.",
+            body=LOGIN_MEMBER_BODY, auth=NO_AUTH, tests=SET_MEMBER_BEARER_TOKEN),
+        req("Register a new member", "POST", "/api/auth/register",
+            "Self-service sign-up: creates the Member profile and its login together, "
+            "and returns a token (also sets `memberBearerToken`).",
+            body=REGISTER_MEMBER_BODY, auth=NO_AUTH, tests=SET_MEMBER_BEARER_TOKEN),
+        req("Provision another librarian", "POST", "/api/auth/librarians",
+            "Librarian-only. Requires `bearerToken` (run **1. Login as librarian** first).",
+            body={"username": "librarian2.{{$timestamp}}", "email": "librarian2.{{$timestamp}}@library.local",
+                  "password": "Librarian2Pass1"}),
+    ])
 
 books = folder("Books", "Catalog CRUD, advanced search and Excel bulk import.", [
     req("List books", "GET", "/api/books",
@@ -170,6 +229,39 @@ borrowing = folder("Borrowing", "Issue and return copies; search borrow records.
         "Closes the borrow record. `returnedAt` optional (defaults to now).", body={"returnedAt": None}),
 ])
 
+borrow_requests = folder(
+    "Borrow Requests",
+    "Member self-service borrow/purchase requests and the librarian approval queue. "
+    "Requires `memberBearerToken` for the two Member-only requests (run Auth > "
+    "**2. Login as member** first) and the default `bearerToken` for the rest.",
+    [
+        req("Create borrow request (Member)", "POST", "/api/borrow-requests",
+            "Member-only. Requests to borrow an existing catalog title.",
+            body={"type": "Borrow", "bookId": "{{bookId}}", "note": "Requested from Postman."},
+            auth=bearer("{{memberBearerToken}}"),
+            tests=["const r = pm.response.json();",
+                   "if (pm.response.code === 201 && r.id) { pm.collectionVariables.set('borrowRequestId', r.id); }"]),
+        req("Suggest a purchase (Member)", "POST", "/api/borrow-requests",
+            "Member-only. Suggests a title not currently in the catalog.",
+            body={"type": "Purchase", "suggestedTitle": "A Book The Library Should Buy",
+                  "suggestedAuthor": "Some Author", "note": "Recommended from Postman."},
+            auth=bearer("{{memberBearerToken}}")),
+        req("My requests (Member)", "GET", "/api/borrow-requests/mine",
+            "Member-only. The signed-in member's own requests, most recent first.",
+            auth=bearer("{{memberBearerToken}}")),
+        req("Search requests (Librarian)", "POST", "/api/borrow-requests/search",
+            "Librarian-only approval queue. `status`/`type` matched by name "
+            "(Pending/Approved/Rejected/Fulfilled, Borrow/Purchase).",
+            body={"filters": [{"field": "status", "operator": "eq", "value": "Pending"}],
+                  "match": "all", "sort": [{"field": "requestedAt", "direction": "desc"}],
+                  "page": 1, "pageSize": 20}),
+        req("Approve request (Librarian)", "POST", "/api/borrow-requests/{{borrowRequestId}}/approve",
+            "Librarian-only. A Borrow request is issued immediately if a copy is available "
+            "(picks the first Available copy); a Purchase request is simply marked Approved."),
+        req("Reject request (Librarian)", "POST", "/api/borrow-requests/{{borrowRequestId}}/reject",
+            "Librarian-only."),
+    ])
+
 dashboard = folder("Dashboard", "Aggregated totals for the librarian home screen.", [
     req("Get dashboard summary", "GET", "/api/dashboard",
         "Catalogue/copy/member/borrowing totals + recent borrows. Served via EF Core or Dapper per `Database:Orm`."),
@@ -208,8 +300,13 @@ health = folder("Health", "Liveness / readiness.", [
 ])
 
 smoke = folder("Smoke Flow (run in order)",
-    "Runnable end-to-end happy path. Use the Collection Runner on this folder: it creates a book, a copy, "
-    "a member, issues and returns the copy, then cascade-deletes the book. IDs are chained via collection variables.", [
+    "Runnable end-to-end happy path. Use the Collection Runner on this folder: it logs in, "
+    "creates a book, a copy, a member, issues and returns the copy, then cascade-deletes the "
+    "book. IDs and the bearer token are chained via collection variables, so this folder is "
+    "fully self-contained - no need to run Auth first.", [
+    req("0. Login as librarian", "POST", "/api/auth/login",
+        "Sets `bearerToken` for the rest of this flow.",
+        body=LOGIN_LIBRARIAN_BODY, auth=NO_AUTH, tests=SET_BEARER_TOKEN),
     req("1. Create book", "POST", "/api/books",
         "Creates a uniquely-named book so the flow is re-runnable.",
         body=BOOK_BODY,
@@ -226,10 +323,12 @@ smoke = folder("Smoke Flow (run in order)",
         prereq=["pm.collectionVariables.set('smokeBarcode', 'BC-' + Date.now().toString().slice(-8));"],
         tests=["pm.test('201 Created', () => pm.response.to.have.status(201));",
                "pm.collectionVariables.set('copyId', pm.response.json().id);"]),
-    req("4. Create a member", "POST", "/api/members", "Enrols a member.",
-        body=MEMBER_BODY,
-        prereq=["const n = Date.now().toString().slice(-6);",
-                "pm.collectionVariables.set('smokeMem', 'MEM-' + n);"],
+    req("4. Create a member", "POST", "/api/members",
+        "Enrols a uniquely-numbered member so the flow is re-runnable.",
+        body={**MEMBER_BODY, "membershipNumber": "{{smokeMem}}", "email": "{{smokeMemberEmail}}"},
+        prereq=["const n = Date.now().toString().slice(-9);",
+                "pm.collectionVariables.set('smokeMem', 'MEM-' + n);",
+                "pm.collectionVariables.set('smokeMemberEmail', 'smoke.' + n + '@example.com');"],
         tests=["pm.test('201 Created', () => pm.response.to.have.status(201));",
                "pm.collectionVariables.set('memberId', pm.response.json().id);"]),
     req("5. Issue the copy", "POST", "/api/borrowing/issue", "Lends the copy to the member.",
@@ -257,18 +356,32 @@ collection = {
         "description": "Enterprise Library Management System (.NET 10). Import this file, select the "
                        "\"Library MS - Local\" environment (or keep the baseUrl collection variable = "
                        "http://localhost:5254), start the API with `dotnet run --project src/Library.Api`, "
-                       "and every request runs as-is. The **Smoke Flow** folder is a runnable end-to-end "
-                       "happy path for the Collection Runner. Failure responses follow RFC 7807 "
-                       "(application/problem+json) with `success`, `errors[]` and `correlationId`.",
+                       "then run **Auth > 1. Login as librarian** once - it sets the `bearerToken` collection "
+                       "variable that every other request uses automatically (the collection's default auth "
+                       "is Bearer {{bearerToken}}). Every request then runs as-is, no per-request setup. "
+                       "The **Smoke Flow** folder is fully self-contained (it logs in itself) and is a "
+                       "runnable end-to-end happy path for the Collection Runner. Seeded demo accounts: "
+                       "librarian / Librarian@123 and alice@example.com / Member@123 (see "
+                       "docs/ai-handover.md). Failure responses follow RFC 7807 (application/problem+json) "
+                       "with `success`, `errors[]` and `correlationId`.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
-    "item": [books, copies, members, borrowing, dashboard, jobs, metadata, release, logs, health, smoke],
+    "auth": bearer("{{bearerToken}}"),
+    "item": [auth_folder, books, copies, members, borrowing, borrow_requests, dashboard, jobs,
+             metadata, release, logs, health, smoke],
     "variable": [
         {"key": "baseUrl", "value": "http://localhost:5254"},
+        {"key": "librarianUsername", "value": "librarian"},
+        {"key": "librarianPassword", "value": "Librarian@123"},
+        {"key": "memberUsername", "value": "alice@example.com"},
+        {"key": "memberPassword", "value": "Member@123"},
+        {"key": "bearerToken", "value": ""},
+        {"key": "memberBearerToken", "value": ""},
         {"key": "bookId", "value": ""},
         {"key": "copyId", "value": ""},
         {"key": "memberId", "value": ""},
         {"key": "borrowRecordId", "value": ""},
+        {"key": "borrowRequestId", "value": ""},
     ],
 }
 
@@ -276,10 +389,10 @@ environment = {
     "name": "Library MS - Local",
     "values": [
         {"key": "baseUrl", "value": "http://localhost:5254", "enabled": True},
-        {"key": "bookId", "value": "", "enabled": True},
-        {"key": "copyId", "value": "", "enabled": True},
-        {"key": "memberId", "value": "", "enabled": True},
-        {"key": "borrowRecordId", "value": "", "enabled": True},
+        {"key": "librarianUsername", "value": "librarian", "enabled": True},
+        {"key": "librarianPassword", "value": "Librarian@123", "enabled": True},
+        {"key": "memberUsername", "value": "alice@example.com", "enabled": True},
+        {"key": "memberPassword", "value": "Member@123", "enabled": True},
     ],
     "_postman_variable_scope": "environment",
 }

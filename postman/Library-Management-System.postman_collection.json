@@ -2,10 +2,229 @@
   "info": {
     "name": "Library Management System API",
     "_postman_id": "6f3b1c2a-0d4e-4a7b-9c11-libmgmt000001",
-    "description": "Enterprise Library Management System (.NET 10). Import this file, select the \"Library MS - Local\" environment (or keep the baseUrl collection variable = http://localhost:5254), start the API with `dotnet run --project src/Library.Api`, and every request runs as-is. The **Smoke Flow** folder is a runnable end-to-end happy path for the Collection Runner. Failure responses follow RFC 7807 (application/problem+json) with `success`, `errors[]` and `correlationId`.",
+    "description": "Enterprise Library Management System (.NET 10). Import this file, select the \"Library MS - Local\" environment (or keep the baseUrl collection variable = http://localhost:5254), start the API with `dotnet run --project src/Library.Api`, then run **Auth > 1. Login as librarian** once - it sets the `bearerToken` collection variable that every other request uses automatically (the collection's default auth is Bearer {{bearerToken}}). Every request then runs as-is, no per-request setup. The **Smoke Flow** folder is fully self-contained (it logs in itself) and is a runnable end-to-end happy path for the Collection Runner. Seeded demo accounts: librarian / Librarian@123 and alice@example.com / Member@123 (see docs/ai-handover.md). Failure responses follow RFC 7807 (application/problem+json) with `success`, `errors[]` and `correlationId`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
+    {
+      "name": "Auth",
+      "description": "Run **1. Login as librarian** first (or use the Collection Runner on this folder) - it sets the `bearerToken` collection variable that every other folder's requests use automatically via the collection's default auth. Seeded demo accounts: librarian / Librarian@123 and alice@example.com / Member@123 (see docs/ai-handover.md).",
+      "item": [
+        {
+          "name": "1. Login as librarian",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Sets the `bearerToken` collection variable used as the default Bearer auth for every other request in this collection.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"{{librarianUsername}}\",\n  \"password\": \"{{librarianPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('bearerToken', body.accessToken);",
+                  "pm.test('token received', () => pm.expect(body.accessToken).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2. Login as member (optional)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Sets `memberBearerToken` for the handful of Member-only requests (Borrow Requests > Create/Mine) that explicitly use it instead of the default librarian token.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"{{memberUsername}}\",\n  \"password\": \"{{memberPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.accessToken) {",
+                  "    pm.collectionVariables.set('memberBearerToken', body.accessToken);",
+                  "    pm.collectionVariables.set('memberId', body.memberId);",
+                  "}",
+                  "pm.test('token received', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register a new member",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Self-service sign-up: creates the Member profile and its login together, and returns a token (also sets `memberBearerToken`).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Taylor Reed\",\n  \"email\": \"taylor.reed.{{$timestamp}}@example.com\",\n  \"password\": \"MemberPass1\",\n  \"phone\": \"555-0199\",\n  \"address\": \"9 Reader Row\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.accessToken) {",
+                  "    pm.collectionVariables.set('memberBearerToken', body.accessToken);",
+                  "    pm.collectionVariables.set('memberId', body.memberId);",
+                  "}",
+                  "pm.test('token received', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Provision another librarian",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/librarians",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "librarians"
+              ]
+            },
+            "description": "Librarian-only. Requires `bearerToken` (run **1. Login as librarian** first).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"librarian2.{{$timestamp}}\",\n  \"email\": \"librarian2.{{$timestamp}}@library.local\",\n  \"password\": \"Librarian2Pass1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "Books",
       "description": "Catalog CRUD, advanced search and Excel bulk import.",
@@ -1227,6 +1446,237 @@
       ]
     },
     {
+      "name": "Borrow Requests",
+      "description": "Member self-service borrow/purchase requests and the librarian approval queue. Requires `memberBearerToken` for the two Member-only requests (run Auth > **2. Login as member** first) and the default `bearerToken` for the rest.",
+      "item": [
+        {
+          "name": "Create borrow request (Member)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests"
+              ]
+            },
+            "description": "Member-only. Requests to borrow an existing catalog title.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Borrow\",\n  \"bookId\": \"{{bookId}}\",\n  \"note\": \"Requested from Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const r = pm.response.json();",
+                  "if (pm.response.code === 201 && r.id) { pm.collectionVariables.set('borrowRequestId', r.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suggest a purchase (Member)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests"
+              ]
+            },
+            "description": "Member-only. Suggests a title not currently in the catalog.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Purchase\",\n  \"suggestedTitle\": \"A Book The Library Should Buy\",\n  \"suggestedAuthor\": \"Some Author\",\n  \"note\": \"Recommended from Postman.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My requests (Member)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests/mine",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests",
+                "mine"
+              ]
+            },
+            "description": "Member-only. The signed-in member's own requests, most recent first.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{memberBearerToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search requests (Librarian)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests/search",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests",
+                "search"
+              ]
+            },
+            "description": "Librarian-only approval queue. `status`/`type` matched by name (Pending/Approved/Rejected/Fulfilled, Borrow/Purchase).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filters\": [\n    {\n      \"field\": \"status\",\n      \"operator\": \"eq\",\n      \"value\": \"Pending\"\n    }\n  ],\n  \"match\": \"all\",\n  \"sort\": [\n    {\n      \"field\": \"requestedAt\",\n      \"direction\": \"desc\"\n    }\n  ],\n  \"page\": 1,\n  \"pageSize\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Approve request (Librarian)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests/{{borrowRequestId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests",
+                "{{borrowRequestId}}",
+                "approve"
+              ]
+            },
+            "description": "Librarian-only. A Borrow request is issued immediately if a copy is available (picks the first Available copy); a Purchase request is simply marked Approved."
+          }
+        },
+        {
+          "name": "Reject request (Librarian)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/borrow-requests/{{borrowRequestId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "borrow-requests",
+                "{{borrowRequestId}}",
+                "reject"
+              ]
+            },
+            "description": "Librarian-only."
+          }
+        }
+      ]
+    },
+    {
       "name": "Dashboard",
       "description": "Aggregated totals for the librarian home screen.",
       "item": [
@@ -1530,8 +1980,62 @@
     },
     {
       "name": "Smoke Flow (run in order)",
-      "description": "Runnable end-to-end happy path. Use the Collection Runner on this folder: it creates a book, a copy, a member, issues and returns the copy, then cascade-deletes the book. IDs are chained via collection variables.",
+      "description": "Runnable end-to-end happy path. Use the Collection Runner on this folder: it logs in, creates a book, a copy, a member, issues and returns the copy, then cascade-deletes the book. IDs and the bearer token are chained via collection variables, so this folder is fully self-contained - no need to run Auth first.",
       "item": [
+        {
+          "name": "0. Login as librarian",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Sets `bearerToken` for the rest of this flow.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"{{librarianUsername}}\",\n  \"password\": \"{{librarianPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('bearerToken', body.accessToken);",
+                  "pm.test('token received', () => pm.expect(body.accessToken).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "1. Create book",
           "request": {
@@ -1708,10 +2212,10 @@
                 "members"
               ]
             },
-            "description": "Enrols a member.",
+            "description": "Enrols a uniquely-numbered member so the flow is re-runnable.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"membershipNumber\": \"MEM-900001\",\n  \"name\": \"Jordan Rivera\",\n  \"email\": \"jordan.rivera@example.com\",\n  \"phone\": \"555-0101\",\n  \"address\": \"12 Library Lane\"\n}",
+              "raw": "{\n  \"membershipNumber\": \"{{smokeMem}}\",\n  \"name\": \"Jordan Rivera\",\n  \"email\": \"{{smokeMemberEmail}}\",\n  \"phone\": \"555-0101\",\n  \"address\": \"12 Library Lane\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1725,8 +2229,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const n = Date.now().toString().slice(-6);",
-                  "pm.collectionVariables.set('smokeMem', 'MEM-' + n);"
+                  "const n = Date.now().toString().slice(-9);",
+                  "pm.collectionVariables.set('smokeMem', 'MEM-' + n);",
+                  "pm.collectionVariables.set('smokeMemberEmail', 'smoke.' + n + '@example.com');"
                 ]
               }
             },
@@ -1967,6 +2472,30 @@
       "value": "http://localhost:5254"
     },
     {
+      "key": "librarianUsername",
+      "value": "librarian"
+    },
+    {
+      "key": "librarianPassword",
+      "value": "Librarian@123"
+    },
+    {
+      "key": "memberUsername",
+      "value": "alice@example.com"
+    },
+    {
+      "key": "memberPassword",
+      "value": "Member@123"
+    },
+    {
+      "key": "bearerToken",
+      "value": ""
+    },
+    {
+      "key": "memberBearerToken",
+      "value": ""
+    },
+    {
       "key": "bookId",
       "value": ""
     },
@@ -1980,6 +2509,10 @@
     },
     {
       "key": "borrowRecordId",
+      "value": ""
+    },
+    {
+      "key": "borrowRequestId",
       "value": ""
     }
   ]
