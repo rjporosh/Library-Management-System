@@ -25,6 +25,26 @@ public sealed class AssistantApiTests
     }
 
     [Fact]
+    public async Task Chat_CopyCountQuestion_UnquotedNaturalPhrasing_StripsTrailingFiller()
+    {
+        // Regression: "copies of X are available?" used to capture "X are
+        // available" as the title (including the trailing filler words),
+        // so the book was never found.
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("How many copies of Clean Code are available?"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+
+        Assert.NotNull(body);
+        Assert.Contains("Clean Code", body!.Answer);
+        Assert.DoesNotContain("couldn't find", body.Answer);
+    }
+
+    [Fact]
     public async Task Chat_MostBorrowedQuestion_ReturnsAnAnswer()
     {
         await using var factory = new LibraryApiFactory();

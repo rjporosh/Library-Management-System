@@ -321,6 +321,15 @@ export const en = {
   'import.col.field': 'Field',
   'import.col.problem': 'Problem',
   'import.col.accepted': 'Accepted',
+
+  // --- Assistant (chat + voice) ---
+  'assistant.open': 'Ask the library assistant',
+  'assistant.title': 'Library Assistant',
+  'assistant.subtitle': 'Ask about stock, popular titles and top borrowers',
+  'assistant.hint': 'Try: "How many copies of Clean Code are available?", "Most borrowed books this month?", or "Who borrowed the most last month?"',
+  'assistant.placeholder': 'Ask a question…',
+  'assistant.thinking': 'Thinking…',
+  'assistant.voice': 'Voice input',
 } as const
 
 export type MessageKey = keyof typeof en

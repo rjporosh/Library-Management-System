@@ -21,6 +21,7 @@ import MembersPage from '@/pages/MembersPage'
 import MemberDetailPage from '@/pages/MemberDetailPage'
 import BorrowingPage from '@/pages/BorrowingPage'
 import BorrowRequestsPage from '@/pages/BorrowRequestsPage'
+import { ChatWidget } from '@/components/ChatWidget'
 import MyRequestsPage from '@/pages/MyRequestsPage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
@@ -191,6 +192,8 @@ export default function App() {
           </Routes>
         </main>
       </div>
+
+      {isLibrarian && <ChatWidget />}
     </div>
   )
 }

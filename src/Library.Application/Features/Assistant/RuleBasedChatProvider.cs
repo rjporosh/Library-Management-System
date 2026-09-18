@@ -19,7 +19,7 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
         var copiesMatch = CopiesOfPattern().Match(lower);
         if (copiesMatch.Success)
         {
-            var title = ExtractQuoted(text) ?? copiesMatch.Groups["title"].Value.Trim(' ', '?', '.', '"');
+            var title = ExtractQuoted(text) ?? CleanTitle(copiesMatch.Groups["title"].Value);
             return new ChatAnswer(await AnswerCopyCountAsync(title, cancellationToken), Name);
         }
 
@@ -90,6 +90,20 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
         var match = QuotedPattern().Match(text);
         return match.Success ? match.Groups[1].Value : null;
     }
+
+    /// <summary>
+    /// Strips trailing filler ("are available", "in stock", "left", the
+    /// question mark, etc.) that the copies-of regex otherwise swallows into
+    /// the title, e.g. "clean code are available?" -> "clean code".
+    /// </summary>
+    private static string CleanTitle(string raw)
+    {
+        var title = TrailingFillerPattern().Replace(raw, "").Trim(' ', '?', '.', '"', '\'');
+        return title;
+    }
+
+    [GeneratedRegex(@"\s*(?:are|is)?\s*(?:available|in\s+stock|left|remaining|in\s+the\s+library)\s*[?.]*\s*$")]
+    private static partial Regex TrailingFillerPattern();
 
     private static int? ExtractDays(string lower)
     {

@@ -323,4 +323,13 @@ export const bn: Record<MessageKey, string> = {
   'import.col.field': 'ক্ষেত্র',
   'import.col.problem': 'সমস্যা',
   'import.col.accepted': 'গ্রহণযোগ্য',
+
+  // --- Assistant (chat + voice) ---
+  'assistant.open': 'লাইব্রেরি সহায়ককে জিজ্ঞাসা করুন',
+  'assistant.title': 'লাইব্রেরি সহায়ক',
+  'assistant.subtitle': 'মজুদ, জনপ্রিয় বই ও শীর্ষ ধারকারী সম্পর্কে জিজ্ঞাসা করুন',
+  'assistant.hint': 'চেষ্টা করুন: "Clean Code-এর কয়টি কপি পাওয়া যাচ্ছে?", "এই মাসে সবচেয়ে বেশি ধার হওয়া বই কোনগুলো?", অথবা "গত মাসে সবচেয়ে বেশি ধার নিয়েছেন কে?"',
+  'assistant.placeholder': 'একটি প্রশ্ন জিজ্ঞাসা করুন…',
+  'assistant.thinking': 'চিন্তা করা হচ্ছে…',
+  'assistant.voice': 'ভয়েস ইনপুট',
 }

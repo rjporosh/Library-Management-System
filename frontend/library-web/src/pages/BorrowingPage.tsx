@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeftRight, BookUp, Undo2 } from 'lucide-react'
+import { ArrowLeftRight, BookUp, Mic, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { borrowingApi, copiesApi, membersApi } from '@/api'
 import { DataTable, type Column } from '@/components/DataTable'
@@ -13,8 +13,25 @@ import {
 } from '@/components/ui'
 import { normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDate } from '@/lib/format'
-import { t } from '@/lib/i18n'
+import { getLang, t } from '@/lib/i18n'
+import { useSpeechRecognition } from '@/lib/speech'
 import type { BorrowRecord } from '@/lib/types'
+
+function MicButton({ onResult, title }: Readonly<{ onResult: (text: string) => void; title: string }>) {
+  const speech = useSpeechRecognition(onResult, getLang())
+  if (!speech.supported) return null
+  return (
+    <Button
+      type="button"
+      variant={speech.listening ? 'danger' : 'secondary'}
+      size="sm"
+      onClick={() => (speech.listening ? speech.stop() : speech.start())}
+      title={title}
+    >
+      <Mic size={14} />
+    </Button>
+  )
+}
 
 export default function BorrowingPage() {
   const qc = useQueryClient()
@@ -171,14 +188,17 @@ export default function BorrowingPage() {
           </h2>
           <div className="space-y-3">
             <FormField label={t('borrow.findMember')} hint={t('borrow.findMemberHint')}>
-              <TextInput
-                placeholder={t('borrow.startTyping')}
-                value={memberQ}
-                onChange={(e) => {
-                  setMemberQ(e.target.value)
-                  setMemberId('')
-                }}
-              />
+              <div className="flex gap-1.5">
+                <TextInput
+                  placeholder={t('borrow.startTyping')}
+                  value={memberQ}
+                  onChange={(e) => {
+                    setMemberQ(e.target.value)
+                    setMemberId('')
+                  }}
+                />
+                <MicButton title={t('assistant.voice')} onResult={(text) => { setMemberQ(text); setMemberId('') }} />
+              </div>
             </FormField>
             {members.data && memberQ.length >= 2 && !memberId && (
               <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 text-sm">
@@ -204,14 +224,17 @@ export default function BorrowingPage() {
             )}
 
             <FormField label={t('borrow.findCopy')} hint={t('borrow.findCopyHint')}>
-              <TextInput
-                placeholder={t('borrow.barcodePlaceholder')}
-                value={copyQ}
-                onChange={(e) => {
-                  setCopyQ(e.target.value)
-                  setCopyId('')
-                }}
-              />
+              <div className="flex gap-1.5">
+                <TextInput
+                  placeholder={t('borrow.barcodePlaceholder')}
+                  value={copyQ}
+                  onChange={(e) => {
+                    setCopyQ(e.target.value)
+                    setCopyId('')
+                  }}
+                />
+                <MicButton title={t('assistant.voice')} onResult={(text) => { setCopyQ(text); setCopyId('') }} />
+              </div>
             </FormField>
             {copies.data && copyQ.length >= 1 && !copyId && (
               <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 text-sm">
@@ -259,12 +282,13 @@ export default function BorrowingPage() {
           <h2 className="flex items-center gap-2 border-b border-slate-100 px-5 py-4 text-sm font-semibold text-slate-700">
             <Undo2 size={16} /> {t('borrow.activeHeading')}
           </h2>
-          <div className="border-b border-slate-100 p-3">
+          <div className="flex gap-1.5 border-b border-slate-100 p-3">
             <TextInput
               placeholder={t('borrow.searchActivePlaceholder')}
               value={activeQ}
               onChange={(e) => setActiveQ(e.target.value)}
             />
+            <MicButton title={t('assistant.voice')} onResult={setActiveQ} />
           </div>
           <div className="p-2">
             <DataTable

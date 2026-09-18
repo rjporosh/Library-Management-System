@@ -154,6 +154,25 @@ export const authApi = {
     http.post<LoginResponse>('/auth/register', body).then((r) => r.data),
 }
 
+// --- assistant (chat + server-side speech-to-text) -------------------
+
+export interface ChatResponse {
+  answer: string
+  provider: string
+}
+
+export const assistantApi = {
+  chat: (message: string) => http.post<ChatResponse>('/assistant/chat', { message }).then((r) => r.data),
+  transcribe: async (audio: Blob) => {
+    const form = new FormData()
+    form.append('audio', audio, 'speech.webm')
+    const { data } = await http.post<{ text: string }>('/assistant/transcribe', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data.text
+  },
+}
+
 // --- helpers --------------------------------------------------------
 
 async function uploadFile(path: string, file: File) {
