@@ -5,6 +5,7 @@
 services:
   db:
     image: postgres:17
+    restart: unless-stopped
     environment:
       POSTGRES_DB: library
       POSTGRES_USER: library
@@ -21,6 +22,7 @@ services:
 
   jaeger:
     image: jaegertracing/all-in-one:1.60
+    restart: unless-stopped
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
     ports:
@@ -31,6 +33,7 @@ services:
     build:
       context: .
       dockerfile: src/Library.Api/Dockerfile
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -46,12 +49,20 @@ services:
       Jwt__SigningKey: "docker-compose-signing-key-CHANGE-ME-not-for-production-1234567890"
     ports:
       - "5254:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      start_period: 30s
+      retries: 5
 
   web:
     build:
       context: ./frontend/library-web
+    restart: unless-stopped
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
       - "8080:80"
 

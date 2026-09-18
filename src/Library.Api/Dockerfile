@@ -21,8 +21,9 @@ WORKDIR /app
 
 # Npgsql probes for Kerberos/GSSAPI at startup; without this it logs
 # "Cannot load library libgssapi_krb5.so.2" before falling back to password auth.
+# curl backs the HEALTHCHECK below (the runtime image ships neither by default).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # The aspnet image ships a non-root 'app' user (UID 1654); run as it.
@@ -33,7 +34,11 @@ ENV ASPNETCORE_URLS=http://+:8080 \
     ASPNETCORE_ENVIRONMENT=Production
 EXPOSE 8080
 
-# The /health endpoint is the readiness probe; container orchestrators
-# (compose, k8s) should poll it over HTTP rather than shelling in.
+# The /health endpoint is the readiness probe. Give the container a
+# generous start period - EF migrations + seed run before the app starts
+# listening, and that can legitimately take longer than the default 5s
+# on a cold volume.
+HEALTHCHECK --interval=5s --timeout=3s --start-period=30s --retries=5 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
 ENTRYPOINT ["dotnet", "Library.Api.dll"]
