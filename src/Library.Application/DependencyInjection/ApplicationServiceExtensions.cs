@@ -1,5 +1,6 @@
 using Library.Application.Common.Options;
 using Library.Application.Common.Security;
+using Library.Application.Features.Assistant;
 using Library.Application.Features.Auth;
 using Library.Application.Features.BookCopies;
 using Library.Application.Features.Books;
@@ -17,9 +18,25 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddApplication(
         this IServiceCollection services,
-        BorrowingOptions? borrowing = null)
+        BorrowingOptions? borrowing = null,
+        ChatOptions? chat = null,
+        SpeechOptions? speech = null)
     {
         services.AddSingleton(borrowing ?? new BorrowingOptions());
+
+        chat ??= new ChatOptions();
+        speech ??= new SpeechOptions();
+        services.AddSingleton(chat);
+        services.AddSingleton(chat.Anthropic);
+        services.AddSingleton(chat.OpenAI);
+        services.AddSingleton(speech);
+        services.AddSingleton(speech.HuggingFace);
+        services.AddScoped<LibraryQueryTools>();
+        services.AddScoped<ToolCatalog>();
+        services.AddScoped<RuleBasedChatProvider>();
+        services.AddScoped<ChatService>();
+        // SpeechService is registered via AddHttpClient<SpeechService>() in
+        // Program.cs (it needs an HttpClient, like the Anthropic/OpenAI providers).
         services.AddScoped<BookService>();
         services.AddScoped<BookCopyService>();
         services.AddScoped<MemberService>();

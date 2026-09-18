@@ -49,13 +49,30 @@ var borrowingOptions =
     builder.Configuration.GetSection("Borrowing").Get<BorrowingOptions>()
     ?? new BorrowingOptions();
 
+var chatOptions =
+    builder.Configuration.GetSection("Chat").Get<ChatOptions>()
+    ?? new ChatOptions();
+
+var speechOptions =
+    builder.Configuration.GetSection("Speech").Get<SpeechOptions>()
+    ?? new SpeechOptions();
+
 // Application & Infrastructure
-builder.Services.AddApplication(borrowingOptions);
+builder.Services.AddApplication(borrowingOptions, chatOptions, speechOptions);
 builder.Services.AddInfrastructure(
     observabilitySettings,
     databaseOptions,
     builder.Environment.ContentRootPath,
     jwtOptions);
+
+// Chat providers that call out to an external LLM API get their own named
+// HttpClient (short timeout - a slow/unreachable provider should not hang a
+// request forever). Missing API keys are handled at request time inside
+// each provider, never here - the app must always start regardless of
+// whether Anthropic/OpenAI/Hugging Face credentials are configured.
+builder.Services.AddHttpClient<Library.Application.Features.Assistant.AnthropicChatProvider>(c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient<Library.Application.Features.Assistant.OpenAiChatProvider>(c => c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddHttpClient<Library.Application.Features.Assistant.SpeechService>(c => c.Timeout = TimeSpan.FromSeconds(60));
 
 // JWT bearer authentication + role-based authorization (Librarian / Member).
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
