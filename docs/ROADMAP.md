@@ -7,11 +7,12 @@ it into an enterprise-grade product.
 
 ## Progress snapshot (2026-09-18, branch `feat/enterprise-completion`)
 
-**Phase 17 (Smart Library feature set)** is 8 of 9 milestones done.
-Only 17.9 (voice search + agentic chat) remains - see `docs/ai-handover.md`
-§4i for its exact, up-to-date plan. §4h documents exactly what shipped for
-17.2-17.8, including a couple of small deviations from the original plan
-(flags instead of a `BookFormat` enum; see §4h for why).
+**Phase 17 (Smart Library feature set) is 9 of 9 milestones done.**
+`docs/ai-handover.md` §4h/§4j document exactly what shipped, including a
+couple of small deviations from the original plan (flags instead of a
+`BookFormat` enum - see §4h for why) and what's left in §4k (genuinely
+optional: live-verifying the LLM/speech providers with real API keys,
+plus pre-existing gaps unrelated to this ask like MySQL/Oracle drivers).
 
 | Phase | Status |
 |---|---|
@@ -39,9 +40,9 @@ Only 17.9 (voice search + agentic chat) remains - see `docs/ai-handover.md`
 | 17.6 Borrow-request / admin-approval workflow | **Done** - see §4h |
 | 17.7 Borrowing page search verification (member/book/copy) | **Done** - real gap found (raw GUIDs shown) and fixed, see §4h |
 | 17.8 Localization audit of new pages | **Done** - one real gap found and fixed, see §4h |
-| 17.9 Voice search (Web Speech + Hugging Face) + agentic chat (rule-based + Anthropic/OpenAI) | **Not started** - see §4i for the exact plan |
+| 17.9 Voice search (Web Speech + Hugging Face) + agentic chat (rule-based + Anthropic/OpenAI) | **Done** - see §4j; LLM/speech external providers implemented but not live-verified with real keys (none available in this sandbox) |
 
-See `docs/ai-handover.md` §3-4 and §4h-4i for the exact next steps and commands.
+See `docs/ai-handover.md` §3-4 and §4h-4k for the exact next steps and commands.
 
 ------------------------------------------------------------------------
 
@@ -780,20 +781,28 @@ added this session already fully bilingual from the start. One real gap
 (a hardcoded English network/server-error fallback message) was found and
 fixed. See §4h.
 
-## 17.9 Voice search + agentic chat assistant --- Not started
+## 17.9 Voice search + agentic chat assistant --- Done
 
-The only remaining milestone. Two provider tiers each, both configurable
-via appsettings/env vars, following the existing `DatabaseOptions`/
-`JwtOptions`/`BorrowingOptions` POCO-bound-once pattern:
-- **Speech**: Web Speech API (client-side, default) + Hugging Face STT
-  (server, configurable alternative via `Speech:Provider`).
+Two provider tiers each, both configurable via appsettings/env vars,
+following the existing `DatabaseOptions`/`JwtOptions`/`BorrowingOptions`
+POCO-bound-once pattern - a missing/invalid key never stops the app from
+starting, it just makes that one feature answer "not configured":
+- **Speech**: Web Speech API (client-side, default, zero backend) +
+  Hugging Face STT (server, `POST /api/assistant/transcribe`, configurable
+  via `Speech:Provider`).
 - **Chat**: a rule-based deterministic intent engine (default/fallback, no
-  external dependency, no cost) + a real LLM path supporting both
-  `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` (user wants both available,
-  selectable via `Chat:Provider`). The LLM path must call the same internal
-  query "tools" rather than get free-form DB access.
-- `guide.md` must document configuration for both, step by step, in the
-  same commit that adds the feature.
+  external dependency, no cost - answers copy-count/most-borrowed/top-
+  borrower questions against the existing repositories) + a real LLM path
+  supporting both Anthropic and OpenAI (`Chat:Provider`), each calling the
+  real Messages/Chat-Completions API with tool-use/function-calling
+  constrained to exactly three named tools - never free-form DB access.
+- Librarian-only floating chat widget + mic buttons (Web Speech API) on
+  the chat input and the Borrowing page's three search boxes.
+- `guide.md` §4b documents configuration for both, step by step, including
+  where to obtain each provider's API key.
 
-See `docs/ai-handover.md` §4i for the exact plan, suggested build order,
-and the standing one-milestone-per-commit workflow rule.
+**Not yet live-verified**: the Anthropic/OpenAI/Hugging Face paths compile
+and their "not configured" fallback is verified, but no real API key was
+available in this sandbox to verify an actual round-trip. See
+`docs/ai-handover.md` §4j/§4k for exactly what to check first if you have
+a key and it doesn't work out of the box.

@@ -1,17 +1,19 @@
 {
-  "version": "0.5.0-dev",
+  "version": "0.5.0",
   "releaseDate": "2026-09-18",
   "newFeatures": [
-    "JWT authentication with Librarian/Member RBAC: login, member self-registration, librarian-only staff provisioning; every catalog/member/borrowing/dashboard/jobs/logs endpoint now requires a bearer token (Books stays browsable read-only by Members; everything else is Librarian-only)",
-    "Book catalog enrichment: cover thumbnail (explicit URL or a derived Open Library cover-by-ISBN fallback), optional edition, ebook/audiobook availability flags with URLs, external buy/PDF suggestion links, and a new book detail page resolving smart availability (physical -> ebook -> audiobook -> external suggestion); Members see a read-only catalog with no mutating actions",
+    "JWT authentication with Librarian/Member RBAC: login, member self-registration, librarian-only staff provisioning; every catalog/member/borrowing/dashboard/jobs/logs/assistant endpoint now requires a bearer token (Books stays browsable read-only by Members; everything else is Librarian-only)",
+    "Book catalog enrichment: cover thumbnail (explicit URL or a derived Open Library cover-by-ISBN fallback), optional edition, ebook/audiobook availability flags with URLs, external buy/PDF suggestion links, and a book detail page resolving smart availability (physical -> ebook -> audiobook -> external suggestion); Members see a read-only catalog with no mutating actions",
     "Book-copy auto-generation: creating a book with TotalCopies > 0 generates that many BookCopy rows in one transaction with sequential barcodes (BC-0001, BC-0002, ...), continuing the existing sequence",
     "Borrow limit raised from 1 to 2 active books per member, and made configurable (Borrowing:MaxActiveBorrowsPerMember)",
-    "Member list shows a currently-borrowing indicator per member (batched, not N+1); the Active/Suspended/Inactive status filter already existed and was verified working",
-    "Member borrow-request / librarian-approval workflow: a member can request to borrow an existing title or suggest a purchase; a librarian approval queue approves (issuing the book immediately if a copy is available, via the existing BorrowingService) or rejects",
-    "Borrowing page now shows real member names and book titles instead of truncated GUIDs, with a client-side search box across member name, membership number, book title and copy barcode",
-    "In progress: this is 8 of 9 smart-library milestones - only voice search and an agentic chat assistant remain, see docs/ai-handover.md §4i for the exact plan",
+    "Member list shows a currently-borrowing indicator per member; the member detail page's borrow history shows the book title and copy barcode instead of a raw id",
+    "Member borrow-request / librarian-approval workflow: a member can request to borrow an existing title or suggest a purchase; a librarian approval queue approves (issuing the book immediately if a copy is available) or rejects",
+    "Borrowing page and book-copies list show real member/book names instead of truncated GUIDs, with a client-side search box across member name, membership number, book title and copy barcode",
+    "Agentic librarian chat assistant (Chat:Provider=RuleBased by default, no external dependency; Anthropic or OpenAI with tool-use/function-calling constrained to three query tools) answering copy-count/most-borrowed/top-borrower questions",
+    "Voice search via the browser's native Web Speech API (default, zero backend) on the chat input and the Borrowing page's search boxes, plus an optional server-side Hugging Face speech-to-text endpoint (Speech:Provider=HuggingFace)",
+    "Docker hardening: a real API healthcheck (GET /health) and restart:unless-stopped on every service; web now waits for api to report healthy",
     "PBKDF2 password hashing, a users table/migration, and a full bilingual login/registration SPA flow with role-based navigation and route guarding",
-    "OpenAPI/Scalar now renders a title and description for every endpoint (XML doc file enabled); Postman collection (postman/) with runnable example requests for all 43 endpoints plus a verified end-to-end Smoke Flow folder",
+    "OpenAPI/Scalar now renders a title and description for every endpoint (XML doc file enabled); Postman collection (postman/) covers all endpoints including Auth and Borrow Requests with a runnable end-to-end Smoke Flow folder",
     "Soft delete on every entity (Domain.Common.Entity base) - nothing is physically removed; deleted rows are hidden from reads, search, duplicate checks and aggregates",
     "Smart cascade delete: DELETE /api/{books|members|book-copies}/{id}?force= - borrowed dependents block, other dependents ask to confirm, force cascades in one transaction",
     "Book.Category / Book.Publisher and Member.Phone / Member.Address across domain, DTOs, validators, Excel templates, seed and frontend",
@@ -27,7 +29,9 @@
     "appsettings.Development.json had Database:Provider \"PostgreSql\" (a typo not matching the Postgres enum name), which silently fell back to InMemory - Development had never actually been exercising Postgres; also fixed its connection string (wrong port/credentials)",
     "A hardcoded English network/server-error fallback message that rendered regardless of the active language - moved to a locale key",
     "A member's own borrow-request list showed a blank book title (only the librarian queue had the name/title enrichment lookup) - fixed with a regression test",
-    "The 0.2.0 backend is now built, tested and verified (98 backend + 11 frontend tests)"
+    "tests/Library.LoadTests and the Postman collection both predated auth and 401'd on every request - both now log in first; Postman also had a variable-scope shadowing bug and an unused randomized value in the Smoke Flow",
+    "The chat assistant's copies-of intent captured trailing filler words (\"are available\") into the search title for natural, unquoted phrasing - fixed with a trailing-filler strip",
+    "The 0.2.0 backend is now built, tested and verified (107 backend + 11 frontend tests)"
   ],
   "changedBehaviour": [
     "Every endpoint except /api/auth/*, /api/metadata/* and /api/release-notes/* now requires an Authorization: Bearer <token> header, or returns 401",
@@ -39,24 +43,27 @@
   ],
   "qaChecklist": [
     "dotnet build LibraryManagementSystem.slnx -> 0 warnings, 0 errors",
-    "dotnet test -> 98/98 (58 unit + 40 integration)",
+    "dotnet test -> 107/107 (58 unit + 49 integration)",
     "frontend npm test -> 11/11; npm run lint + npm run build clean",
+    "dotnet run --project tests/Library.LoadTests -> 1950/1950 requests OK with rate limiting off",
+    "newman run against the Postman collection -> 64/64 requests, 17/17 assertions",
     "POST /api/auth/login with the seeded librarian/member accounts returns a bearer token; wrong password returns 400 with the standard error envelope",
     "a Member token gets 403 on a Librarian-only endpoint and 200 browsing /api/books",
-    "browser end-to-end: auth flows for both roles; book cover rendering + the DDD no-physical-copy-> external-buy-link fallback; the full borrow-request -> approve -> fulfilled workflow; borrowing page shows names not GUIDs - 0 console errors in every pass",
+    "browser end-to-end: auth flows for both roles; book cover rendering + the DDD no-physical-copy-> external-buy-link fallback; the full borrow-request -> approve -> fulfilled workflow; borrowing page shows names not GUIDs; the chat widget answering a real question - 0 console errors in every pass",
+    "fresh docker compose down -v && up --build -> all four services healthy, direct API + nginx proxy + a real login against the freshly-seeded database + Jaeger receiving traces all confirmed",
     "cascade delete: blocked / confirm / force paths",
     "soft-deleted rows excluded from search, duplicate checks and dashboard",
     "rate limiting returns 429 after the window; RFC 7807 problem+json shape",
     "localization: en/bn message catalogue via ?culture= and Accept-Language, full UI chrome including the new pages",
     "Dapper vs EF dashboard aggregate parity",
     "advanced search operators + enum-by-name; all ten bulk-import acceptance scenarios",
-    "docker compose up --build -> /health healthy, web proxies API, Jaeger receives traces",
     "all three new migrations (AddUsers, AddBookCatalogEnrichment, AddBorrowRequests) applied cleanly to a real local Postgres"
   ],
   "knownIssues": [
-    "Voice search (Web Speech API + Hugging Face, configurable) and an agentic chat assistant (rule-based + Anthropic/OpenAI, configurable) are not yet built - see docs/ai-handover.md §4i for the exact plan",
+    "The Anthropic/OpenAI chat paths and the Hugging Face speech path are implemented but not live-verified with a real API key - none was available in this build environment; the \"not configured\" fallback path for each is verified",
     "Database:Orm=Dapper covers the dashboard aggregate; other read paths use EF Core",
     "No EF Core 10 driver for MySQL/Oracle yet (provider slots + ADR-0001 ready)",
-    "Success response envelope deferred (ADR-0005)"
+    "Success response envelope deferred (ADR-0005)",
+    "Frontend component test coverage is limited to lib/ and a few components; pages are covered by manual/browser-automation verification"
   ]
 }

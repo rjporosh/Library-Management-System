@@ -1,7 +1,7 @@
 # AI Handover --- Library Management System
 
-**Last updated:** 2026-09-18 (sixth checkpoint - smart-library feature set
-milestones 2-8 of 9 complete; only voice search + agentic chat remain)
+**Last updated:** 2026-09-18 (seventh checkpoint - all 9 smart-library
+milestones functionally complete)
 **Written by:** Claude (principal-engineer role), in a sandbox **with a
 working .NET 10 SDK, NuGet, Node 26 and Docker** - so unlike the 0.2.0
 session, everything below is **built, tested and smoke-verified**.
@@ -10,11 +10,11 @@ Read this file first. `docs/ROADMAP.md` and `docs/MASTER_SPECIFICATION.md`
 describe the long-term plan; this file is exactly where execution stands.
 
 **If you are the next agent picking this up:** jump straight to
-[§4h "Sixth checkpoint"](#4h-sixth-checkpoint-2026-09-18--milestones-2-8-of-9-done)
-below for what shipped this session, then to
-[§4i "Exact plan for the one remaining milestone"](#4i-exact-plan-for-the-one-remaining-milestone-voice-search--agentic-chat)
-for the precise next-step plan. Everything in the original §4g plan is done
-**except milestone 9** (voice search + the agentic chat assistant).
+[§4j "Seventh checkpoint"](#4j-seventh-checkpoint-2026-09-18--all-9-milestones-done)
+below - it supersedes §4h/§4i (voice search + chat, the one item those left
+open, is now done). §4k lists the small number of genuinely-optional items
+left (things that need credentials/infra this sandbox doesn't have, not
+things that are broken or half-built).
 
 ---
 
@@ -23,14 +23,19 @@ for the precise next-step plan. Everything in the original §4g plan is done
 | Check | Result |
 |---|---|
 | `dotnet build LibraryManagementSystem.slnx` | **0 warnings, 0 errors** (TreatWarningsAsErrors on) |
-| `dotnet test` | **98 pass** (58 unit + 40 integration), 0 fail |
+| `dotnet test` | **107 pass** (58 unit + 49 integration), 0 fail |
 | `npm test` (frontend, Vitest) | **11 pass** |
 | `npm run build` / `npm run lint` (frontend) | clean |
-| End-to-end flows verified in a real headless browser against a running API | auth (both roles), book catalog enrichment + cover fallback, borrow-request -> approve -> fulfilled workflow, borrowing page shows real names not GUIDs; 0 console errors, 0 failed requests in every pass |
-| EF Core migrations `AddUsers`, `AddBookCatalogEnrichment`, `AddBorrowRequests` | generated, compile, and **have been applied** to the real local dev Postgres (`docker compose up -d db`) - verified with `\d books`/`\d users` etc. |
+| `dotnet run --project tests/Library.LoadTests` | 1950/1950 requests OK (with rate limiting off - see §4j) |
+| `newman run postman/...` | 64/64 requests, 17/17 assertions, against a freshly-started API |
+| Fresh `docker compose down -v && up --build` | db -> jaeger -> api (reports **healthy**) -> web, in that order; direct API, the nginx proxy, a real login against the freshly-seeded DB, and Jaeger receiving traces all verified |
+| End-to-end flows verified in a real headless browser against a running API | auth (both roles), book catalog enrichment + cover fallback, borrow-request -> approve -> fulfilled workflow, borrowing page shows real names not GUIDs, the chat widget answering a real question; 0 console errors, 0 failed requests in every pass |
+| EF Core migrations `AddUsers`, `AddBookCatalogEnrichment`, `AddBorrowRequests` | generated, compile, and **have been applied** to the real local dev Postgres - verified with `\d books`/`\d users` etc. |
 
-Branch: `feat/enterprise-completion` (off `main`). Commits are one-per-milestone
-with full messages; six new commits since the fifth checkpoint - `08b7e2f`
+Branch: `feat/enterprise-completion` (off `main`). Commits are one-per-fix/
+milestone with full messages - eight new commits since the sixth checkpoint,
+see §4j for the full list. Six new commits since the fifth checkpoint before
+that - `08b7e2f`
 (book catalog enrichment), `8a39dee` (borrow limit + member indicator +
 borrowing page fix), `3342851` (borrow-request workflow), `3882bfe`
 (localization fix) - plus `f7b3a6e` and the two auth commits from the fifth
@@ -587,11 +592,12 @@ user-facing behavior (auth flows, book cover rendering, the DDD
 approve -> fulfilled workflow, borrowing-page name display) - see each
 commit message for the specific assertions made in each pass.
 
-## 4i. Exact plan for the one remaining milestone: voice search + agentic chat
+## 4i. Plan for milestone 9 (superseded - now done, see §4j)
 
-This is the only thing left from the original 9-milestone ask (§4g). The
-user's requirements, confirmed via `AskUserQuestion` earlier in this
-session (do not re-ask - proceed with this design):
+This section's plan was executed as written; kept for the historical
+rationale (why the design decisions below were made) rather than as a
+todo list. The user's requirements, confirmed via `AskUserQuestion` earlier
+in this session:
 
 - **Speech**: Web Speech API (`SpeechRecognition`/`speechSynthesis`,
   client-side, zero backend work, Chromium-only) as the default/
@@ -632,15 +638,187 @@ session (do not re-ask - proceed with this design):
   via `speechSynthesis`); (4) the Hugging Face STT alternative last, since
   it's the most infrastructure-heavy piece and least likely to be used day
   to day. Land each as its own commit per the standing workflow rule below.
-- **Standing workflow rule (unchanged from §4g, still applies)**: every
-  milestone lands as its own commit with 0 build warnings/errors, no
-  regressions in the existing test suite, and a docs update - do not batch
-  multiple milestones into one commit, and do not leave a milestone
-  half-done across a context/session boundary without updating this file
-  (add a `## 4j. <n>th checkpoint` section) to say exactly which half is
-  done, why, and the precise resume point. Do not leave partially-applied
-  EF migrations, half-added positional-record fields, or TODO/stub code
-  across a checkpoint boundary.
+- **Standing workflow rule**: every milestone lands as its own commit with
+  0 build warnings/errors, no regressions in the existing test suite, and a
+  docs update - do not batch multiple milestones into one commit.
+
+## 4j. Seventh checkpoint (2026-09-18) - all 9 milestones done
+
+Continuing directly from §4h. Eight commits this session, each independently
+buildable/testable - see each commit message for full detail:
+
+1. **`1e3de2c` fix(book-copies,members)** - `BookCopyResponse` and
+   `MemberBorrowSummary` gained denormalized `BookTitle`/`Barcode` fields
+   (same pattern as the borrowing-page fix from §4h): the Book Copies list
+   was showing `BookId.Slice(0,8)` and the member detail's borrow history
+   was showing a raw `BookCopyId` - both now show the actual title/barcode.
+2. **`1d0d100` fix(docker)** - **could not reproduce** the reported "API
+   starts and immediately stops" crash after multiple fresh-volume and
+   existing-volume boots. What was genuinely missing: no Docker
+   `HEALTHCHECK` and no `restart` policy on any service, so a transient
+   failure (if one occurred) would leave a dead container with no
+   self-healing and no visible health status. Added both (`curl`-based
+   healthcheck against `/health`, 30s start-period for cold-volume
+   migrations; `restart: unless-stopped` everywhere; `web` now waits for
+   `api` to report *healthy*, not just "container created"). **If this
+   crash recurs for the user, the next agent's first move should be
+   `docker compose logs api` captured at the moment of the crash** -
+   nothing in this codebase should exit non-zero without writing to
+   `logs/build-error-logs/` first (see `Program.cs`'s try/catch around
+   `builder.Build()` and the migrate/seed step), so that log is the
+   fastest path to a root cause if it happens again.
+3. **`f7b19fc` fix(load-tests)** - `tests/Library.LoadTests` predates auth
+   entirely; all three scenarios 401'd until fixed to log in once and reuse
+   the token. Also documented (not "fixed", it's correct behavior) that the
+   scenarios' request rates trigger the rate limiter unless it's disabled
+   on the target - see the updated `tests/Library.LoadTests/README.md`.
+4. **`c518fad` fix(postman)** - the collection also predated auth; added an
+   Auth folder + collection-default Bearer auth + a Borrow Requests folder.
+   Found and fixed two real bugs while verifying with `newman` (not
+   speculative - the collection outright failed before these): (a)
+   variable-scope shadowing - the login script's `pm.collectionVariables.set
+   ('bearerToken', ...)` was silently overridden by the *environment's own*
+   `bearerToken` (empty), because environment scope resolves before
+   collection scope; fixed by removing every workflow-mutated variable
+   (tokens, IDs) from the environment file entirely - **only `baseUrl` and
+   credentials belong in the environment; anything a test script
+   `.set()`s at runtime must live in exactly one scope, collection
+   variables, or you get this exact silent-401 bug again**; (b) the Smoke
+   Flow's "Create a member" step computed a randomized membership number
+   in its pre-request script but never used it in the request body.
+5. **`9cefd38` feat(assistant)** - chat + speech backend. See below.
+6. **`a74ba03` feat(assistant)** - chat + speech frontend, plus a real bug
+   (found live in a browser, not spec-derived): the rule-based intent
+   regex for "how many copies of X" captured trailing filler words ("are
+   available") into the title when the question was phrased naturally
+   without quotes, so `"Clean Code are available"` was searched for
+   instead of `"Clean Code"` and nothing matched. Fixed with a
+   trailing-filler strip, locked in with a regression test.
+7. **`93364cd` docs(guide)** - `guide.md` updated for auth (it predated
+   login entirely) and the Chat/Speech configuration reference.
+
+**Milestone 9 (voice search + agentic chat) - what actually shipped:**
+- `Library.Application.Features.Assistant`: `LibraryQueryTools` (three
+  read-only queries: copy count by title/author/ISBN fragment, most-
+  borrowed books in N days, top borrowers in N days - all against existing
+  repositories, no new tables), `ToolCatalog` (provider-agnostic tool
+  definitions + dispatcher), `RuleBasedChatProvider` (regex/keyword intent
+  matching, zero dependency, the default), `AnthropicChatProvider` /
+  `OpenAiChatProvider` (real Messages API / Chat Completions API calls with
+  tool-use/function-calling constrained to `ToolCatalog` - a single tool
+  round-trip: the model can call one or more tools once, then answers from
+  the results - not a full multi-turn agent loop, but a real, working
+  "look something up, then answer" flow), `ChatService` (picks the
+  provider from `Chat:Provider` config), `SpeechService` (Hugging Face
+  Inference API transcription, only used when `Speech:Provider=
+  HuggingFace`).
+- `POST /api/assistant/chat` and `POST /api/assistant/transcribe`, both
+  `[Authorize(Roles="Librarian")]`.
+- **Config-gated, never blocks startup**: `ChatOptions`/`SpeechOptions`
+  bound in `Program.cs` from `Chat`/`Speech` config sections, same
+  POCO-bound-once pattern as `DatabaseOptions`/`JwtOptions`/
+  `BorrowingOptions`. A missing/invalid Anthropic/OpenAI/Hugging Face key
+  **never throws or prevents the app from starting** - the provider
+  returns a plain-text "not configured, set X or switch back to
+  RuleBased" answer at request time. `AnthropicChatProvider`/
+  `OpenAiChatProvider`/`SpeechService` are registered via
+  `AddHttpClient<T>()` in `Program.cs` (not `AddApplication`, since
+  Application shouldn't take a `Microsoft.Extensions.Http` dependency) -
+  **if you add a fourth external HTTP-calling provider, register it the
+  same way, in `Program.cs`, not in `ApplicationServiceExtensions`**.
+- Frontend: `ChatWidget.tsx` (floating, Librarian-only, mounted in
+  `App.tsx` only when `isLibrarian`), `lib/speech.ts` (a
+  `useSpeechRecognition` hook around the browser's native
+  `SpeechRecognition`/`webkitSpeechRecognition` - renders no mic button at
+  all on unsupported browsers rather than a broken one), mic buttons wired
+  into the chat input and all three Borrowing-page search boxes (member,
+  copy, active-borrows filter).
+- **Real LLM paths (Anthropic/OpenAI) are implemented but not live-
+  verified with a real API key** - this sandbox has no `ANTHROPIC_API_KEY`/
+  `OPENAI_API_KEY` to test with. What **is** verified: the code compiles,
+  the "not configured" fallback path returns the correct message when no
+  key is set (this proves the provider-selection and error-handling logic
+  works), and the wire-format construction (Anthropic's `tool_use`/
+  `tool_result` blocks, OpenAI's `tool_calls`/`role:"tool"` messages) was
+  written directly against each provider's documented API shape. **If you
+  have a real key, the fastest verification is**: set
+  `Chat__Provider=Anthropic` (or `OpenAI`) and `Chat__Anthropic__ApiKey`
+  (or `Chat__OpenAI__ApiKey`), restart the API, ask the chat widget "how
+  many copies of Clean Code are available?", and confirm the response's
+  `provider` field matches and the answer is coherent. If it errors,
+  the two most likely gaps to check first are (a) the exact JSON shape of
+  the follow-up "tool result" message per provider - both were written
+  from documentation, not from a live round-trip - and (b) rate/quota
+  limits on a free-tier key.
+- Hugging Face STT is similarly implemented-but-unverified with a real
+  key (no `HUGGINGFACE_API_KEY` in this sandbox); the "not configured"
+  and "provider not HuggingFace" error paths ARE verified live.
+
+**Verification performed this session**: every fix above was checked with
+`dotnet build` (0/0), the full backend test suite (107/107, up from 98),
+`npm run build`/`npm run lint`/`npm test` (11/11), a full `docker compose
+down -v && up --build` (all four services healthy, verified via direct
+API call, the nginx proxy, a real login against the freshly-seeded
+database, and Jaeger actually receiving traces), the load-test console app
+(1950/1950 requests succeeded with rate limiting off), and the full Postman
+collection via `newman` (64/64 requests, 17/17 assertions, against a
+freshly-started API - re-running it repeatedly against the *same*
+persistent Postgres volume will hit stale-data conflicts on the
+non-Smoke-Flow folders' static example bodies, which is expected/
+documented, not a bug - see `postman/README.md`).
+
+## 4k. What's left (all genuinely optional / needs external resources this sandbox lacks)
+
+Everything the user asked for is implemented, tested, and documented. What
+remains is either (a) verification that needs a resource this sandbox
+doesn't have, or (b) pre-existing, already-documented gaps from before this
+session that were never part of this ask:
+
+1. **Live-verify the Anthropic/OpenAI chat paths and the Hugging Face
+   speech path with real API keys** - see §4j's note above for exactly
+   what to check first if it doesn't work out of the box.
+2. **MySQL/Oracle EF Core drivers** - pre-existing gap (ADR-0001), not
+   part of this session's ask; provider slots exist and throw
+   `NotSupportedException` today.
+3. **Broader frontend component test coverage** - only `lib/` and a
+   handful of components have Vitest tests; the pages themselves are
+   covered by manual/browser-automation verification in this session's
+   commits, not automated frontend unit tests.
+4. **Code-splitting the frontend bundle** - `npm run build` warns the main
+   chunk is over 500kB (it has been growing steadily across sessions,
+   this one included). Not a functional problem, purely a build-output
+   size note; `vite`'s suggested fix is `dynamic import()` for route-level
+   code-splitting.
+5. If a *new* crash-on-start report comes in for Docker (the one this
+   session couldn't reproduce): the healthcheck/restart-policy hardening
+   from `1d0d100` means it will now be visible (`docker compose ps` will
+   show `unhealthy`/restarting) instead of silently disappearing - use
+   `docker compose logs api` and check `src/Library.Api/logs/build-error-
+   logs/` (mounted or `docker cp`'d out of the container) first.
+
+**Exact commands for the next agent** (nothing below should be needed to
+get to a working state - it already is one; these are just how to
+re-verify):
+
+```bash
+cd ~/Downloads/porosh/LibraryManagementSystem
+git checkout feat/enterprise-completion
+dotnet build LibraryManagementSystem.slnx      # expect 0/0
+dotnet test  LibraryManagementSystem.slnx      # expect 107 pass (58 unit + 49 integration)
+( cd frontend/library-web && npm ci && npm test && npm run build && npm run lint )   # 11 tests, clean
+
+docker compose up -d db
+dotnet run --project src/Library.Api           # http://localhost:5254
+
+curl -X POST localhost:5254/api/auth/login -H 'content-type: application/json' \
+  -d '{"usernameOrEmail":"librarian","password":"Librarian@123"}'
+curl -X POST localhost:5254/api/assistant/chat -H "Authorization: Bearer <token>" \
+  -H 'content-type: application/json' -d '{"message":"most borrowed books this month"}'
+
+docker compose down -v && docker compose up --build -d   # full fresh-boot check
+npx newman run postman/Library-Management-System.postman_collection.json \
+  -e postman/Library-Management-System.postman_environment.json
+```
 
 ## 5. Landmines
 
@@ -700,3 +878,42 @@ session (do not re-ask - proceed with this design):
   volume (`db-data`) is untouched, so no data is lost. Check `docker port
   librarymanagementsystem-db-1` if `dotnet ef database update` or the API
   can't connect and everything else looks right.
+- **Port 5432 may already be taken by an unrelated container on this
+  machine** (this session hit an `enterprise-postgres` container from a
+  different project bound to host port 5432) - that is not this project's
+  container, do not stop/remove it. If you need to verify this stack while
+  something else holds 5432, use a docker-compose override that either
+  remaps the port (`ports: ["5499:5432"]`) or clears it entirely
+  (`ports: !reset []` - the API talks to `db` over the internal compose
+  network regardless of whether the port is published to the host).
+- **`tests/Library.LoadTests` and the Postman collection both need a
+  bearer token now** - if you add a new load-test scenario or Postman
+  request against an endpoint that isn't `/api/auth/*`, `/api/metadata/*`
+  or `/api/release-notes/*`, it needs the token wired in (see `Program.cs`
+  top of `tests/Library.LoadTests/Program.cs` for the load-test pattern,
+  or the Postman collection's default Bearer auth for Postman - new
+  requests get it automatically unless you explicitly override `auth`).
+- **Postman/Newman variable-scope gotcha**: `pm.collectionVariables.set()`
+  in a test script is silently overridden by an *environment* variable of
+  the same name if one is selected and has a value (even `""`) - environment
+  scope resolves before collection scope. Any variable a test script
+  mutates at runtime (tokens, created-entity IDs) must be declared in
+  exactly one scope. This project's convention: `baseUrl` and credentials
+  live in both (collection variable as the default, environment overrides
+  it) since those never change at runtime; everything else (`bearerToken`,
+  `bookId`, `borrowRequestId`, etc.) lives **only** in collection
+  variables. Don't add a runtime-mutated variable to the environment file.
+- **`AnthropicChatProvider`/`OpenAiChatProvider`/`SpeechService` are
+  registered via `AddHttpClient<T>()` in `Program.cs`, not in
+  `ApplicationServiceExtensions.AddApplication()`** - they need an
+  `HttpClient` injected, and `Library.Application` deliberately doesn't
+  reference `Microsoft.Extensions.Http`. If you add another provider that
+  calls an external HTTP API, register it the same way, in `Program.cs`.
+- **A missing/invalid `Chat:*`/`Speech:*` API key must never throw** - the
+  established pattern (see `AnthropicChatProvider.AskAsync`) is: check for
+  the key at the top of the method and return a `ChatAnswer`/`Result`
+  carrying a clear "not configured" message, not an exception. This is
+  different from `Jwt:SigningKey` (which *does* fail-fast at startup) -
+  the distinction is that auth is load-bearing for the whole app, while an
+  unconfigured chat/speech provider should degrade one optional feature,
+  not the app.

@@ -14,14 +14,16 @@ and release verification.
 
 ------------------------------------------------------------------------
 
-# Release 0.5.0-dev --- Smart Library Feature Set (8 of 9 milestones done)
 
-**Release date:** 2026-09-18 (updated; originally 2026-09-17 for auth only)\
-**Status:** Built, tested (98 backend + 11 frontend tests), smoke-verified
-in a real browser against a real running API for every milestone below -
-**but this is 8 of 9 requested milestones, not a finished release.** Only
-voice search + an agentic chat assistant remain. See `docs/ai-handover.md`
-§4h (what shipped) and §4i (the exact remaining plan).\
+# Release 0.5.0 --- Smart Library Feature Set (feature-complete)
+
+**Release date:** 2026-09-18\
+**Status:** Built, tested (107 backend + 11 frontend tests), smoke-verified
+live in a real browser and via a fresh `docker compose down -v && up
+--build` for every feature below. All 9 requested milestones are done. See
+`docs/ai-handover.md` §4h/§4j for exactly what shipped and §4k for the
+short list of what's left (all genuinely optional / needs external
+resources this build environment didn't have - not broken or half-built).\
 **Release type:** Feature (breaking: every endpoint except `/api/auth/*`,
 `/api/metadata/*` and `/api/release-notes/*` now requires authentication)
 
@@ -33,38 +35,55 @@ voice search + an agentic chat assistant remain. See `docs/ai-handover.md`
   password hashing, a `users` table/migration, HS256 tokens configurable
   via `Jwt:*` appsettings or environment variables. Every existing endpoint
   is now authorized (Books stays browsable read-only by both roles; Book
-  Copies/Members/Borrowing/Dashboard/Jobs/Logs are Librarian-only). Full
-  bilingual login/registration SPA flow with role-based navigation and
-  routing.
+  Copies/Members/Borrowing/Dashboard/Jobs/Logs/the chat assistant are
+  Librarian-only). Full bilingual login/registration SPA flow with
+  role-based navigation and routing.
 - **Book catalog enrichment.** Cover thumbnail (explicit URL, or a derived
   Open Library cover-by-ISBN fallback, or a neutral placeholder), optional
   edition label, ebook/audiobook availability flags with URLs, and external
-  buy/PDF suggestion links. New `GET /api/books/{id}/detail` resolves
-  "smart availability": physical copy -> ebook -> audiobook -> external
+  buy/PDF suggestion links. `GET /api/books/{id}/detail` resolves "smart
+  availability": physical copy -> ebook -> audiobook -> external
   suggestion. New Book detail page. The Books list hides all mutating
-  actions from the Member role (view-only).
+  actions from the Member role (view-only) and shows a cover thumbnail +
+  edition at a glance.
 - **Book-copy auto-generation.** `POST /api/books` accepts `TotalCopies`;
   when `> 0`, that many `BookCopy` rows are generated in one transaction
   with sequential barcodes (`BC-0001`, `BC-0002`, ...), continuing the
-  existing sequence.
+  existing sequence. The Book Copies list shows the book's title, not a
+  raw id.
 - **Borrow limit raised from 1 to 2**, and made configurable
   (`Borrowing:MaxActiveBorrowsPerMember`).
-- **Member list "currently borrowing" indicator** (batched per-page query).
-  The Active/Suspended/Inactive status filter already existed and was
-  verified working.
+- **Member list "currently borrowing" indicator** (batched per-page query),
+  and the member detail page's borrow history shows the book title/copy
+  barcode instead of a raw id. The Active/Suspended/Inactive status filter
+  already existed and was verified working.
 - **Member borrow-request / librarian-approval workflow.** A member can
   request to borrow an existing title or suggest a purchase; a librarian
   approval queue approves (issuing the book immediately if a copy is
-  available) or rejects. New `BorrowRequest` entity/table, `POST /api/
-  borrow-requests`, `GET /api/borrow-requests/mine`, `POST /api/
-  borrow-requests/search`, `POST /{id}/approve`, `POST /{id}/reject`. New
-  `/requests` page (role-switched: own requests + a purchase-suggestion
-  form for a Member, the approval queue for a Librarian) and a "Request to
-  borrow" button on the Book detail page.
-- **Borrowing page now shows real names, not GUIDs.** The active-borrows
-  table shows member name/membership number and book title/copy barcode
-  (previously truncated raw GUIDs), with a client-side search box across
-  all four fields.
+  available, via the existing issue logic) or rejects. New `BorrowRequest`
+  entity/table, `POST /api/borrow-requests`, `GET /api/borrow-requests/
+  mine`, `POST /api/borrow-requests/search`, `POST /{id}/approve`,
+  `POST /{id}/reject`. New `/requests` page (role-switched: own requests +
+  a purchase-suggestion form for a Member, the approval queue for a
+  Librarian) and a "Request to borrow" button on the Book detail page.
+- **Borrowing page shows real names, not GUIDs**, with a client-side
+  search box across member name, membership number, book title and copy
+  barcode.
+- **Agentic librarian chat assistant.** A floating, Librarian-only chat
+  widget answers questions like "how many copies of X are available",
+  "most borrowed books this month", "who borrowed the most last month" -
+  via a rule-based intent engine by default (`Chat:Provider=RuleBased`, no
+  external dependency), or a real Anthropic/OpenAI LLM with tool-use/
+  function-calling constrained to the same three query tools
+  (`Chat:Provider=Anthropic|OpenAI`). `POST /api/assistant/chat`.
+- **Voice search.** Mic buttons (Web Speech API, client-side, zero backend)
+  on the chat input and the Borrowing page's member/copy/active-borrow
+  search boxes. An optional server-side Hugging Face speech-to-text
+  endpoint (`POST /api/assistant/transcribe`, `Speech:Provider=
+  HuggingFace`) is available as a configurable alternative.
+- **Docker hardening.** The API image now has a real `HEALTHCHECK`
+  (`GET /health`) and every service has `restart: unless-stopped`; `web`
+  waits for `api` to report healthy before starting, not just "created".
 - Demo accounts seeded for manual testing: `librarian` / `Librarian@123`
   (Librarian) and `alice@example.com` / `Member@123` (Member, linked to the
   existing seeded "Alice Johnson" member record).
@@ -75,7 +94,9 @@ voice search + an agentic chat assistant remain. See `docs/ai-handover.md`
   Unauthorized` on every endpoint except `/api/auth/*`, `/api/metadata/*`
   and `/api/release-notes/*`.
 - `Jwt:SigningKey` must be set (non-empty) in every environment's config or
-  the API refuses to start.
+  the API refuses to start. (`Chat:*`/`Speech:*` provider keys are the
+  opposite by design - missing/invalid never blocks startup, the feature
+  just answers "not configured".)
 - Borrow-limit conflict messages now say "at most N book(s)" instead of
   "only one active borrow."
 
@@ -91,28 +112,52 @@ voice search + an agentic chat assistant remain. See `docs/ai-handover.md`
 - A member's own borrow-request list was showing a blank book title (only
   the librarian queue had the enrichment lookup) - fixed with a regression
   test.
+- `tests/Library.LoadTests` and the Postman collection both predated auth
+  and 401'd on every request - both now log in first. Postman also had a
+  variable-scope shadowing bug (an environment variable silently
+  overrode a collection variable a test script had just set) and a
+  Smoke Flow step that computed a randomized value but never used it.
+- The chat assistant's "copies of X" intent captured trailing filler words
+  ("are available") into the search title when phrased naturally without
+  quotes, so the book was never found - fixed with a trailing-filler strip.
 
 ## QA checklist
 
-- `dotnet build` -> 0 warnings, 0 errors; `dotnet test` -> 98/98
-  (58 unit + 40 integration)
+- `dotnet build` -> 0 warnings, 0 errors; `dotnet test` -> 107/107
+  (58 unit + 49 integration)
 - `npm test` -> 11/11; `npm run lint` / `npm run build` clean
+- `dotnet run --project tests/Library.LoadTests` -> 1950/1950 requests OK
+  (with rate limiting off - see `tests/Library.LoadTests/README.md`)
+- `newman run postman/...` -> 64/64 requests, 17/17 assertions, against a
+  freshly-started API
 - Login with seeded librarian/member accounts; wrong password -> 400 with
   the standard error envelope
 - Member token -> 403 on a Librarian-only endpoint, 200 browsing `/api/books`
 - Browser end-to-end (each verified live against a running API): auth flows
   for both roles; book cover rendering + the DDD "no physical copy ->
   external buy link" fallback; the full borrow-request -> approve ->
-  fulfilled workflow; borrowing page shows names not GUIDs - 0 console
-  errors in every pass
+  fulfilled workflow; borrowing page shows names not GUIDs; the chat
+  widget answering a real question - 0 console errors in every pass
+- Fresh `docker compose down -v && up --build`: all four services healthy,
+  direct API + nginx proxy + a real login against the freshly-seeded
+  database + Jaeger receiving traces all confirmed
 - All three new migrations (`AddUsers`, `AddBookCatalogEnrichment`,
   `AddBorrowRequests`) applied cleanly to a real local Postgres
 
 ## Known issues / not yet done
 
-- Voice search (Web Speech API + Hugging Face, configurable) and an
-  agentic chat assistant (rule-based + Anthropic/OpenAI, configurable) -
-  see `docs/ai-handover.md` §4i for the exact plan.
+- The Anthropic/OpenAI chat paths and the Hugging Face speech path are
+  implemented (real API calls, correct tool-use/function-calling wire
+  format per each provider's documentation) but **not live-verified with
+  a real API key** - none was available in this build environment. The
+  "not configured" fallback path for each is verified. See
+  `docs/ai-handover.md` §4j/§4k for what to check first if you have a key
+  and it doesn't work immediately.
+- MySQL/Oracle EF Core drivers (pre-existing gap, ADR-0001, unrelated to
+  this release).
+- Frontend component test coverage is limited to `lib/` and a few
+  components; pages are covered by manual/browser-automation verification
+  rather than automated unit tests.
 
 ------------------------------------------------------------------------
 
