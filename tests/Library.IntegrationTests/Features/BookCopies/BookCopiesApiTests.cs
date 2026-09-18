@@ -196,4 +196,25 @@ public sealed class BookCopiesApiTests
         Assert.Equal(created.Barcode, retrieved.Barcode);
         Assert.Equal(created.Status, retrieved.Status);
     }
+
+    [Fact]
+    public async Task Search_ShouldIncludeTheBookTitle_NotJustTheBookId()
+    {
+        var booksResponse = await _client.GetAsync("/api/books");
+        var books = await booksResponse.Content.ReadFromJsonAsync<PagedBookResponse>();
+        Assert.NotNull(books);
+        var cleanCode = books.Items.Single(b => b.Title == "Clean Code");
+
+        var searchResponse = await _client.PostAsJsonAsync("/api/book-copies/search", new
+        {
+            filters = new[] { new { field = "bookId", @operator = "eq", value = cleanCode.Id.ToString() } },
+        });
+
+        Assert.Equal(HttpStatusCode.OK, searchResponse.StatusCode);
+        var page = await searchResponse.ReadModelAsync<Library.Application.Common.Pagination.PagedResult<BookCopyResponse>>();
+
+        Assert.NotNull(page);
+        Assert.NotEmpty(page.Items);
+        Assert.All(page.Items, c => Assert.Equal("Clean Code", c.BookTitle));
+    }
 }

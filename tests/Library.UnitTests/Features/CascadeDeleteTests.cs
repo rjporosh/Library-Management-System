@@ -101,7 +101,8 @@ public sealed class CascadeDeleteTests
     {
         var memberRepo = new InMemoryMemberRepository();
         var borrowRepo = new InMemoryBorrowRecordRepository();
-        var service = new MemberService(memberRepo, borrowRepo, new NoOpUnitOfWork());
+        var service = new MemberService(
+            memberRepo, borrowRepo, new InMemoryBookCopyRepository(), new InMemoryBookRepository(), new NoOpUnitOfWork());
 
         var member = new Member(Guid.NewGuid(), "MEM-1", "Jane", "jane@x.com", null, "555", "1 St");
         memberRepo.Seed([member]);

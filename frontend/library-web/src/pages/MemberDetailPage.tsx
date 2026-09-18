@@ -52,7 +52,16 @@ export default function MemberDetailPage() {
   }
 
   const columns: Column<MemberBorrowSummary>[] = [
-    { key: 'copy', header: t('borrow.col.copy'), render: (h) => <span className="font-mono text-xs">{h.bookCopyId.slice(0, 8)}</span> },
+    {
+      key: 'copy',
+      header: t('borrow.col.book'),
+      render: (h) => (
+        <div>
+          <p className="font-medium text-slate-900">{h.bookTitle || t('common.dash')}</p>
+          <p className="font-mono text-xs text-slate-400">{h.barcode}</p>
+        </div>
+      ),
+    },
     { key: 'borrowedAt', header: t('borrow.col.borrowed'), render: (h) => formatDate(h.borrowedAt) },
     { key: 'dueAt', header: t('borrow.col.due'), render: (h) => formatDate(h.dueAt) },
     { key: 'returnedAt', header: t('borrow.col.returned'), render: (h) => formatDate(h.returnedAt) },

@@ -98,7 +98,7 @@ export default function BookCopiesPage() {
       render: (c) => <span className="font-mono text-sm font-medium text-slate-800">{c.barcode}</span>,
     },
     { key: 'status', header: t('copies.col.status'), sortable: true, render: (c) => <StatusPill status={c.status} /> },
-    { key: 'bookId', header: t('copies.col.book'), render: (c) => <span className="font-mono text-xs text-slate-400">{c.bookId.slice(0, 8)}</span> },
+    { key: 'bookTitle', header: t('copies.col.book'), render: (c) => <span className="text-sm text-slate-700">{c.bookTitle || t('common.dash')}</span> },
     {
       key: 'actions',
       header: '',

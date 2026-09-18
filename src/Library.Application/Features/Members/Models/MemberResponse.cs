@@ -30,6 +30,8 @@ public sealed record MemberDetailResponse(
     DateTime? LastBorrowedAt,
     IReadOnlyList<MemberBorrowSummary> History);
 
+/// <param name="Barcode">Denormalized for display so the UI never has to show a bare copy id.</param>
+/// <param name="BookTitle">See <paramref name="Barcode"/>.</param>
 public sealed record MemberBorrowSummary(
     Guid BorrowRecordId,
     Guid BookCopyId,
@@ -37,4 +39,6 @@ public sealed record MemberBorrowSummary(
     DateTime DueAt,
     DateTime? ReturnedAt,
     BorrowStatus Status,
-    bool IsOverdue);
+    bool IsOverdue,
+    string Barcode = "",
+    string BookTitle = "");

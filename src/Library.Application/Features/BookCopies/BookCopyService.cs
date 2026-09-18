@@ -18,35 +18,57 @@ public sealed class BookCopyService(
     public Result<PagedResult<BookCopyResponse>> Search(SearchRequest request)
     {
         var result = QueryableSearchBuilder.Apply(bookCopyRepository.Query(), request, BookCopySearchMap.Fields);
+        if (!result.IsSuccess)
+        {
+            return Result.Failure<PagedResult<BookCopyResponse>>(result.Errors);
+        }
 
-        return result.IsSuccess
-            ? Result.Success(result.Value!.Map(Map))
-            : Result.Failure<PagedResult<BookCopyResponse>>(result.Errors);
+        var page = result.Value!;
+        var bookIds = page.Items.Select(c => c.BookId).ToHashSet();
+        var books = bookRepository.Query().Where(b => bookIds.Contains(b.Id)).ToDictionary(b => b.Id);
+
+        return Result.Success(page.Map(c =>
+        {
+            books.TryGetValue(c.BookId, out var book);
+            return Map(c, book);
+        }));
     }
 
     public async Task<IReadOnlyList<BookCopyResponse>> GetByBookIdAsync(Guid bookId, CancellationToken cancellationToken = default)
     {
+        var book = await bookRepository.GetByIdAsync(bookId, cancellationToken);
         var copies = await bookCopyRepository.GetByBookIdAsync(bookId, cancellationToken);
-        return copies.Select(Map).ToList();
+        return copies.Select(c => Map(c, book)).ToList();
     }
 
     public async Task<BookCopyResponse?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var copy = await bookCopyRepository.GetByIdAsync(id, cancellationToken);
-        return copy is null ? null : Map(copy);
+        if (copy is null)
+        {
+            return null;
+        }
+
+        var book = await bookRepository.GetByIdAsync(copy.BookId, cancellationToken);
+        return Map(copy, book);
     }
 
     public async Task<Result<BookCopyResponse>> CreateAsync(CreateBookCopyRequest request, CancellationToken cancellationToken = default)
     {
         var errors = new List<ApiError>();
 
+        Book? book = null;
         if (request.BookId == Guid.Empty)
         {
             errors.Add(new ApiError(ErrorCodes.BookCopyBookRequired, "A book must be specified.", "bookId", Required: true));
         }
-        else if (await bookRepository.GetByIdAsync(request.BookId, cancellationToken) is null)
+        else
         {
-            errors.Add(new ApiError(ErrorCodes.BookCopyBookNotFound, "The specified book does not exist.", "bookId"));
+            book = await bookRepository.GetByIdAsync(request.BookId, cancellationToken);
+            if (book is null)
+            {
+                errors.Add(new ApiError(ErrorCodes.BookCopyBookNotFound, "The specified book does not exist.", "bookId"));
+            }
         }
 
         if (string.IsNullOrWhiteSpace(request.Barcode))
@@ -66,7 +88,7 @@ public sealed class BookCopyService(
         var copy = new BookCopy(Guid.NewGuid(), request.BookId, request.Barcode.Trim());
         await bookCopyRepository.AddAsync(copy, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result.Success(Map(copy));
+        return Result.Success(Map(copy, book));
     }
 
     public async Task<Result<BookCopyResponse>> UpdateAsync(Guid id, UpdateBookCopyRequest request, CancellationToken cancellationToken = default)
@@ -90,7 +112,8 @@ public sealed class BookCopyService(
         copy.ChangeBarcode(request.Barcode.Trim());
         await bookCopyRepository.UpdateAsync(copy, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result.Success(Map(copy));
+        var book = await bookRepository.GetByIdAsync(copy.BookId, cancellationToken);
+        return Result.Success(Map(copy, book));
     }
 
     public async Task<Result<BookCopyResponse>> ChangeStatusAsync(Guid id, ChangeBookCopyStatusRequest request, CancellationToken cancellationToken = default)
@@ -119,7 +142,8 @@ public sealed class BookCopyService(
 
         await bookCopyRepository.UpdateAsync(copy, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result.Success(Map(copy));
+        var book = await bookRepository.GetByIdAsync(copy.BookId, cancellationToken);
+        return Result.Success(Map(copy, book));
     }
 
     public async Task<Result> DeleteAsync(Guid id, bool force = false, CancellationToken cancellationToken = default)
@@ -162,6 +186,6 @@ public sealed class BookCopyService(
         return Result.Success();
     }
 
-    private static BookCopyResponse Map(BookCopy copy) =>
-        new(copy.Id, copy.BookId, copy.Barcode, copy.Status);
+    private static BookCopyResponse Map(BookCopy copy, Book? book = null) =>
+        new(copy.Id, copy.BookId, copy.Barcode, copy.Status, book?.Title ?? "");
 }

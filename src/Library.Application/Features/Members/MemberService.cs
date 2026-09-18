@@ -13,6 +13,8 @@ namespace Library.Application.Features.Members;
 public sealed class MemberService(
     IMemberRepository memberRepository,
     IBorrowRecordRepository borrowRecordRepository,
+    IBookCopyRepository bookCopyRepository,
+    IBookRepository bookRepository,
     IUnitOfWork unitOfWork)
 {
     public Result<PagedResult<MemberResponse>> Search(SearchRequest request)
@@ -51,9 +53,21 @@ public sealed class MemberService(
         var records = await borrowRecordRepository.GetByMemberIdAsync(id, cancellationToken);
         var now = DateTime.UtcNow;
 
+        var copyIds = records.Select(r => r.BookCopyId).ToHashSet();
+        var copies = bookCopyRepository.Query().Where(c => copyIds.Contains(c.Id)).ToDictionary(c => c.Id);
+
+        var bookIds = copies.Values.Select(c => c.BookId).ToHashSet();
+        var books = bookRepository.Query().Where(b => bookIds.Contains(b.Id)).ToDictionary(b => b.Id);
+
         var history = records
-            .Select(r => new MemberBorrowSummary(
-                r.Id, r.BookCopyId, r.BorrowedAt, r.DueAt, r.ReturnedAt, r.Status, r.IsOverdue(now)))
+            .Select(r =>
+            {
+                copies.TryGetValue(r.BookCopyId, out var copy);
+                var bookTitle = copy is not null && books.TryGetValue(copy.BookId, out var book) ? book.Title : null;
+                return new MemberBorrowSummary(
+                    r.Id, r.BookCopyId, r.BorrowedAt, r.DueAt, r.ReturnedAt, r.Status, r.IsOverdue(now),
+                    copy?.Barcode ?? "", bookTitle ?? "");
+            })
             .ToList();
 
         return new MemberDetailResponse(

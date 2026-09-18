@@ -51,6 +51,7 @@ export interface BookCopy {
   bookId: string
   barcode: string
   status: BookCopyStatus
+  bookTitle: string
 }
 
 export interface Member {
@@ -75,6 +76,8 @@ export interface MemberBorrowSummary {
   returnedAt?: string | null
   status: BorrowStatus
   isOverdue: boolean
+  barcode: string
+  bookTitle: string
 }
 
 export interface MemberDetail {
