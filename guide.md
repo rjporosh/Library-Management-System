@@ -30,7 +30,7 @@ built and served by nginx, which proxies `/api` to the API container.
 | Web UI | http://localhost:8080 |
 | API + OpenAPI (Scalar) | http://localhost:5254 / http://localhost:5254/scalar |
 | Jaeger (traces) | http://localhost:16686 |
-| PostgreSQL | localhost:5432 (`library` / `library`) |
+| PostgreSQL | localhost:5433 (`library` / `library`) |
 
 The API migrates and seeds the database on first start. Stop with
 `docker compose down`; add `-v` to also wipe the database volume (do this if a
@@ -213,7 +213,7 @@ repo root:
 ```bash
 # one-time
 dotnet tool install --global dotnet-ef --version 10.0.11
-docker compose up -d db                                    # local Postgres on :5432
+docker compose up -d db                                    # local Postgres on :5433 (host-published; container-internal is still 5432)
 
 # add a schema change
 dotnet ef migrations add <Name> \

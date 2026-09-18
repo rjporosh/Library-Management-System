@@ -17,7 +17,7 @@ migrates and seeds the database on first start.
 | Web UI | http://localhost:8080 |
 | API (OpenAPI / Scalar) | http://localhost:5254 · http://localhost:5254/scalar |
 | Jaeger (traces) | http://localhost:16686 |
-| PostgreSQL | `localhost:5432` — `library` / `library` |
+| PostgreSQL | `localhost:5433` — `library` / `library` |
 
 Stop with `docker compose down` (add `-v` to wipe the database volume).
 

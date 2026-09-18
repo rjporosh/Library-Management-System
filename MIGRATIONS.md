@@ -12,7 +12,7 @@ docker compose up -d db                                    # a local Postgres
 ```
 
 The design-time connection string comes from `LMS_DESIGN_CONNECTION`, else
-`Host=localhost;Port=5432;Database=library;Username=library;Password=library`.
+`Host=localhost;Port=5433;Database=library;Username=library;Password=library` (docker-compose publishes Postgres on host port 5433, not 5432, to avoid clashing with any other local Postgres).
 
 ## Everyday commands
 

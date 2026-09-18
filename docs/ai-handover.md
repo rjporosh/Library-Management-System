@@ -207,7 +207,7 @@ curl -X POST localhost:5254/api/books/search -H 'content-type: application/json'
 dotnet ef database update --project src/Library.Infrastructure --startup-project src/Library.Api
 
 # full stack
-docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5432
+docker compose up --build     # web :8080, api :5254, Jaeger :16686, db :5433 (host-published; internal 5432)
 
 # frontend only
 cd frontend/library-web && npm install && npm run dev   # http://localhost:5173
@@ -878,14 +878,23 @@ npx newman run postman/Library-Management-System.postman_collection.json \
   volume (`db-data`) is untouched, so no data is lost. Check `docker port
   librarymanagementsystem-db-1` if `dotnet ef database update` or the API
   can't connect and everything else looks right.
-- **Port 5432 may already be taken by an unrelated container on this
-  machine** (this session hit an `enterprise-postgres` container from a
-  different project bound to host port 5432) - that is not this project's
-  container, do not stop/remove it. If you need to verify this stack while
-  something else holds 5432, use a docker-compose override that either
-  remaps the port (`ports: ["5499:5432"]`) or clears it entirely
-  (`ports: !reset []` - the API talks to `db` over the internal compose
-  network regardless of whether the port is published to the host).
+- **Fixed: port 5432 was taken by an unrelated container on this
+  machine** (`enterprise-postgres`, a different project - never touched).
+  This caused both a Docker-internal `api -> db` failure (the `db`
+  container itself failed the port-conflicted bind, so it wasn't actually
+  listening despite showing `healthy` briefly) and the exact local
+  `dotnet run` symptom `28P01: password authentication failed for user
+  "library"` (it was silently talking to the *other* Postgres instance on
+  `localhost:5432`, which has different credentials). **Permanent fix
+  applied**: `docker-compose.yml`'s `db` service now publishes
+  `"5433:5432"` instead of `"5432:5432"`, and
+  `appsettings.Development.json`'s connection string uses `Port=5433` to
+  match (container-to-container traffic inside compose still uses the
+  internal `db:5432` unaffected by this). If a *different* host port is
+  ever also taken, the same pattern applies - remap `ports:` and update
+  the connection string together, or use a docker-compose override
+  (`ports: !reset []`) to drop the host publish entirely for a
+  container-only workflow.
 - **`tests/Library.LoadTests` and the Postman collection both need a
   bearer token now** - if you add a new load-test scenario or Postman
   request against an endpoint that isn't `/api/auth/*`, `/api/metadata/*`
