@@ -1,6 +1,6 @@
 # Full local stack: PostgreSQL + Jaeger + API + web.
 #   docker compose up --build
-# Then: web http://localhost:8080 , API http://localhost:5254 , Jaeger http://localhost:16686
+# Then: web http://localhost:8080 , API http://localhost:5254 , Jaeger http://localhost:16686 (login jaeger / Jaeger@123)
 
 services:
   db:
@@ -25,9 +25,23 @@ services:
     restart: unless-stopped
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+    expose:
+      - "16686"          # UI - reachable only through jaeger-auth (below)
     ports:
-      - "16686:16686"   # UI
       - "4317:4317"      # OTLP gRPC
+
+  # Jaeger has no built-in authentication, so its UI is published only through
+  # this basic-auth proxy. Default login: jaeger / Jaeger@123 (see docker/jaeger).
+  jaeger-auth:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - jaeger
+    volumes:
+      - ./docker/jaeger/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/jaeger/.htpasswd:/etc/nginx/.htpasswd:ro
+    ports:
+      - "16686:80"
 
   api:
     build:

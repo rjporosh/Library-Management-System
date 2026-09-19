@@ -767,6 +767,36 @@ persistent Postgres volume will hit stale-data conflicts on the
 non-Smoke-Flow folders' static example bodies, which is expected/
 documented, not a bug - see `postman/README.md`).
 
+## 4l. Eighth checkpoint (2026-09-19) - import fix, dashboard names, voice chat, Jaeger login
+
+**Start here.** Branch `feat/enterprise-completion`. Build 0 warnings/0 errors;
+79 unit + 56 integration + 14 frontend tests pass.
+
+| Ask | Root cause / what shipped | Commit |
+|---|---|---|
+| Bulk insert broken, template download broken | (1) `<a href>` sent no bearer -> 401: `downloadFile()` blob fetch. (2) template examples collided with seeded ISBNs and `+` phones hit the formula guard: new unseeded examples, guard exempts phone-shaped values. Round-trip integration tests added. | 75b4065 |
+| Dashboard shows names | `RecentBorrowActivity` gained `MemberName`/`BookTitle` in EF, Dapper and in-memory stores | 75b4065 |
+| Voice questions (title/author/publisher/edition, total/borrowed) | `BookQuestionParser`, `BookFilter` query, `BookStatsFormatter`, LLM tool extended | a28cd4b |
+| Voice in/out in chat | auto-send transcript, speechSynthesis reply, toggle, error messages; fixed a number-stripping bug in `toSpokenText` | cb3ad63 |
+| Jaeger credential | nginx basic-auth proxy, `jaeger` / `Jaeger@123` (ADR 0008) | see git log |
+
+**Verified live:** headless browser (same-origin build with `/api` proxy) - login,
+dashboard names, template download (`book-import-template.xlsx`), mocked-speech voice
+question answered in the thread with 0 console errors. Jaeger proxy: 401 without / with
+wrong creds, 200 with. **Not verifiable here:** real microphone/speaker output (headless),
+Anthropic/OpenAI/HF round-trips (no keys).
+
+**Left / untouched:** Firefox STT fallback via `/api/assistant/transcribe` (MediaRecorder);
+Bangla question parsing in rule-based mode (use an LLM provider); ADR 0001 MySQL/Oracle.
+
+**Pick up:**
+```bash
+git checkout feat/enterprise-completion && dotnet build LibraryManagementSystem.slnx
+dotnet test LibraryManagementSystem.slnx && (cd frontend/library-web && npm ci && npm test && npm run build)
+docker compose up --build        # web :8080, api :5254, jaeger :16686 (jaeger/Jaeger@123)
+```
+Login: `librarian` / `Librarian@123`.
+
 ## 4k. What's left (all genuinely optional / needs external resources this sandbox lacks)
 
 Everything the user asked for is implemented, tested, and documented. What

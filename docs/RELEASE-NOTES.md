@@ -15,6 +15,28 @@ and release verification.
 ------------------------------------------------------------------------
 
 
+# Release 0.5.1 --- Voice chat, import fixes, dashboard names, Jaeger login
+
+**Release date:** 2026-09-19\
+**Status:** Built with 0 warnings / 0 errors; 79 unit + 56 integration + 14
+frontend tests pass; template download, dashboard and voice-chat flow driven
+in a real headless browser with 0 console errors.
+
+## New
+- Voice chat end-to-end: speak -> auto-send -> written + spoken answer.
+- Copy-count questions by title / author / publisher / edition
+  (total, available, borrowed), e.g. "How many copies of books by Robert C.
+  Martin are borrowed?".
+- Dashboard shows *who* borrowed *what* (member name + book title).
+- Jaeger UI behind basic auth: `jaeger` / `Jaeger@123` (change for real deployments).
+
+## Fixed
+- Bulk import: template download 401, and untouched templates failing import
+  (colliding ISBNs; `+` phone numbers rejected by the formula guard).
+- Spoken answer dropped a leading number.
+
+See `docs/ai-handover.md` §4l and ADR 0008-0010.
+
 # Release 0.5.0 --- Smart Library Feature Set (feature-complete)
 
 **Release date:** 2026-09-18\

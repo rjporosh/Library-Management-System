@@ -29,7 +29,7 @@ built and served by nginx, which proxies `/api` to the API container.
 |---|---|
 | Web UI | http://localhost:8080 |
 | API + OpenAPI (Scalar) | http://localhost:5254 / http://localhost:5254/scalar |
-| Jaeger (traces) | http://localhost:16686 |
+| Jaeger (traces) | http://localhost:16686 — login `jaeger` / `Jaeger@123` (basic-auth proxy, see ADR 0008) |
 | PostgreSQL | localhost:5433 (`library` / `library`) |
 
 The API migrates and seeds the database on first start. Stop with

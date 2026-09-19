@@ -1,7 +1,11 @@
 {
-  "version": "0.5.0",
-  "releaseDate": "2026-09-18",
+  "version": "0.5.1",
+  "releaseDate": "2026-09-19",
   "newFeatures": [
+    "Hands-free voice chat: the mic auto-sends the spoken question and the answer is both written in the thread and read aloud (speechSynthesis, EN/BN, toggle in the widget header)",
+    "Chat answers copy-count questions by title, author, publisher and edition with total / available / borrowed counts (all three chat providers share one query path)",
+    "Dashboard recent activity shows member name and book title instead of a copy id",
+    "Jaeger UI is now behind HTTP basic auth (docker/jaeger; default login jaeger / Jaeger@123)",
     "JWT authentication with Librarian/Member RBAC: login, member self-registration, librarian-only staff provisioning; every catalog/member/borrowing/dashboard/jobs/logs/assistant endpoint now requires a bearer token (Books stays browsable read-only by Members; everything else is Librarian-only)",
     "Book catalog enrichment: cover thumbnail (explicit URL or a derived Open Library cover-by-ISBN fallback), optional edition, ebook/audiobook availability flags with URLs, external buy/PDF suggestion links, and a book detail page resolving smart availability (physical -> ebook -> audiobook -> external suggestion); Members see a read-only catalog with no mutating actions",
     "Book-copy auto-generation: creating a book with TotalCopies > 0 generates that many BookCopy rows in one transaction with sequential barcodes (BC-0001, BC-0002, ...), continuing the existing sequence",
@@ -26,6 +30,9 @@
     "EF Core + PostgreSQL with configuration-only provider switching, OpenTelemetry/Jaeger, dockerised stack, GitHub Actions CI (from 0.3.0)"
   ],
   "fixed": [
+    "Bulk-import template download returned 401 (plain link sent no bearer token) - now downloaded through the authenticated client",
+    "Untouched import templates failed to import: example ISBNs collided with seed data and '+' phone numbers tripped the formula-injection guard (which now exempts strictly phone-shaped values)",
+    "Spoken answers dropped a leading count (\"1 copy...\") because of list-number stripping - fixed with a unit test",
     "appsettings.Development.json had Database:Provider \"PostgreSql\" (a typo not matching the Postgres enum name), which silently fell back to InMemory - Development had never actually been exercising Postgres; also fixed its connection string (wrong port/credentials)",
     "A hardcoded English network/server-error fallback message that rendered regardless of the active language - moved to a locale key",
     "A member's own borrow-request list showed a blank book title (only the librarian queue had the name/title enrichment lookup) - fixed with a regression test",

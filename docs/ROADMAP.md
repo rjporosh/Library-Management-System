@@ -806,3 +806,11 @@ and their "not configured" fallback is verified, but no real API key was
 available in this sandbox to verify an actual round-trip. See
 `docs/ai-handover.md` §4j/§4k for exactly what to check first if you have
 a key and it doesn't work out of the box.
+
+## 17.10 Voice chat, import and dashboard polish --- Done (0.5.1)
+
+Hands-free voice chat (speak -> written + spoken answer), copy-count questions by
+title/author/publisher/edition with borrowed counts, bulk-import template download and
+example-row fixes, dashboard member/book names, Jaeger behind basic auth. See
+`docs/ai-handover.md` §4l and ADR 0008-0010. Remaining optional: Firefox STT fallback
+through `/api/assistant/transcribe`, Bangla parsing in rule-based mode.
