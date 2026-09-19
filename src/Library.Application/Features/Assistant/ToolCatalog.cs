@@ -18,9 +18,16 @@ public sealed class ToolCatalog(LibraryQueryTools tools)
     [
         new ToolDefinition(
             "get_copy_count",
-            "Get how many total and available physical copies the library has of a book, matched by title, author or ISBN fragment.",
-            new Dictionary<string, ToolParam> { ["title"] = new("string", "Title, author or ISBN fragment to search for.") },
-            ["title"]),
+            "Get how many total, available and currently borrowed physical copies the library has. Filter by any combination of book title, author, publisher and edition; all supplied filters must match. Use 'query' for a loose title/author/ISBN fragment.",
+            new Dictionary<string, ToolParam>
+            {
+                ["title"] = new("string", "Book title (or a fragment of it)."),
+                ["author"] = new("string", "Author name (or a fragment of it)."),
+                ["publisher"] = new("string", "Publisher name (or a fragment of it)."),
+                ["edition"] = new("string", "Edition, e.g. '2nd', 'second' or '20th Anniversary'."),
+                ["query"] = new("string", "Loose title, author or ISBN fragment when the kind of value is unclear."),
+            },
+            []),
         new ToolDefinition(
             "most_borrowed_books",
             "Get the most-borrowed books in the library within a recent time window.",
@@ -48,11 +55,13 @@ public sealed class ToolCatalog(LibraryQueryTools tools)
         {
             case "get_copy_count":
             {
-                var title = args.GetValueOrDefault("title")?.ToString() ?? "";
-                var results = await tools.GetCopyCountAsync(title, cancellationToken);
+                var filter = new BookFilter(
+                    Text(args, "title"), Text(args, "author"), Text(args, "publisher"), Text(args, "edition"), Text(args, "query"));
+                var results = await tools.GetCopyCountAsync(filter, cancellationToken);
                 return results.Count == 0
-                    ? $"No book found matching \"{title}\"."
-                    : string.Join("; ", results.Select(r => $"\"{r.Title}\" by {r.Author}: {r.AvailableCopies}/{r.TotalCopies} copies available"));
+                    ? $"No book found matching {BookStatsFormatter.DescribeFilter(filter)}."
+                    : string.Join("; ", results.Select(r =>
+                        $"\"{r.Title}\" by {r.Author} ({r.Publisher}{(r.Edition is null ? "" : ", " + r.Edition)}): {r.TotalCopies} total, {r.AvailableCopies} available, {r.BorrowedCopies} borrowed"));
             }
             case "most_borrowed_books":
             {
@@ -76,6 +85,9 @@ public sealed class ToolCatalog(LibraryQueryTools tools)
                 return $"Unknown tool '{name}'.";
         }
     }
+
+    private static string? Text(IReadOnlyDictionary<string, object?> args, string key) =>
+        args.GetValueOrDefault(key)?.ToString() is { Length: > 0 } value ? value : null;
 
     private static int ToInt(object? value, int fallback)
     {

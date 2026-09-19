@@ -15,13 +15,48 @@ public sealed class LibraryQueryTools(
     IBorrowRecordRepository borrowRecordRepository,
     IMemberRepository memberRepository)
 {
-    /// <summary>Total and available copy counts for books matching a title/author/ISBN fragment.</summary>
-    public Task<IReadOnlyList<BookCopyCount>> GetCopyCountAsync(string titleQuery, CancellationToken cancellationToken = default)
+    /// <summary>Total, available and borrowed copy counts for books matching a title/author/ISBN fragment.</summary>
+    public Task<IReadOnlyList<BookCopyCount>> GetCopyCountAsync(string titleQuery, CancellationToken cancellationToken = default) =>
+        GetCopyCountAsync(new BookFilter(AnyText: titleQuery), cancellationToken);
+
+    /// <summary>
+    /// Total, available and borrowed copy counts for books matching every supplied
+    /// criterion (title, author, publisher, edition, or a free-text fragment of
+    /// title/author/ISBN). Criteria are AND-ed; text matching is case-insensitive.
+    /// </summary>
+    public Task<IReadOnlyList<BookCopyCount>> GetCopyCountAsync(BookFilter filter, CancellationToken cancellationToken = default)
     {
-        var term = titleQuery.Trim().ToLowerInvariant();
-        var books = bookRepository.Query()
-            .Where(b => b.Title.ToLower().Contains(term) || b.Author.ToLower().Contains(term) || b.ISBN.Contains(term))
-            .Take(5)
+        var query = bookRepository.Query();
+
+        if (Normalise(filter.Title) is { } title)
+        {
+            query = query.Where(b => b.Title.ToLower().Contains(title));
+        }
+
+        if (Normalise(filter.Author) is { } author)
+        {
+            query = query.Where(b => b.Author.ToLower().Contains(author));
+        }
+
+        if (Normalise(filter.Publisher) is { } publisher)
+        {
+            query = query.Where(b => b.Publisher.ToLower().Contains(publisher));
+        }
+
+        if (Normalise(filter.AnyText) is { } any)
+        {
+            query = query.Where(b => b.Title.ToLower().Contains(any) || b.Author.ToLower().Contains(any) || b.ISBN.Contains(any));
+        }
+
+        var edition = EditionNumber(filter.Edition);
+        if (filter.Edition is not null)
+        {
+            query = query.Where(b => b.Edition != null);
+        }
+
+        var books = query.ToList()
+            .Where(b => filter.Edition is null || EditionMatches(b.Edition, filter.Edition, edition))
+            .Take(MaxBooks)
             .ToList();
 
         if (books.Count == 0)
@@ -39,10 +74,51 @@ public sealed class LibraryQueryTools(
                 b.Title,
                 b.Author,
                 bookCopies.Count,
-                bookCopies.Count(c => c.Status == BookCopyStatus.Available));
+                bookCopies.Count(c => c.Status == BookCopyStatus.Available),
+                bookCopies.Count(c => c.Status == BookCopyStatus.Borrowed),
+                b.Publisher,
+                b.Edition);
         })];
 
         return Task.FromResult(result);
+    }
+
+    private const int MaxBooks = 10;
+
+    private static string? Normalise(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToLowerInvariant();
+
+    /// <summary>"2nd", "second", "2" -> 2; null when the text carries no edition number.</summary>
+    private static int? EditionNumber(string? edition)
+    {
+        if (string.IsNullOrWhiteSpace(edition))
+        {
+            return null;
+        }
+
+        var text = edition.Trim().ToLowerInvariant();
+        var ordinals = new[] { "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth" };
+        var index = Array.FindIndex(ordinals, o => text.Contains(o, StringComparison.Ordinal));
+        if (index >= 0)
+        {
+            return index + 1;
+        }
+
+        var digits = new string([.. text.SkipWhile(c => !char.IsDigit(c)).TakeWhile(char.IsDigit)]);
+        return int.TryParse(digits, out var n) ? n : null;
+    }
+
+    private static bool EditionMatches(string? bookEdition, string wanted, int? wantedNumber)
+    {
+        if (bookEdition is null)
+        {
+            return false;
+        }
+
+        // "2nd Edition" must match "second edition" and "2", but "12th" must not match "2".
+        return wantedNumber is { } n
+            ? EditionNumber(bookEdition) == n
+            : bookEdition.Contains(wanted.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>The most-borrowed books in the last <paramref name="days"/> days, most first.</summary>
@@ -95,7 +171,22 @@ public sealed class LibraryQueryTools(
     }
 }
 
-public sealed record BookCopyCount(string Title, string Author, int TotalCopies, int AvailableCopies);
+/// <summary>Search criteria for <see cref="LibraryQueryTools.GetCopyCountAsync(BookFilter, CancellationToken)"/>; every supplied field must match.</summary>
+public sealed record BookFilter(
+    string? Title = null,
+    string? Author = null,
+    string? Publisher = null,
+    string? Edition = null,
+    string? AnyText = null);
+
+public sealed record BookCopyCount(
+    string Title,
+    string Author,
+    int TotalCopies,
+    int AvailableCopies,
+    int BorrowedCopies,
+    string Publisher = "",
+    string? Edition = null);
 
 public sealed record BookBorrowCount(string Title, string Author, int BorrowCount);
 

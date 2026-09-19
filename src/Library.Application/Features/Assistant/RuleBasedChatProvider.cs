@@ -16,11 +16,16 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
         var text = message.Trim();
         var lower = text.ToLowerInvariant();
 
-        var copiesMatch = CopiesOfPattern().Match(lower);
-        if (copiesMatch.Success)
+        var question = BookQuestionParser.Parse(text);
+        if (question is not null)
         {
-            var title = ExtractQuoted(text) ?? CleanTitle(copiesMatch.Groups["title"].Value);
-            return new ChatAnswer(await AnswerCopyCountAsync(title, cancellationToken), Name);
+            var counts = await tools.GetCopyCountAsync(question.Filter, cancellationToken);
+            return new ChatAnswer(BookStatsFormatter.Describe(question, counts), Name);
+        }
+
+        if (CopiesOfPattern().IsMatch(lower))
+        {
+            return new ChatAnswer("Which book, author, publisher or edition would you like the copy count for?", Name);
         }
 
         if (MostBorrowedPattern().IsMatch(lower))
@@ -40,27 +45,12 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
         return new ChatAnswer(
             "I can answer questions like:\n" +
             "- \"How many copies of Clean Code are available?\"\n" +
+            "- \"How many copies of books by Robert C. Martin are borrowed?\"\n" +
+            "- \"How many borrowed copies of the second edition of Refactoring?\"\n" +
             "- \"What are the most borrowed books this month?\"\n" +
             "- \"Who borrowed the most books last month?\"\n" +
             "Try rephrasing your question along those lines.",
             Name);
-    }
-
-    private async Task<string> AnswerCopyCountAsync(string title, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            return "Which book would you like the copy count for?";
-        }
-
-        var results = await tools.GetCopyCountAsync(title, cancellationToken);
-        if (results.Count == 0)
-        {
-            return $"I couldn't find any book matching \"{title}\".";
-        }
-
-        return string.Join("\n", results.Select(r =>
-            $"\"{r.Title}\" by {r.Author}: {r.AvailableCopies} of {r.TotalCopies} copies available."));
     }
 
     private static string FormatMostBorrowed(IReadOnlyList<BookBorrowCount> results, int days)
@@ -85,26 +75,6 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
         return $"Top borrowers in the last {days} days:\n" + string.Join("\n", lines);
     }
 
-    private static string? ExtractQuoted(string text)
-    {
-        var match = QuotedPattern().Match(text);
-        return match.Success ? match.Groups[1].Value : null;
-    }
-
-    /// <summary>
-    /// Strips trailing filler ("are available", "in stock", "left", the
-    /// question mark, etc.) that the copies-of regex otherwise swallows into
-    /// the title, e.g. "clean code are available?" -> "clean code".
-    /// </summary>
-    private static string CleanTitle(string raw)
-    {
-        var title = TrailingFillerPattern().Replace(raw, "").Trim(' ', '?', '.', '"', '\'');
-        return title;
-    }
-
-    [GeneratedRegex(@"\s*(?:are|is)?\s*(?:available|in\s+stock|left|remaining|in\s+the\s+library)\s*[?.]*\s*$")]
-    private static partial Regex TrailingFillerPattern();
-
     private static int? ExtractDays(string lower)
     {
         if (lower.Contains("this week") || lower.Contains("last week")) return 7;
@@ -122,9 +92,6 @@ public sealed partial class RuleBasedChatProvider(LibraryQueryTools tools) : ICh
 
     [GeneratedRegex(@"(?:top\s+borrower|who\s+borrowed\s+the\s+most|most\s+active\s+member)")]
     private static partial Regex TopBorrowerPattern();
-
-    [GeneratedRegex("\"([^\"]+)\"")]
-    private static partial Regex QuotedPattern();
 
     [GeneratedRegex(@"last\s+(\d+)\s+days?")]
     private static partial Regex DaysPattern();

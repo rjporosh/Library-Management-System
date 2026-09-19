@@ -109,4 +109,24 @@ public sealed class AssistantApiTests
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
+
+    [Theory]
+    [InlineData("How many copies of Clean Code are borrowed?", "0 copies", "2 total, 2 available, 0 borrowed")]
+    [InlineData("How many copies of Refactoring are borrowed?", "1 copy", "2 total, 1 available, 1 borrowed")]
+    [InlineData("How many total copies of books by Martin Fowler?", "2 copies", "Refactoring")]
+    [InlineData("How many books are borrowed from publisher Addison-Wesley?", "2 copies", "Across 3 matching books")]
+    [InlineData("How many copies of the 20th edition are borrowed?", "1 copy", "Pragmatic Programmer")]
+    public async Task Chat_BookStatsQuestion_AnswersFromSeedData(string question, string headlineFragment, string detailFragment)
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat", new ChatRequest(question));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body);
+        Assert.Contains(headlineFragment, body!.Answer);
+        Assert.Contains(detailFragment, body.Answer);
+    }
 }
