@@ -77,3 +77,38 @@ export function useSpeechRecognition(onResult: (text: string) => void, lang: 'en
 
   return { supported: isSpeechRecognitionSupported(), listening, error, start, stop }
 }
+
+export const isSpeechSynthesisSupported = (): boolean =>
+  typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+
+/** Removes markup-ish characters so the synthesiser reads a clean sentence. */
+export function toSpokenText(text: string): string {
+  return text
+    .replace(/["“”]/g, '')
+    .replace(/^\s*(?:[-*]|\d+[.)])\s+/gm, '')
+    .replace(/([^.!?:])[ \t]*\n+\s*/g, '$1. ')
+    .replace(/\s*\n+\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Reads `text` aloud in the UI language; silently does nothing where synthesis is unavailable. */
+export function speak(text: string, lang: 'en' | 'bn' = 'en'): void {
+  if (!isSpeechSynthesisSupported()) return
+  const spoken = toSpokenText(text)
+  if (!spoken) return
+
+  try {
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(spoken)
+    utterance.lang = lang === 'bn' ? 'bn-BD' : 'en-US'
+    utterance.rate = 1
+    window.speechSynthesis.speak(utterance)
+  } catch {
+    /* a synthesis failure must never break the written answer */
+  }
+}
+
+export function cancelSpeech(): void {
+  if (isSpeechSynthesisSupported()) window.speechSynthesis.cancel()
+}

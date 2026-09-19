@@ -11,6 +11,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    // The admin SPA ships as one bundle behind nginx (gzip); ~1 MB raw is expected.
+    chunkSizeWarningLimit: 1200,
+  },
   server: {
     port: 5173,
   },

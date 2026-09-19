@@ -31,7 +31,7 @@ export const booksApi = {
     http.put<Book>(`/books/${id}`, body).then((r) => r.data),
   remove: (id: string, force = false) =>
     http.delete(`/books/${id}`, { params: { force } }).then((r) => r.data),
-  importTemplateUrl: `${http.defaults.baseURL}/books/import/template`,
+  importTemplateUrl: '/books/import/template',
   import: (file: File) => uploadFile('/books/import', file),
 }
 
@@ -54,7 +54,7 @@ export const copiesApi = {
       .then((r) => r.data),
   remove: (id: string, force = false) =>
     http.delete(`/book-copies/${id}`, { params: { force } }).then((r) => r.data),
-  importTemplateUrl: `${http.defaults.baseURL}/book-copies/import/template`,
+  importTemplateUrl: '/book-copies/import/template',
   import: (file: File) => uploadFile('/book-copies/import', file),
 }
 
@@ -82,7 +82,7 @@ export const membersApi = {
     http.delete(`/members/${id}`, { params: { force } }).then((r) => r.data),
   lifecycle: (id: string, action: 'suspend' | 'reactivate' | 'renew' | 'deactivate') =>
     http.post<Member>(`/members/${id}/${action}`).then((r) => r.data),
-  importTemplateUrl: `${http.defaults.baseURL}/members/import/template`,
+  importTemplateUrl: '/members/import/template',
   import: (file: File) => uploadFile('/members/import', file),
 }
 

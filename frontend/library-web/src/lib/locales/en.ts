@@ -331,6 +331,11 @@ export const en = {
   'assistant.placeholder': 'Ask a question…',
   'assistant.thinking': 'Thinking…',
   'assistant.voice': 'Voice input',
+  'assistant.listening': 'Listening… speak your question',
+  'assistant.speakOn': 'Spoken answers on',
+  'assistant.speakOff': 'Spoken answers off',
+  'assistant.voiceUnsupported': 'Voice input is not supported in this browser. Use Chrome, Edge or Safari, or type your question.',
+  'assistant.voiceError': 'Could not hear you ({error}). Check the microphone permission and try again.',
 } as const
 
 export type MessageKey = keyof typeof en

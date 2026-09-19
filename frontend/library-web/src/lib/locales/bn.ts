@@ -333,4 +333,9 @@ export const bn: Record<MessageKey, string> = {
   'assistant.placeholder': 'একটি প্রশ্ন জিজ্ঞাসা করুন…',
   'assistant.thinking': 'চিন্তা করা হচ্ছে…',
   'assistant.voice': 'ভয়েস ইনপুট',
+  'assistant.listening': 'শুনছি… আপনার প্রশ্ন বলুন',
+  'assistant.speakOn': 'উত্তর শোনা চালু',
+  'assistant.speakOff': 'উত্তর শোনা বন্ধ',
+  'assistant.voiceUnsupported': 'এই ব্রাউজারে ভয়েস ইনপুট সমর্থিত নয়। Chrome, Edge বা Safari ব্যবহার করুন, অথবা প্রশ্ন টাইপ করুন।',
+  'assistant.voiceError': 'আপনার কথা শোনা যায়নি ({error})। মাইক্রোফোনের অনুমতি দেখে আবার চেষ্টা করুন।',
 }
