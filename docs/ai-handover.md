@@ -770,7 +770,7 @@ documented, not a bug - see `postman/README.md`).
 ## 4l. Eighth checkpoint (2026-09-19) - import fix, dashboard names, voice chat, Jaeger login
 
 **Start here.** Branch `feat/enterprise-completion`. Build 0 warnings/0 errors;
-79 unit + 56 integration + 14 frontend tests pass.
+73 unit + 56 integration + 14 frontend tests pass.
 
 | Ask | Root cause / what shipped | Commit |
 |---|---|---|

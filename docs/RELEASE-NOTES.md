@@ -18,7 +18,7 @@ and release verification.
 # Release 0.5.1 --- Voice chat, import fixes, dashboard names, Jaeger login
 
 **Release date:** 2026-09-19\
-**Status:** Built with 0 warnings / 0 errors; 79 unit + 56 integration + 14
+**Status:** Built with 0 warnings / 0 errors; 73 unit + 56 integration + 14
 frontend tests pass; template download, dashboard and voice-chat flow driven
 in a real headless browser with 0 console errors.
 
