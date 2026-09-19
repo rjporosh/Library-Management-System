@@ -108,6 +108,7 @@ export const bn: Record<MessageKey, string> = {
   'dash.overdueHint': '{active}টি সক্রিয় ধার',
   'dash.recentActivity': 'সাম্প্রতিক ধার কার্যক্রম',
   'dash.noActivity': 'এখনও কোনো ধার কার্যক্রম নেই।',
+  'common.unknown': 'অজানা',
   'dash.borrowedOn': 'ধার নেওয়া হয়েছে {date}',
   'dash.membershipHealth': 'সদস্যপদের অবস্থা',
   'dash.expiring30': '৩০ দিনের মধ্যে মেয়াদ শেষ',

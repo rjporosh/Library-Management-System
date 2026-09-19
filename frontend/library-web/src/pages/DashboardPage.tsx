@@ -108,12 +108,15 @@ export default function DashboardPage() {
                       key={a.borrowRecordId}
                       className="flex items-center justify-between px-5 py-3 text-sm"
                     >
-                      <span className="font-mono text-xs text-slate-500">
-                        {a.bookCopyId.slice(0, 8)}
-                      </span>
-                      <span className="text-slate-600">
-                        {t('dash.borrowedOn', { date: formatDateTime(a.borrowedAt) })}
-                      </span>
+                      <div className="min-w-0 flex-1 pr-3">
+                        <p className="truncate font-semibold text-slate-800">
+                          {a.memberName || t('common.unknown')}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {a.bookTitle || t('common.unknown')} ·{' '}
+                          {t('dash.borrowedOn', { date: formatDateTime(a.borrowedAt) })}
+                        </p>
+                      </div>
                       <Badge tone={a.status === 'Active' ? 'blue' : 'slate'}>
                         {tStatus(a.status)}
                       </Badge>

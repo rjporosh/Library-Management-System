@@ -30,6 +30,8 @@ public sealed record RecentBorrowActivity(
     Guid BorrowRecordId,
     Guid MemberId,
     Guid BookCopyId,
+    string MemberName,
+    string BookTitle,
     DateTime BorrowedAt,
     DateTime DueAt,
     Library.Domain.Enums.BorrowStatus Status);

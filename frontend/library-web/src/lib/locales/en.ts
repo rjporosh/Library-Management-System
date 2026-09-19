@@ -106,6 +106,7 @@ export const en = {
   'dash.overdueHint': '{active} active borrows',
   'dash.recentActivity': 'Recent borrowing activity',
   'dash.noActivity': 'No borrowing activity yet.',
+  'common.unknown': 'Unknown',
   'dash.borrowedOn': 'borrowed {date}',
   'dash.membershipHealth': 'Membership health',
   'dash.expiring30': 'Expiring within 30 days',

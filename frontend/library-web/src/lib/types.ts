@@ -130,6 +130,8 @@ export interface DashboardSnapshot {
     borrowRecordId: string
     memberId: string
     bookCopyId: string
+    memberName: string
+    bookTitle: string
     borrowedAt: string
     dueAt: string
     status: BorrowStatus

@@ -19,10 +19,18 @@ public sealed class InMemoryDashboardReadStore(
         var borrows = await borrowRecordRepository.GetAllAsync(cancellationToken);
         var now = DateTime.UtcNow;
 
+        var memberNames = members.ToDictionary(m => m.Id, m => m.Name);
+        var bookTitles = bookRepository.Query().ToDictionary(b => b.Id, b => b.Title);
+        var copyTitles = copies.ToDictionary(c => c.Id, c => bookTitles.GetValueOrDefault(c.BookId, string.Empty));
+
         var recent = borrows
             .OrderByDescending(b => b.BorrowedAt)
             .Take(5)
-            .Select(b => new RecentBorrowActivity(b.Id, b.MemberId, b.BookCopyId, b.BorrowedAt, b.DueAt, b.Status))
+            .Select(b => new RecentBorrowActivity(
+                b.Id, b.MemberId, b.BookCopyId,
+                memberNames.GetValueOrDefault(b.MemberId, string.Empty),
+                copyTitles.GetValueOrDefault(b.BookCopyId, string.Empty),
+                b.BorrowedAt, b.DueAt, b.Status))
             .ToList();
 
         return new DashboardSnapshot(

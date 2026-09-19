@@ -17,6 +17,11 @@ public sealed class BulkImportPipeline(
 {
     private static readonly char[] FormulaTriggers = ['=', '+', '@', '\t', '\r'];
 
+    // An international phone number ("+44 20 7946-0000") starts with '+' but cannot
+    // execute as a spreadsheet formula, so it is exempt from the injection guard.
+    private static readonly System.Text.RegularExpressions.Regex PhoneLike =
+        new(@"^\+[0-9][0-9\s\-().]{5,}$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     public async Task<BulkImportOutcome> RunAsync<TEntity>(
         Stream? fileStream,
         long fileLength,
@@ -166,7 +171,7 @@ public sealed class BulkImportPipeline(
 
             var trimmed = value.Trim();
 
-            if (trimmed.Length > 0 && FormulaTriggers.Contains(trimmed[0]))
+            if (trimmed.Length > 0 && FormulaTriggers.Contains(trimmed[0]) && !PhoneLike.IsMatch(trimmed))
             {
                 errors.Add(new ApiError(ErrorCodes.ImportCellFormulaRejected,
                     $"Cell '{column}' starts with '{trimmed[0]}', which is not allowed (formula-injection guard).",

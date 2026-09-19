@@ -28,10 +28,15 @@ public sealed class DapperDashboardReadStore(IDbConnectionFactory connectionFact
         """;
 
     private const string RecentSql = """
-        SELECT "Id" AS BorrowRecordId, "MemberId", "BookCopyId", "BorrowedAt", "DueAt", "Status"
-        FROM borrow_records
-        WHERE "IsDeleted" = FALSE
-        ORDER BY "BorrowedAt" DESC
+        SELECT br."Id" AS BorrowRecordId, br."MemberId", br."BookCopyId",
+               COALESCE(m."Name", '') AS MemberName, COALESCE(b."Title", '') AS BookTitle,
+               br."BorrowedAt", br."DueAt", br."Status"
+        FROM borrow_records br
+        LEFT JOIN members m ON m."Id" = br."MemberId"
+        LEFT JOIN book_copies bc ON bc."Id" = br."BookCopyId"
+        LEFT JOIN books b ON b."Id" = bc."BookId"
+        WHERE br."IsDeleted" = FALSE
+        ORDER BY br."BorrowedAt" DESC
         LIMIT 5
         """;
 
@@ -48,7 +53,7 @@ public sealed class DapperDashboardReadStore(IDbConnectionFactory connectionFact
                     new CommandDefinition(RecentSql, cancellationToken: cancellationToken)))
                 .Select(r => new RecentBorrowActivity(
                     Guid.Parse(r.BorrowRecordId), Guid.Parse(r.MemberId), Guid.Parse(r.BookCopyId),
-                    r.BorrowedAt, r.DueAt, Enum.Parse<Domain.Enums.BorrowStatus>(r.Status)))
+                    r.MemberName, r.BookTitle, r.BorrowedAt, r.DueAt, Enum.Parse<Domain.Enums.BorrowStatus>(r.Status)))
                 .ToList();
 
             return new DashboardSnapshot(
@@ -82,6 +87,8 @@ public sealed class DapperDashboardReadStore(IDbConnectionFactory connectionFact
         public string BorrowRecordId { get; init; } = string.Empty;
         public string MemberId { get; init; } = string.Empty;
         public string BookCopyId { get; init; } = string.Empty;
+        public string MemberName { get; init; } = string.Empty;
+        public string BookTitle { get; init; } = string.Empty;
         public DateTime BorrowedAt { get; init; }
         public DateTime DueAt { get; init; }
         public string Status { get; init; } = string.Empty;

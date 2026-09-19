@@ -25,8 +25,8 @@ public sealed class BookImportDefinition(IBookRepository bookRepository) : IImpo
             new ImportColumn("Description", false, "Optional short description.")
         ],
         [
-            ["9780132350884", "Clean Code", "Robert C. Martin", "Software Engineering", "Prentice Hall", "2008", "A handbook of agile software craftsmanship."],
-            ["978-0135957059", "The Pragmatic Programmer", "David Thomas & Andrew Hunt", "Software Engineering", "Addison-Wesley", "2019", "Your journey to mastery."]
+            ["9780134494166", "Clean Architecture", "Robert C. Martin", "Software Engineering", "Prentice Hall", "2017", "A craftsman's guide to software structure and design."],
+            ["978-0201633610", "Design Patterns", "Erich Gamma", "Software Engineering", "Addison-Wesley", "1994", "Elements of reusable object-oriented software."]
         ]);
 
     public ValueTask<RowParseResult<Book>> ParseRowAsync(ImportRow row, CancellationToken cancellationToken) =>

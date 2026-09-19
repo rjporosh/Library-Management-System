@@ -15,7 +15,12 @@ public sealed class EfDashboardReadStore(LibraryDbContext db) : IDashboardReadSt
         var recent = await db.BorrowRecords.AsNoTracking()
             .OrderByDescending(b => b.BorrowedAt)
             .Take(5)
-            .Select(b => new RecentBorrowActivity(b.Id, b.MemberId, b.BookCopyId, b.BorrowedAt, b.DueAt, b.Status))
+            .Select(b => new RecentBorrowActivity(
+                b.Id, b.MemberId, b.BookCopyId,
+                db.Members.Where(m => m.Id == b.MemberId).Select(m => m.Name).FirstOrDefault() ?? string.Empty,
+                db.BookCopies.Where(c => c.Id == b.BookCopyId)
+                    .Join(db.Books, c => c.BookId, k => k.Id, (c, k) => k.Title).FirstOrDefault() ?? string.Empty,
+                b.BorrowedAt, b.DueAt, b.Status))
             .ToListAsync(cancellationToken);
 
         return new DashboardSnapshot(

@@ -223,3 +223,23 @@ export async function cascadeDelete(
     return false
   }
 }
+
+/**
+ * Downloads a file from an authenticated endpoint. A plain `<a href>` cannot
+ * be used because the browser would not send the bearer token (-> 401).
+ */
+export async function downloadFile(url: string, fallbackName: string): Promise<void> {
+  const res = await http.get<Blob>(url, { responseType: 'blob' })
+  const disposition = String(res.headers['content-disposition'] ?? '')
+  const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition)
+  const name = match ? decodeURIComponent(match[1]) : fallbackName
+
+  const objectUrl = URL.createObjectURL(res.data)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = name
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(objectUrl)
+}

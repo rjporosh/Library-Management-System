@@ -24,8 +24,8 @@ public sealed class BookCopyImportDefinition(
             new ImportColumn("Barcode", true, "Unique barcode for this physical copy.")
         ],
         [
-            ["9780132350884", "BC-1001"],
-            ["9780132350884", "BC-1002"]
+            ["9780134494166", "BC-TPL-0001"],
+            ["9780134494166", "BC-TPL-0002"]
         ]);
 
     public async ValueTask<RowParseResult<BookCopy>> ParseRowAsync(ImportRow row, CancellationToken cancellationToken)

@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { Download, FileSpreadsheet, UploadCloud } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { normaliseError, toastSuccess } from '@/lib/api'
+import { downloadFile, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { t } from '@/lib/i18n'
 import type { ApiError } from '@/lib/types'
 import { Button, Modal } from './ui'
@@ -37,6 +37,14 @@ export function BulkImportModal({
     setBusy(false)
   }
 
+  const download = async () => {
+    try {
+      await downloadFile(templateUrl, 'import-template.xlsx')
+    } catch (err) {
+      toastError(normaliseError(err).message)
+    }
+  }
+
   const close = () => {
     reset()
     onClose()
@@ -68,12 +76,13 @@ export function BulkImportModal({
           <span className="text-slate-600">
             {t('import.templatePrompt')}
           </span>
-          <a
-            href={templateUrl}
+          <button
+            type="button"
+            onClick={() => void download()}
             className="inline-flex items-center gap-1.5 font-semibold text-brand-600 hover:text-brand-700"
           >
             <Download size={15} /> {t('import.downloadTemplate')}
-          </a>
+          </button>
         </div>
 
         <button
