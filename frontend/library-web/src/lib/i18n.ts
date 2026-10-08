@@ -25,6 +25,15 @@ export function setLang(lang: Lang) {
   window.location.reload()
 }
 
+const BANGLA_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+
+function formatPlaceholderVal(val: string | number): string {
+  if (typeof val === 'number' && getLang() === 'bn') {
+    return String(val).replace(/\d/g, (d) => BANGLA_DIGITS[Number(d)])
+  }
+  return String(val)
+}
+
 /**
  * Translate a UI string key for the active language. Falls back to English,
  * then to the key itself. `vars` fills `{name}` placeholders.
@@ -34,7 +43,7 @@ export function t(key: MessageKey, vars?: Record<string, string | number>): stri
   const template = dictionaries[lang][key] ?? dictionaries.en[key] ?? key
   if (!vars) return template
   return template.replace(/\{(\w+)\}/g, (_, name: string) =>
-    name in vars ? String(vars[name]) : `{${name}}`,
+    name in vars ? formatPlaceholderVal(vars[name]) : `{${name}}`,
   )
 }
 

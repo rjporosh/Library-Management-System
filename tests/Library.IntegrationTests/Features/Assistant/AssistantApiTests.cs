@@ -129,4 +129,99 @@ public sealed class AssistantApiTests
         Assert.Contains(headlineFragment, body!.Answer);
         Assert.Contains(detailFragment, body.Answer);
     }
+
+    [Fact]
+    public async Task Chat_SingleWriterBookCount_ReturnsSummary()
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("How many books by writer Robert C. Martin do we have?"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body);
+        Assert.Contains("Robert C. Martin", body!.Answer);
+        Assert.Contains("Clean Code", body.Answer);
+    }
+
+    [Fact]
+    public async Task Chat_BorrowsTimeframe_ReturnsBorrowCounts()
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("How many books are on borrow this month?"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body);
+        Assert.Contains("borrow", body!.Answer);
+    }
+
+    [Fact]
+    public async Task Chat_BestBorrowedBook_ReturnsBestBook()
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("Which is the best borrowed book?"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body);
+        Assert.Contains("The best borrowed book", body!.Answer);
+    }
+
+    [Fact]
+    public async Task Chat_ThresholdAlarm_ReturnsBuyMoreAlarm()
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        var response = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("Check low stock threshold alarm (buy more books)"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body);
+        Assert.Contains("ALARM", body!.Answer);
+        Assert.Contains("Buy more copies", body.Answer);
+    }
+
+    [Fact]
+    public async Task Chat_BengaliQuestions_ReturnsBengaliAnswersWithBengaliDigits()
+    {
+        await using var factory = new LibraryApiFactory();
+        using var client = factory.CreateLibrarianClient();
+
+        // 1. Author question in Bengali
+        var res1 = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("রবার্ট সি. মার্টিনের কয়টি বই আছে?"));
+        Assert.Equal(HttpStatusCode.OK, res1.StatusCode);
+        var body1 = await res1.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body1);
+        Assert.Contains("রবার্ট সি. মার্টিন", body1!.Answer);
+        Assert.Contains("টি", body1.Answer);
+
+        // 2. Threshold alarm question in Bengali
+        var res2 = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("কম স্টকের বই বা অ্যালার্ম দেখাও"));
+        Assert.Equal(HttpStatusCode.OK, res2.StatusCode);
+        var body2 = await res2.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body2);
+        Assert.Contains("অ্যালার্ম", body2!.Answer);
+        Assert.Contains("ক্রয়", body2.Answer);
+
+        // 3. Best borrowed book in Bengali
+        var res3 = await client.PostAsJsonAsync("/api/assistant/chat",
+            new ChatRequest("সবচেয়ে বেশি ধার নেওয়া বই কোনটি?"));
+        Assert.Equal(HttpStatusCode.OK, res3.StatusCode);
+        var body3 = await res3.Content.ReadFromJsonAsync<ChatResponse>();
+        Assert.NotNull(body3);
+        Assert.Contains("সেরা", body3!.Answer);
+    }
 }

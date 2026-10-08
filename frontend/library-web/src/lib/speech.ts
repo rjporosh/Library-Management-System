@@ -101,7 +101,8 @@ export function speak(text: string, lang: 'en' | 'bn' = 'en'): void {
   try {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(spoken)
-    utterance.lang = lang === 'bn' ? 'bn-BD' : 'en-US'
+    const effectiveLang = /[\u0980-\u09FF]/.test(spoken) ? 'bn' : lang
+    utterance.lang = effectiveLang === 'bn' ? 'bn-BD' : 'en-US'
     utterance.rate = 1
     window.speechSynthesis.speak(utterance)
   } catch {

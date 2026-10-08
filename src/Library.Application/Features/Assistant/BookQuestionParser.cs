@@ -82,6 +82,7 @@ public static partial class BookQuestionParser
         }
 
         var value = match.Groups["v"].Value.Trim(' ', ',', '"', '\'');
+        value = Regex.Replace(value, @"^(?:writer|author)\s+", "", RegexOptions.IgnoreCase).Trim();
         text = WhitespacePattern().Replace(text.Remove(match.Index, match.Length), " ").Trim();
         return value.Length == 0 ? null : value;
     }

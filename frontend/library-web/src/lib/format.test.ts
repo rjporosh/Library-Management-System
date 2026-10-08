@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { daysUntil, relativeExpiry, statusTone } from './format'
+import { daysUntil, formatNumber, relativeExpiry, statusTone, toBanglaDigits } from './format'
 
 describe('statusTone', () => {
   it('maps known statuses to tones', () => {
@@ -27,5 +27,20 @@ describe('relativeExpiry', () => {
 
   it('daysUntil is null for missing input', () => {
     expect(daysUntil(undefined)).toBeNull()
+  })
+})
+
+describe('number formatting and Bengali digits', () => {
+  it('converts ASCII digits to Bengali digits', () => {
+    expect(toBanglaDigits(0)).toBe('০')
+    expect(toBanglaDigits(12345)).toBe('১২৩৪৫')
+    expect(toBanglaDigits('35')).toBe('৩৫')
+    expect(toBanglaDigits('1 / 35')).toBe('১ / ৩৫')
+  })
+
+  it('formatNumber formats numbers properly in English mode by default', () => {
+    expect(formatNumber(42)).toBe('42')
+    expect(formatNumber(0)).toBe('0')
+    expect(formatNumber('')).toBe('')
   })
 })

@@ -8,10 +8,12 @@ import {
   Repeat,
   Users,
 } from 'lucide-react'
+import { useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
+import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from '@/context/authContextValue'
 import { getLang, setLang, t } from '@/lib/i18n'
+import { startSignalR, stopSignalR } from '@/lib/signalr'
 import type { MessageKey } from '@/lib/locales'
 import DashboardPage from '@/pages/DashboardPage'
 import BooksPage from '@/pages/BooksPage'
@@ -37,6 +39,22 @@ const NAV: { to: string; labelKey: MessageKey; icon: typeof BookOpen; end?: bool
 
 export default function App() {
   const { auth, isLibrarian, logout } = useAuth()
+  const location = useLocation()
+
+  useEffect(() => {
+    const lang = getLang()
+    document.documentElement.lang = lang
+    const appTitle = lang === 'bn' ? 'লিব্রা - গ্রন্থাগার ব্যবস্থাপনা পদ্ধতি' : 'Libra - Library Management System'
+    document.title = appTitle
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (auth?.accessToken) {
+      void startSignalR()
+    } else {
+      void stopSignalR()
+    }
+  }, [auth])
 
   if (!auth) {
     return (

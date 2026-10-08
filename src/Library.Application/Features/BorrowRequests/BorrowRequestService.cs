@@ -1,3 +1,4 @@
+using Library.Application.Abstractions;
 using Library.Application.Abstractions.Persistence;
 using Library.Application.Common.Errors;
 using Library.Application.Common.Pagination;
@@ -17,7 +18,8 @@ public sealed class BorrowRequestService(
     IBookRepository bookRepository,
     IBookCopyRepository bookCopyRepository,
     IUnitOfWork unitOfWork,
-    BorrowingService borrowingService)
+    BorrowingService borrowingService,
+    ILibraryNotificationPublisher? notificationPublisher = null)
 {
     public Result<PagedResult<BorrowRequestResponse>> Search(SearchRequest request)
     {
@@ -107,7 +109,13 @@ public sealed class BorrowRequestService(
         await borrowRequestRepository.AddAsync(borrowRequest, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(await MapWithMemberAsync(borrowRequest, member, cancellationToken));
+        var response = await MapWithMemberAsync(borrowRequest, member, cancellationToken);
+        if (notificationPublisher is not null)
+        {
+            await notificationPublisher.PublishBorrowRequestAsync(response, cancellationToken);
+        }
+
+        return Result.Success(response);
     }
 
     /// <summary>

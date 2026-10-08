@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, X } from 'lucide-react'
+import { useEffect } from 'react'
 import { borrowRequestsApi } from '@/api'
 import { AdvancedSearch, type FieldDef } from '@/components/AdvancedSearch'
 import { DataTable, type Column } from '@/components/DataTable'
@@ -8,6 +9,7 @@ import { Badge, Button, PageHeader } from '@/components/ui'
 import { confirmAction, normaliseError, toastError, toastSuccess } from '@/lib/api'
 import { formatDateTime } from '@/lib/format'
 import { t } from '@/lib/i18n'
+import { subscribeToNotifications } from '@/lib/signalr'
 import type { BorrowRequestRecord, BorrowRequestStatus } from '@/lib/types'
 import { useSearchList } from '@/lib/useSearchList'
 
@@ -31,6 +33,13 @@ export default function BorrowRequestsPage() {
   )
 
   const invalidate = () => void qc.invalidateQueries({ queryKey: ['borrowRequests'] })
+
+  useEffect(() => {
+    const unsub = subscribeToNotifications(() => {
+      invalidate()
+    })
+    return unsub
+  }, [])
 
   const approve = useMutation({
     mutationFn: (id: string) => borrowRequestsApi.approve(id),

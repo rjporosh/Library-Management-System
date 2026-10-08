@@ -2,9 +2,12 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Library.Api.BackgroundJobs;
 using Library.Api.HealthChecks;
+using Library.Api.Hubs;
 using Library.Api.Infrastructure;
 using Library.Api.Middleware;
 using Library.Api.Observability;
+using Library.Api.Services;
+using Library.Application.Abstractions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -74,6 +77,10 @@ builder.Services.AddHttpClient<Library.Application.Features.Assistant.AnthropicC
 builder.Services.AddHttpClient<Library.Application.Features.Assistant.OpenAiChatProvider>(c => c.Timeout = TimeSpan.FromSeconds(30));
 builder.Services.AddHttpClient<Library.Application.Features.Assistant.SpeechService>(c => c.Timeout = TimeSpan.FromSeconds(60));
 
+// SignalR real-time notification system.
+builder.Services.AddSignalR();
+builder.Services.AddScoped<ILibraryNotificationPublisher, SignalRNotificationPublisher>();
+
 // JWT bearer authentication + role-based authorization (Librarian / Member).
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -88,6 +95,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 builder.Services.AddAuthorization();
@@ -160,7 +180,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 // Per-client rate limiting (toggle: FeatureFlags.EnableRateLimiting).
 builder.Services.AddLibraryRateLimiting(observabilitySettings);
 
-// Add CORS policy for frontend
+// Add CORS policy for frontend (including SignalR support)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -168,7 +188,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -229,6 +250,9 @@ if (observabilitySettings.EnableRateLimiting)
 {
     controllers.RequireRateLimiting(RateLimitingExtensions.PolicyName);
 }
+
+// SignalR hubs
+app.MapHub<NotificationHub>(NotificationHub.HubUrl);
 
 // Health check endpoint (toggle: FeatureFlags.EnableHealthCheckEndpoint).
 // Returns a simple, structured JSON body so it can be consumed by

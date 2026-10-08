@@ -5,6 +5,7 @@ using Library.Application.Common.Results;
 using Library.Application.Features.Books;
 using Library.Application.Features.Books.Models;
 using Library.Application.Features.BulkImport;
+using Library.Application.Features.Assistant;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,8 +15,19 @@ namespace Library.Api.Controllers;
 [ApiController]
 [Route("api/books")]
 [Authorize]
-public sealed class BooksController(BookService bookService, BulkImportService bulkImport) : ControllerBase
+public sealed class BooksController(
+    BookService bookService,
+    BulkImportService bulkImport,
+    LibraryQueryTools queryTools) : ControllerBase
 {
+    /// <summary>Lists books at or below the available copies threshold with low-stock alarm recommendation.</summary>
+    /// <response code="200">The low stock books.</response>
+    [Authorize(Roles = "Librarian")]
+    [HttpGet("low-stock")]
+    [ProducesResponseType(typeof(IReadOnlyList<LowStockBookAlert>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<LowStockBookAlert>>> GetLowStock(
+        [FromQuery] int threshold = 1, CancellationToken cancellationToken = default) =>
+        Ok(await queryTools.GetLowStockThresholdBooksAsync(threshold, cancellationToken));
     /// <summary>Downloads the Excel template for bulk book import (headers, examples, instructions sheet).</summary>
     /// <response code="200">The .xlsx template.</response>
     [Authorize(Roles = "Librarian")]

@@ -31,8 +31,20 @@ export const booksApi = {
     http.put<Book>(`/books/${id}`, body).then((r) => r.data),
   remove: (id: string, force = false) =>
     http.delete(`/books/${id}`, { params: { force } }).then((r) => r.data),
+  getLowStock: (threshold = 1) =>
+    http.get<LowStockBookAlert[]>('/books/low-stock', { params: { threshold } }).then((r) => r.data),
   importTemplateUrl: '/books/import/template',
   import: (file: File) => uploadFile('/books/import', file),
+}
+
+export interface LowStockBookAlert {
+  bookId: string
+  title: string
+  author: string
+  totalCopies: number
+  borrowedCopies: number
+  availableCopies: number
+  threshold: number
 }
 
 // --- book copies -------------------------------------------------------

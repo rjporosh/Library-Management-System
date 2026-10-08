@@ -2,6 +2,21 @@ import { getLang, t } from './i18n'
 
 export type BadgeTone = 'green' | 'amber' | 'red' | 'slate' | 'blue' | 'violet'
 
+const BANGLA_DIGITS = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯']
+
+export function toBanglaDigits(val: number | string): string {
+  return String(val).replace(/\d/g, (d) => BANGLA_DIGITS[Number(d)])
+}
+
+export function formatNumber(val: number | string): string {
+  if (val === '' || val === null || val === undefined) return ''
+  const str = String(val)
+  if (getLang() === 'bn') {
+    return toBanglaDigits(str)
+  }
+  return str
+}
+
 /** Intl locale for the active UI language. */
 function locale(): string | undefined {
   return getLang() === 'bn' ? 'bn-BD' : undefined

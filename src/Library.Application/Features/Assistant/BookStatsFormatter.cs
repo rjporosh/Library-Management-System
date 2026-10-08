@@ -3,25 +3,46 @@ namespace Library.Application.Features.Assistant;
 /// <summary>
 /// Turns copy-count results into a short, natural sentence. The text doubles as
 /// the spoken answer in the chat widget, so it avoids markup and tabular layout.
+/// Supports both English and Bengali with proper localized numeral conversion.
 /// </summary>
 public static class BookStatsFormatter
 {
-    public static string Describe(BookQuestion question, IReadOnlyList<BookCopyCount> counts)
+    public static string Describe(BookQuestion question, IReadOnlyList<BookCopyCount> counts, bool isBengali = false)
     {
         if (counts.Count == 0)
         {
-            return $"I couldn't find any book matching {DescribeFilter(question.Filter)}.";
+            return isBengali
+                ? $"{DescribeFilter(question.Filter, true)}-এর সাথে মিল রেখে কোনো বই খুঁজে পাওয়া যায়নি।"
+                : $"I couldn't find any book matching {DescribeFilter(question.Filter, false)}.";
         }
 
         var total = counts.Sum(c => c.TotalCopies);
         var available = counts.Sum(c => c.AvailableCopies);
         var borrowed = counts.Sum(c => c.BorrowedCopies);
 
+        if (isBengali)
+        {
+            var filterDesc = DescribeFilter(question.Filter, true);
+            var headlineBn = question.Metric switch
+            {
+                CopyMetric.Borrowed => $"{filterDesc}-এর {BengaliNumberHelper.FormatCount(borrowed, true, "copy", "copies", "টি কপি")} বর্তমানে ধার দেওয়া রয়েছে।",
+                CopyMetric.Available => $"{filterDesc}-এর {BengaliNumberHelper.FormatCount(available, true, "copy", "copies", "টি কপি")} বর্তমানে উপলব্ধ রয়েছে।",
+                _ => $"গ্রন্থাগারে {filterDesc}-এর মোট {BengaliNumberHelper.FormatCount(total, true, "copy", "copies", "টি কপি")} রয়েছে।",
+            };
+
+            var linesBn = counts.Select(c =>
+                $"\"{c.Title}\" (লেখক: {c.Author}{Detail(c)}): মোট {BengaliNumberHelper.ToBanglaDigits(c.TotalCopies)}টি, উপলব্ধ {BengaliNumberHelper.ToBanglaDigits(c.AvailableCopies)}টি, ধার দেওয়া {BengaliNumberHelper.ToBanglaDigits(c.BorrowedCopies)}টি।");
+
+            return counts.Count == 1
+                ? $"{headlineBn}\n{linesBn.First()}"
+                : $"{headlineBn} মিল থাকা {BengaliNumberHelper.ToBanglaDigits(counts.Count)}টি বইয়ের মধ্যে: মোট {BengaliNumberHelper.ToBanglaDigits(total)}টি, উপলব্ধ {BengaliNumberHelper.ToBanglaDigits(available)}টি, ধার দেওয়া {BengaliNumberHelper.ToBanglaDigits(borrowed)}টি।\n{string.Join("\n", linesBn)}";
+        }
+
         var headline = question.Metric switch
         {
-            CopyMetric.Borrowed => $"{Copies(borrowed)} of {DescribeFilter(question.Filter)} {(borrowed == 1 ? "is" : "are")} currently borrowed.",
-            CopyMetric.Available => $"{Copies(available)} of {DescribeFilter(question.Filter)} {(available == 1 ? "is" : "are")} available.",
-            _ => $"The library has {Copies(total)} of {DescribeFilter(question.Filter)}.",
+            CopyMetric.Borrowed => $"{Copies(borrowed)} of {DescribeFilter(question.Filter, false)} {(borrowed == 1 ? "is" : "are")} currently borrowed.",
+            CopyMetric.Available => $"{Copies(available)} of {DescribeFilter(question.Filter, false)} {(available == 1 ? "is" : "are")} available.",
+            _ => $"The library has {Copies(total)} of {DescribeFilter(question.Filter, false)}.",
         };
 
         var lines = counts.Select(c =>
@@ -32,13 +53,13 @@ public static class BookStatsFormatter
             : $"{headline} Across {counts.Count} matching books: {total} total, {available} available, {borrowed} borrowed.\n{string.Join("\n", lines)}";
     }
 
-    public static string DescribeFilter(BookFilter filter)
+    public static string DescribeFilter(BookFilter filter, bool isBengali = false)
     {
         var parts = new List<string>();
         if (filter.Title is not null) parts.Add($"\"{filter.Title}\"");
-        if (filter.Edition is not null) parts.Add($"edition {filter.Edition}");
-        if (filter.Author is not null) parts.Add($"author {filter.Author}");
-        if (filter.Publisher is not null) parts.Add($"publisher {filter.Publisher}");
+        if (filter.Edition is not null) parts.Add(isBengali ? $"সংস্করণ {filter.Edition}" : $"edition {filter.Edition}");
+        if (filter.Author is not null) parts.Add(isBengali ? $"লেখক {filter.Author}" : $"author {filter.Author}");
+        if (filter.Publisher is not null) parts.Add(isBengali ? $"প্রকাশক {filter.Publisher}" : $"publisher {filter.Publisher}");
         if (filter.AnyText is not null) parts.Add($"\"{filter.AnyText}\"");
         return string.Join(", ", parts);
     }
