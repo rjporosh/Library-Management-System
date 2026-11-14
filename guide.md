@@ -23,7 +23,7 @@ docker compose up --build
 
 One command, four containers — PostgreSQL, Jaeger, the API and the web UI
 (`docker-compose.yml`). It is a multi-container app, not one image: the SPA is
-built and served by nginx, which proxies `/api` to the API container.
+built with Next.js (standalone Node server), which proxies `/api`, `/hubs` and `/scalar` to the API container.
 
 | Service | URL |
 |---|---|

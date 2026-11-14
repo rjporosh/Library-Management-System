@@ -7,9 +7,8 @@ function supportMessage(): string {
   return t('common.supportMessage')
 }
 
-export const API_BASE_URL: string =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ??
-  'http://localhost:5254/api'
+// Inlined at build time. Defaults to the same-origin proxy (/api -> next.config rewrites).
+export const API_BASE_URL: string = (process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
 export const http = axios.create({
   baseURL: API_BASE_URL,

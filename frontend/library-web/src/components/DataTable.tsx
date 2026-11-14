@@ -1,3 +1,5 @@
+'use client'
+
 import { clsx } from 'clsx'
 import { ArrowDown, ArrowUp, ChevronsUpDown } from 'lucide-react'
 import type { ReactNode } from 'react'

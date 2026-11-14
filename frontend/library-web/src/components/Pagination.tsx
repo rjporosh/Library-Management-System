@@ -1,3 +1,5 @@
+'use client'
+
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Paged } from '@/lib/types'
 import { t } from '@/lib/i18n'

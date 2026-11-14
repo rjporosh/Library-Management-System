@@ -12,5 +12,5 @@
 | Advanced search returns `SEARCH_FIELD_UNKNOWN` | the field isn't in that entity's `SearchMap`. Add a `.Field(...)` line. |
 | Bulk import always rejects with `IMPORT_HEADER_INVALID` | the header row must contain the definition's `RequiredHeaders` (case-insensitive). Start from the downloaded template. |
 | Frontend shows the generic support-message alert | the API returned a 5xx — check `logs/runtime-error-logs/` with the `traceId` shown. |
-| Frontend can't reach the API | check `VITE_API_BASE_URL` and CORS (`Program.cs` allows `http://localhost:5173`). |
+| Frontend can't reach the API | check `API_INTERNAL_URL` (Next.js rewrites `/api` to it) and, if you set an absolute `NEXT_PUBLIC_API_BASE_URL`, CORS (`Program.cs` allows `http://localhost:5173`). |
 | Jaeger shows no traces | `FeatureFlags:EnableOpenTelemetry` must be `true` and `OtlpEndpoint` must point at the collector. |

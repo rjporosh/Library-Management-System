@@ -1,3 +1,5 @@
+'use client'
+
 import { Plus, Search, SlidersHorizontal, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import {

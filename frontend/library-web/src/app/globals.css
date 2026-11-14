@@ -1,0 +1,125 @@
+@import 'tailwindcss';
+
+/*
+  Libra design tokens.
+  Neutrals are green-tinted "ink on paper" instead of Tailwind's cold slate, and the
+  semantic scales (rose/amber/sky) are remapped to brick, brass and a muted blue so
+  every existing utility class picks up the Libra palette without per-view edits.
+*/
+@theme {
+  --font-sans: var(--font-ui), var(--font-bn), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-book), var(--font-bn), ui-serif, Georgia, serif;
+
+  --color-slate-50: #f7f8f4;
+  --color-slate-100: #eff1ec;
+  --color-slate-200: #e0e4dc;
+  --color-slate-300: #c8cec3;
+  --color-slate-400: #99a393;
+  --color-slate-500: #6a7566;
+  --color-slate-600: #4e594a;
+  --color-slate-700: #384136;
+  --color-slate-800: #232b22;
+  --color-slate-900: #14201c;
+  --color-slate-950: #0b1411;
+
+  --color-brand-50: #e9f4f0;
+  --color-brand-100: #d0e8e0;
+  --color-brand-200: #a6d2c5;
+  --color-brand-400: #4fa58d;
+  --color-brand-500: #1f8068;
+  --color-brand-600: #0e5a4a;
+  --color-brand-700: #0b4a3d;
+  --color-brand-800: #083a30;
+  --color-brand-900: #052a22;
+
+  --color-rose-50: #fdf1ec;
+  --color-rose-200: #f2c4b3;
+  --color-rose-300: #e9a18a;
+  --color-rose-400: #d9754f;
+  --color-rose-500: #c4552f;
+  --color-rose-600: #b4401f;
+  --color-rose-700: #94341a;
+  --color-rose-900: #5c200f;
+
+  --color-amber-50: #fbf5e6;
+  --color-amber-100: #f5e8c3;
+  --color-amber-500: #c8932f;
+  --color-amber-600: #b7832a;
+  --color-amber-700: #8f661f;
+  --color-amber-800: #6e4e18;
+
+  --color-sky-50: #eef3f8;
+  --color-sky-100: #dbe6f1;
+  --color-sky-500: #4b78a6;
+  --color-sky-600: #3b6590;
+  --color-sky-700: #2f5176;
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+}
+
+:root {
+  color-scheme: light;
+  --paper: #f4f5f1;
+  --ink: #12211d;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* SweetAlert should sit above everything, including modals. */
+.swal2-container {
+  z-index: 10000;
+}
+
+/* A spine on the shelf: the one decorative device in the product. */
+.spine {
+  position: relative;
+  transform-origin: bottom center;
+  box-shadow: inset 3px 0 0 rgb(255 255 255 / 0.12), inset -2px 0 0 rgb(0 0 0 / 0.14);
+}
+.spine::before,
+.spine::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgb(255 255 255 / 0.28);
+}
+.spine::before { top: 14%; }
+.spine::after { bottom: 14%; }
+
+@keyframes shelf-in {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.shelf-in { animation: shelf-in 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .shelf-in { animation: none; }
+  * { scroll-behavior: auto !important; }
+}

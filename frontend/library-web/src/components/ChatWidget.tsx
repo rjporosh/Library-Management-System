@@ -1,3 +1,5 @@
+'use client'
+
 import { useMutation } from '@tanstack/react-query'
 import { Mic, MessageCircle, Send, Volume2, VolumeX, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'

@@ -53,4 +53,5 @@ See guide [13 — Localization](13-localization.md).
 
 | Key | Meaning |
 |---|---|
-| `VITE_API_BASE_URL` | API base (`http://localhost:5254/api` dev, `/api` in the container) |
+| `NEXT_PUBLIC_API_BASE_URL` | API base seen by the browser (default `/api`, proxied by Next.js) |
+| `API_INTERNAL_URL` | Server-side proxy target for `/api`, `/hubs`, `/scalar` (default `http://localhost:5254`; `http://api:8080` in Docker) |

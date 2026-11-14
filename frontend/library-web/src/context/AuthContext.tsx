@@ -1,3 +1,5 @@
+'use client'
+
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { authApi } from '@/api'
 import { AUTH_LOGOUT_EVENT, getStoredAuth, setStoredAuth, type StoredAuth } from '@/lib/api'
