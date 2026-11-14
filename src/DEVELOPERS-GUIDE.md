@@ -1,6 +1,6 @@
 # Backend — Developer Guide
 
-.NET 10. See `docs/programmers-guide/` for task guides; this is the quick map.
+.NET 11. See `docs/programmers-guide/` for task guides; this is the quick map.
 
 ## Run
 

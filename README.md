@@ -1,6 +1,6 @@
 # Library Management System
 
-Enterprise library management platform — .NET 10 (Clean Architecture, EF Core,
+Enterprise library management platform — .NET 11 (Clean Architecture, EF Core,
 PostgreSQL) + React 19 / Vite SPA, fully containerised with observability.
 
 ## Run the whole thing (one command)

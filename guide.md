@@ -8,7 +8,7 @@ A step-by-step walkthrough of running, using, testing and observing the system.
 
 | Part | Path | Stack |
 |---|---|---|
-| Backend API | `src/Library.{Domain,Application,Infrastructure,Api}` | .NET 10, EF Core, in-memory/PostgreSQL |
+| Backend API | `src/Library.{Domain,Application,Infrastructure,Api}` | .NET 11, EF Core, in-memory/PostgreSQL |
 | Frontend | `frontend/library-web` | React 19, Vite, Tailwind, TanStack Query |
 | Tests | `tests/Library.{UnitTests,IntegrationTests}` | xUnit |
 | Docs | `docs/` + `MIGRATIONS.md` + this file | Markdown |

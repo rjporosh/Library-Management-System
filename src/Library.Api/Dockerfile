@@ -2,7 +2,7 @@
 # Multi-stage build for the Library API. Run from the repository root:
 #   docker build -f src/Library.Api/Dockerfile -t library-api .
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 COPY Directory.Build.props ./
@@ -16,7 +16,7 @@ RUN dotnet restore src/Library.Api/Library.Api.csproj
 COPY src/ src/
 RUN dotnet publish src/Library.Api/Library.Api.csproj -c Release -o /app --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 
 # Npgsql probes for Kerberos/GSSAPI at startup; without this it logs

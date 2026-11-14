@@ -353,7 +353,7 @@ collection = {
     "info": {
         "name": "Library Management System API",
         "_postman_id": "6f3b1c2a-0d4e-4a7b-9c11-libmgmt000001",
-        "description": "Enterprise Library Management System (.NET 10). Import this file, select the "
+        "description": "Enterprise Library Management System (.NET 11). Import this file, select the "
                        "\"Library MS - Local\" environment (or keep the baseUrl collection variable = "
                        "http://localhost:5254), start the API with `dotnet run --project src/Library.Api`, "
                        "then run **Auth > 1. Login as librarian** once - it sets the `bearerToken` collection "

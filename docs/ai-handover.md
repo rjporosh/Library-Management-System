@@ -956,3 +956,13 @@ npx newman run postman/Library-Management-System.postman_collection.json \
   the distinction is that auth is load-bearing for the whole app, while an
   unconfigured chat/speech provider should degrade one optional feature,
   not the app.
+
+## 0.6.0 - .NET 11 upgrade
+
+- All projects target `net11.0` (`Directory.Build.props`); Docker images use `dotnet/sdk:11.0` and `dotnet/aspnet:11.0`.
+- ASP.NET Core / Extensions packages are 11.0.0 GA. EF Core packages are pinned to `11.0.0-rc.3.26522.148`
+  because `Npgsql.EntityFrameworkCore.PostgreSQL` has no stable 11.x yet (rc.3 requires that exact EF version).
+  Move all EF packages to 11.0.0 together once Npgsql ships a stable 11 release.
+- `System.Security.Cryptography.Pkcs` 11.0.0 is referenced directly to override the vulnerable 9.0.x pulled in by
+  `Microsoft.Data.SqlClient` (NU1902/NU1903 are errors under `TreatWarningsAsErrors`).
+- OpenTelemetry 1.21.0, Scalar 2.21.0, Dapper 2.1.89, JWT 8.23.0, NBomber 6.7.1, Test SDK 18.12.0, coverlet 10.1.0.
