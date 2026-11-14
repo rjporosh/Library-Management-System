@@ -974,5 +974,8 @@ npx newman run postman/Library-Management-System.postman_collection.json \
 - `/api`, `/hubs`, `/scalar`, `/openapi`, `/health` are proxied by `next.config.ts` rewrites to `API_INTERNAL_URL`
   (replaces nginx for the web container; the compose `web` service now listens on 3000, published as 8080).
 - Verified locally: lint, typecheck, 16 vitest tests, `next build`, and a real browser login against the running API.
-- Not verified here: `docker compose up --build` (run it to confirm the standalone image). SignalR over the Next rewrite
+- Verified: `docker compose up --build` (api healthy on PostgreSQL, web healthy); through the Next container on :8080 a real
+  browser run passed guard redirect, login-return, members, dashboard, books + detail, borrowing, copies, requests, Bangla switch, logout,
+  register, with zero console errors; `/health`, `/openapi/v1.json`, `/scalar/v1`, `/api/metadata/messages` all 200.
+- Frontend deps refreshed: SignalR client 11.0.0, axios 1.21, eslint 10.15, vitest 5.1, jsdom 31. SignalR over the Next rewrite
   uses long-polling fallback; point `NEXT_PUBLIC_API_BASE_URL` at the API origin if WebSocket transport is required.
