@@ -1,3 +1,4 @@
+import path from 'node:path'
 import type { NextConfig } from 'next'
 
 // Server-side target for the same-origin proxy (/api, /hubs, /scalar...). In Docker this is the
@@ -6,6 +7,9 @@ const apiOrigin = (process.env.API_INTERNAL_URL ?? 'http://localhost:5254').repl
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  agentRules: false,
+  turbopack: { root: path.resolve(import.meta.dirname) },
+  outputFileTracingRoot: path.resolve(import.meta.dirname),
   reactStrictMode: true,
   poweredByHeader: false,
   async rewrites() {

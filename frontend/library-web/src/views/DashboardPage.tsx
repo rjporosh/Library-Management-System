@@ -528,7 +528,7 @@ function Stat({
         <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
       </div>
       <p
-        className={`mt-2 text-2xl font-bold ${tone === 'red' ? 'text-rose-600' : 'text-slate-900'}`}
+        className={`mt-2 font-serif text-3xl font-semibold ${tone === 'red' ? 'text-rose-600' : 'text-slate-900'}`}
       >
         {value}
       </p>

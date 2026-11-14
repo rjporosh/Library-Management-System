@@ -966,3 +966,13 @@ npx newman run postman/Library-Management-System.postman_collection.json \
 - `System.Security.Cryptography.Pkcs` 11.0.0 is referenced directly to override the vulnerable 9.0.x pulled in by
   `Microsoft.Data.SqlClient` (NU1902/NU1903 are errors under `TreatWarningsAsErrors`).
 - OpenTelemetry 1.21.0, Scalar 2.21.0, Dapper 2.1.89, JWT 8.23.0, NBomber 6.7.1, Test SDK 18.12.0, coverlet 10.1.0.
+
+## 0.6.0 - Next.js frontend
+
+- `frontend/library-web` is now Next.js 16 (App Router) on React 19, Tailwind 4, TypeScript 6 (TS 7 is not yet supported by Next).
+- Routes: `src/app` (`login`, `register`, authenticated `(app)` group guarded client-side by `AppShell`); screens in `src/views`.
+- `/api`, `/hubs`, `/scalar`, `/openapi`, `/health` are proxied by `next.config.ts` rewrites to `API_INTERNAL_URL`
+  (replaces nginx for the web container; the compose `web` service now listens on 3000, published as 8080).
+- Verified locally: lint, typecheck, 16 vitest tests, `next build`, and a real browser login against the running API.
+- Not verified here: `docker compose up --build` (run it to confirm the standalone image). SignalR over the Next rewrite
+  uses long-polling fallback; point `NEXT_PUBLIC_API_BASE_URL` at the API origin if WebSocket transport is required.
